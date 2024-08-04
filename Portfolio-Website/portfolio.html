@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>portfolio</title>
+    <style>
+
+        body {
+
+            background-image: url('https://img.freepik.com/premium-vector/abstract-colorful-sales-background-concept_250207-246.jpg');
+
+        }
+
+        header {
+            background-color: #9727e2;
+            color: #f309ad;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to right, #000000, #333333); 
+        }
+ 
+        header h1 {
+            margin: 0;
+        }
+ 
+        nav ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+ 
+        nav ul li {
+            margin-right: 20px;
+        }
+ 
+        nav ul li a {
+            text-decoration: none;
+            color: #df0fb2;
+        }
+ 
+        nav ul li a:hover {
+            text-decoration: underline;
+        }
+ 
+      
+        section {
+            padding: 10px 20px;
+        }
+ 
+
+        footer {
+            background-color: #333;
+            color:#df0fb2;
+            text-align: center;
+            padding: 10px 0;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+        }
+
+
+        .portfolio_image{
+            float:right;
+            clip-path: ellipse();
+           
+        }
+        .position{
+            position: absolute;
+            width: 70%;
+            left: 10%;
+            top: 20%;
+        
+        }
+        .about {
+        display: flex;
+        color: rgb(231, 15, 198); 
+        }
+        .contact{
+        display: flex;
+        color: rgb(236, 25, 187); /* Changed color to pink */
+        }
+        .project{
+        display: flex;
+        color: rgb(231, 36, 205); /* Changed color to pink */
+
+        }
+         
+        
+            
+        
+
+
+    </style>
+</head>
+<body>
+    <header>
+        <h1>ADARSH.S</h1>
+        <nav>
+            <ul>
+                <li><a href="#about">About</a></li>
+                <li><a href="#projects">Projects</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+    <div class="about">
+        <div > <br><br>
+            <h1>I  AM  ADARSH.S</h1>
+            <pre>
+             Student in presidency university pursuing Btech in computer science
+             and technology with specialization in AI-ML
+
+             INTRESTS- web development
+                       python
+                       java
+                       c++
+
+             ACHIVEMENTS- Smart India Coding-2022,
+                          Bangalore Hackerrank-2023
+        
+        
+            </pre>
+        </div>
+    </div>
+       <div class="position">
+            <img class="portfolio_image" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRqAYjwaH4ujSQYdZX9J-RYvnXR7SjiJSJPjA&s" alt="portfolioimage" width="200" height="250">
+</div>
+            <div id="project" class="project"> <!-- Added class="project" -->
+        <h3>Project:</h3>
+        <pre>
+             Smart Cleaner project using arduino uno and IoT
+             Weight sensing gate project using raspberry pi 
+        </pre>
+    </div>
+ 
+    <div id="contact" class="contact"> <!-- Added class="contact" -->
+        <h3>Contact:</h3>
+        <p><a href="mailto:adarshsnambiar7@gmail.com">adarshsnambiar7@gmail.com</a></p>
+    </div>
+ 
+    <footer>
+        <p>&copy; 2024 ADARSH. All Rights Reserved.</p>
+    </footer>
+</body>
+</html>
