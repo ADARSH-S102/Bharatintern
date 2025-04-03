@@ -1,0 +1,122 @@
+from lxml import etree
+import sys
+from tabulate import tabulate
+from collections import OrderedDict
+
+def parse_xml(file_path):
+    """Parse XML file and return the tree object"""
+    try:
+        tree = etree.parse(file_path)
+        return tree
+    except Exception as e:
+        print(f"Error parsing XML: {str(e)}")
+        return None
+
+def extract_hierarchical_data(elements):
+    """Extract hierarchical data from XML elements for tabular display"""
+    if not elements:
+        return None
+    
+    all_paths = OrderedDict()
+    for element in elements:
+        for descendant in element.iterdescendants():
+            path = get_element_path(descendant, element)
+            if path not in all_paths:
+                all_paths[path] = True
+    
+    columns = list(all_paths.keys())
+    
+    table_data = []
+    for element in elements:
+        row = OrderedDict()
+        for col in columns:
+            parts = col.split('/')
+            current = element
+            found = True
+            for part in parts:
+                current = current.find(part)
+                if current is None:
+                    found = False
+                    break
+            row[col] = current.text.strip() if found and current.text else "N/A"
+        table_data.append(row)
+    
+    return {"columns": columns, "data": table_data}
+
+def extract_exact_tag_data(tree, exact_xpath):
+    """Extract all child tags and their data from a given exact XML path."""
+    try:
+        elements = tree.xpath(exact_xpath)
+        if not elements:
+            return None
+        
+        table_data = []
+        columns = set()
+        
+        for element in elements:
+            row = {}
+            for child in element:
+                columns.add(child.tag)
+                row[child.tag] = child.text.strip() if child.text else "N/A"
+            table_data.append(row)
+        
+        columns = sorted(columns)
+        formatted_data = {"columns": columns, "data": table_data}
+        return formatted_data
+    except Exception as e:
+        print(f"Error extracting exact tag data: {str(e)}")
+        return None
+
+def display_results(results, xpath_expr):
+    """Display extracted results with support for tabular output"""
+    if not results:
+        print(f"No results found for XPath: {xpath_expr}")
+        return
+    
+    if isinstance(results, dict) and "columns" in results:
+        print(f"\nData for XPath '{xpath_expr}':")
+        print("-" * 80)
+        
+        table_rows = [[row.get(col, "N/A") for col in results["columns"]] for row in results["data"]]
+        
+        print(tabulate(table_rows, headers=results["columns"], tablefmt="grid"))
+        print("-" * 80)
+    else:
+        print(f"\nResults for XPath '{xpath_expr}':")
+        print("-" * 50)
+        for i, result in enumerate(results, 1):
+            print(f"Result {i}:")
+            print(result if "\n" not in result else f"  {result}")
+        print("-" * 50)
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python xpath_extractor.py <xml_file_path>")
+        return
+    
+    file_path = sys.argv[1]
+    tree = parse_xml(file_path)
+    if tree is None:
+        return
+    
+    print("\nSample XPath queries you can try:")
+    print("1. //Amt - Extract all amount values")
+    print("2. //Ntry - Extract all entries with hierarchical data")
+    print("3. //Bal - Extract balance information with all descendants")
+    print("4. //TxDtls - Extract transaction details with all child elements")
+    print("5. /root/Ntry - Extract all child tags inside 'Ntry' elements\n")
+    
+    while True:
+        xpath_expr = input("\nEnter XPath expression (or 'quit' to exit): ").strip()
+        if xpath_expr.lower() == 'quit':
+            break
+        
+        if not xpath_expr:
+            print("Please enter a valid XPath expression.")
+            continue
+        
+        results = extract_exact_tag_data(tree, xpath_expr) or extract_hierarchical_data(tree.xpath(xpath_expr)) or extract_data(tree, xpath_expr)
+        display_results(results, xpath_expr)
+
+if __name__ == "__main__":
+    main()
