@@ -12,6 +12,14 @@ def parse_xml(file_path):
         print(f"Error parsing XML: {str(e)}")
         return None
 
+def get_element_path(element, root):
+    """Get the relative XPath of an element from the given root"""
+    path = []
+    while element is not None and element != root:
+        path.insert(0, element.tag)
+        element = element.getparent()
+    return "/".join(path)
+
 def extract_hierarchical_data(elements):
     """Extract hierarchical data from XML elements for tabular display"""
     if not elements:
@@ -61,10 +69,28 @@ def extract_exact_tag_data(tree, exact_xpath):
             table_data.append(row)
         
         columns = sorted(columns)
-        formatted_data = {"columns": columns, "data": table_data}
-        return formatted_data
+        return {"columns": columns, "data": table_data}
     except Exception as e:
         print(f"Error extracting exact tag data: {str(e)}")
+        return None
+
+def extract_general_data(tree, xpath_expr):
+    """Extracts data using a general XPath query."""
+    try:
+        elements = tree.xpath(xpath_expr)
+        if not elements:
+            return None
+        
+        results = []
+        for el in elements:
+            if isinstance(el, etree._Element):
+                results.append(etree.tostring(el, pretty_print=True).decode())
+            else:
+                results.append(str(el))
+        
+        return results if results else None
+    except Exception as e:
+        print(f"Error extracting data: {str(e)}")
         return None
 
 def display_results(results, xpath_expr):
@@ -115,7 +141,12 @@ def main():
             print("Please enter a valid XPath expression.")
             continue
         
-        results = extract_exact_tag_data(tree, xpath_expr) or extract_hierarchical_data(tree.xpath(xpath_expr)) or extract_data(tree, xpath_expr)
+        results = (
+            extract_exact_tag_data(tree, xpath_expr) or 
+            extract_hierarchical_data(tree.xpath(xpath_expr)) or 
+            extract_general_data(tree, xpath_expr)
+        )
+        
         display_results(results, xpath_expr)
 
 if __name__ == "__main__":
