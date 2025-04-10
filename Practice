@@ -1,3 +1,42 @@
+
+namespaces:
+  ns1: "http://example.com/ns1"
+  ns2: "http://example.com/ns2"
+
+database:
+  server: "your_server_name"
+  database: "your_database_name"
+
+tables:
+  - name: "Table1"
+    xpath: "//ns1:Record"  # Adjust this XPath to match your XML structure
+    common_fields:
+      Field1: "//ns1:CommonField1"  # Adjust these paths as needed
+      Field2: "//ns1:CommonField2"
+
+  - name: "Table2"
+    xpath: "//ns2:Entry"  # Adjust this XPath to match your XML structure
+    common_fields:
+      FieldA: "//ns2:CommonFieldA"  # Adjust these paths as needed
+      FieldB: "//ns2:CommonFieldB"
+
+  - name: "Table3"
+    xpath: "//ns1:Item"  # Adjust this XPath to match your XML structure
+    common_fields:
+      FieldX: "//ns1:CommonFieldX"  # Adjust these paths as needed
+      FieldY: "//ns1:CommonFieldY"
+
+
+
+
+
+
+
+
+
+
+
+
 import yaml
 import glob
 import os
