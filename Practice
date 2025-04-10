@@ -1,153 +1,137 @@
 from lxml import etree
-import sys
-from tabulate import tabulate
-from collections import OrderedDict
+import pandas as pd
+import pyodbc
+import yaml
+import glob
+import os
 
-def parse_xml(file_path):
-    """Parse XML file and return the tree object"""
+# Load config
+with open("config.yaml", "r") as f:
+    config = yaml.safe_load(f)
+
+# DB details
+db_config = config["database"]
+
+# XML details
+xml_folder_path = config["xml"]["file_path"]  # now treated as folder path
+xpath_expr = config["xml"]["xpath_expr"]
+namespaces = config.get("namespaces", {})
+
+# Common fields
+common_fields_config = config.get("common_fields", {})
+
+
+def save_to_db(df, table_name):
     try:
-        tree = etree.parse(file_path)
-        return tree
-    except Exception as e:
-        print(f"Error parsing XML: {str(e)}")
-        return None
-
-def get_element_path(element, root):
-    """Get the relative XPath of an element from the given root"""
-    path = []
-    while element is not None and element != root:
-        path.insert(0, element.tag)
-        element = element.getparent()
-    return "/".join(path)
-
-def extract_hierarchical_data(elements):
-    """Extract hierarchical data from XML elements for tabular display"""
-    if not elements:
-        return None
-    
-    all_paths = OrderedDict()
-    for element in elements:
-        for descendant in element.iterdescendants():
-            path = get_element_path(descendant, element)
-            if path not in all_paths:
-                all_paths[path] = True
-    
-    columns = list(all_paths.keys())
-    
-    table_data = []
-    for element in elements:
-        row = OrderedDict()
-        for col in columns:
-            parts = col.split('/')
-            current = element
-            found = True
-            for part in parts:
-                current = current.find(part)
-                if current is None:
-                    found = False
-                    break
-            row[col] = current.text.strip() if found and current.text else "N/A"
-        table_data.append(row)
-    
-    return {"columns": columns, "data": table_data}
-
-def extract_exact_tag_data(tree, exact_xpath):
-    """Extract all child tags and their data from a given exact XML path."""
-    try:
-        elements = tree.xpath(exact_xpath)
-        if not elements:
-            return None
-        
-        table_data = []
-        columns = set()
-        
-        for element in elements:
-            row = {}
-            for child in element:
-                columns.add(child.tag)
-                row[child.tag] = child.text.strip() if child.text else "N/A"
-            table_data.append(row)
-        
-        columns = sorted(columns)
-        return {"columns": columns, "data": table_data}
-    except Exception as e:
-        print(f"Error extracting exact tag data: {str(e)}")
-        return None
-
-def extract_general_data(tree, xpath_expr):
-    """Extracts data using a general XPath query."""
-    try:
-        elements = tree.xpath(xpath_expr)
-        if not elements:
-            return None
-        
-        results = []
-        for el in elements:
-            if isinstance(el, etree._Element):
-                results.append(etree.tostring(el, pretty_print=True).decode())
-            else:
-                results.append(str(el))
-        
-        return results if results else None
-    except Exception as e:
-        print(f"Error extracting data: {str(e)}")
-        return None
-
-def display_results(results, xpath_expr):
-    """Display extracted results with support for tabular output"""
-    if not results:
-        print(f"No results found for XPath: {xpath_expr}")
-        return
-    
-    if isinstance(results, dict) and "columns" in results:
-        print(f"\nData for XPath '{xpath_expr}':")
-        print("-" * 80)
-        
-        table_rows = [[row.get(col, "N/A") for col in results["columns"]] for row in results["data"]]
-        
-        print(tabulate(table_rows, headers=results["columns"], tablefmt="grid"))
-        print("-" * 80)
-    else:
-        print(f"\nResults for XPath '{xpath_expr}':")
-        print("-" * 50)
-        for i, result in enumerate(results, 1):
-            print(f"Result {i}:")
-            print(result if "\n" not in result else f"  {result}")
-        print("-" * 50)
-
-def main():
-    if len(sys.argv) < 2:
-        print("Usage: python xpath_extractor.py <xml_file_path>")
-        return
-    
-    file_path = sys.argv[1]
-    tree = parse_xml(file_path)
-    if tree is None:
-        return
-    
-    print("\nSample XPath queries you can try:")
-    print("1. //Amt - Extract all amount values")
-    print("2. //Ntry - Extract all entries with hierarchical data")
-    print("3. //Bal - Extract balance information with all descendants")
-    print("4. //TxDtls - Extract transaction details with all child elements")
-    print("5. /root/Ntry - Extract all child tags inside 'Ntry' elements\n")
-    
-    while True:
-        xpath_expr = input("\nEnter XPath expression (or 'quit' to exit): ").strip()
-        if xpath_expr.lower() == 'quit':
-            break
-        
-        if not xpath_expr:
-            print("Please enter a valid XPath expression.")
-            continue
-        
-        results = (
-            extract_exact_tag_data(tree, xpath_expr) or 
-            extract_hierarchical_data(tree.xpath(xpath_expr)) or 
-            extract_general_data(tree, xpath_expr)
+        conn = pyodbc.connect(
+            driver=db_config['driver'],
+            server=db_config['server'],
+            database=db_config['database'],
+            trusted_connection='yes' if db_config.get('trusted_connection', True) else 'no'
         )
-        
-        display_results(results, xpath_expr)
+        cursor = conn.cursor()
 
+        cursor.execute("""
+            SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?
+        """, (table_name,))
+        table_exists = cursor.fetchone()[0] == 1
+
+        if not table_exists:
+            columns = [f"[{col}] NVARCHAR(MAX)" for col in df.columns]
+            create_table_sql = f"CREATE TABLE [{table_name}] ({', '.join(columns)})"
+            cursor.execute(create_table_sql)
+            print(f"[INFO] Created table [{table_name}]")
+        else:
+            cursor.execute("""
+                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ?
+            """, (table_name,))
+            existing_columns = set(row[0] for row in cursor.fetchall())
+            missing_columns = [col for col in df.columns if col not in existing_columns]
+
+            for col in missing_columns:
+                alter_sql = f"ALTER TABLE [{table_name}] ADD [{col}] NVARCHAR(MAX)"
+                cursor.execute(alter_sql)
+                print(f"[INFO] Added missing column: {col}")
+
+        for _, row in df.iterrows():
+            placeholders = ", ".join(["?"] * len(row))
+            column_names = ", ".join(f"[{col}]" for col in row.index)
+            insert_sql = f"INSERT INTO [{table_name}] ({column_names}) VALUES ({placeholders})"
+            values = tuple(None if pd.isna(row[col]) else str(row[col]) for col in df.columns)
+            cursor.execute(insert_sql, values)
+
+        conn.commit()
+        print(f"[INFO] Inserted {len(df)} rows into [{table_name}]")
+
+    except Exception as e:
+        print(f"[ERROR] Database error: {str(e)}")
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+
+def extract_data_with_common_fields(xml_file, xpath_expr):
+    try:
+        with open(xml_file, "rb") as f:
+            content = f.read()
+
+        start = content.find(b"<?xml")
+        cleaned_content = content[start:] if start != -1 else content
+        tree = etree.fromstring(cleaned_content)
+
+        elements = tree.xpath(xpath_expr, namespaces=namespaces)
+        if not elements:
+            print(f"[WARNING] No matching elements found in: {xml_file}")
+            return None
+
+        data = []
+        for elem in elements:
+            row = {}
+            for child in elem.iter():
+                tag = child.tag.split('}')[-1]
+                if child.text and child.text.strip():
+                    row[tag] = child.text.strip()
+            data.append(row)
+
+        df = pd.DataFrame(data)
+
+        # Extract and append common fields
+        common_fields = {
+            key: (
+                tree.find(xpath, namespaces=namespaces).text.strip()
+                if tree.find(xpath, namespaces=namespaces) is not None and
+                   tree.find(xpath, namespaces=namespaces).text else "NULL"
+            )
+            for key, xpath in common_fields_config.items()
+        }
+
+        for key, value in common_fields.items():
+            df[key] = value
+
+        return df
+
+    except Exception as e:
+        print(f"[ERROR] Failed to process file {xml_file}: {e}")
+        return None
+
+
+# Main
 if __name__ == "__main__":
-    main()
+    xml_files = glob.glob(os.path.join(xml_folder_path, "*.xml"))
+    if not xml_files:
+        print(f"[INFO] No XML files found in: {xml_folder_path}")
+    else:
+        print(f"[INFO] Found {len(xml_files)} XML files in: {xml_folder_path}")
+
+    # Use XPath expression to name the table
+    table_name = xpath_expr.strip("/").split("/")[-1].replace(":", "_")
+
+    for xml_file in xml_files:
+        print(f"\n[INFO] Processing: {xml_file}")
+        df = extract_data_with_common_fields(xml_file, xpath_expr)
+        if df is not None and not df.empty:
+            save_to_db(df, table_name)
+            print(df.head())
+        else:
+            print(f"[INFO] No data extracted from: {xml_file}")
+              
