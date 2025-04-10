@@ -1,137 +1,114 @@
-from lxml import etree
-import pandas as pd
-import pyodbc
 import yaml
 import glob
 import os
+import pandas as pd
+from lxml import etree
+import pyodbc
 
-# Load config
-with open("config.yaml", "r") as f:
-    config = yaml.safe_load(f)
+def load_config(path='config.yaml'):
+    with open(path, 'r') as f:
+        return yaml.safe_load(f)
 
-# DB details
-db_config = config["database"]
+def clean_and_parse(xml_file):
+    with open(xml_file, 'rb') as f:
+        content = f.read()
+    start = content.find(b'<?xml')
+    cleaned = content[start:] if start != -1 else content
+    return etree.fromstring(cleaned)
 
-# XML details
-xml_folder_path = config["xml"]["file_path"]  # now treated as folder path
-xpath_expr = config["xml"]["xpath_expr"]
-namespaces = config.get("namespaces", {})
+def extract_common_fields(tree, common_paths, ns):
+    def get(path):
+        el = tree.find(path, namespaces=ns)
+        return el.text.strip() if el is not None and el.text else 'NULL'
+    return {k: get(v) for k, v in common_paths.items()}
 
-# Common fields
-common_fields_config = config.get("common_fields", {})
+def extract_data(tree, xpath_expr, ns, common_fields):
+    elements = tree.xpath(xpath_expr, namespaces=ns)
+    if not elements:
+        print("[WARNING] No matching elements found.")
+        return None
 
+    data = []
+    for elem in elements:
+        row = {}
+        for child in elem.iter():
+            tag = child.tag.split('}')[-1]
+            if child.text and child.text.strip():
+                row[tag] = child.text.strip()
+        if row:
+            data.append(row)
 
-def save_to_db(df, table_name):
+    df = pd.DataFrame(data)
+    for k, v in common_fields.items():
+        df[k] = v
+    return df
+
+def save_to_db(df, table_name, db_config):
     try:
         conn = pyodbc.connect(
-            driver=db_config['driver'],
-            server=db_config['server'],
-            database=db_config['database'],
-            trusted_connection='yes' if db_config.get('trusted_connection', True) else 'no'
+            Driver='{SQL Server}',
+            Server=db_config['server'],
+            Database=db_config['database'],
+            Trusted_Connection='yes'
         )
         cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?
+        cursor.execute(f"""
+            IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?)
+            BEGIN
+                CREATE TABLE [{table_name}] ({','.join(f'[{col}] NVARCHAR(MAX)' for col in df.columns)})
+            END
         """, (table_name,))
-        table_exists = cursor.fetchone()[0] == 1
 
-        if not table_exists:
-            columns = [f"[{col}] NVARCHAR(MAX)" for col in df.columns]
-            create_table_sql = f"CREATE TABLE [{table_name}] ({', '.join(columns)})"
-            cursor.execute(create_table_sql)
-            print(f"[INFO] Created table [{table_name}]")
-        else:
-            cursor.execute("""
-                SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ?
-            """, (table_name,))
-            existing_columns = set(row[0] for row in cursor.fetchall())
-            missing_columns = [col for col in df.columns if col not in existing_columns]
-
-            for col in missing_columns:
-                alter_sql = f"ALTER TABLE [{table_name}] ADD [{col}] NVARCHAR(MAX)"
-                cursor.execute(alter_sql)
-                print(f"[INFO] Added missing column: {col}")
+        cursor.execute(f"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME=?", (table_name,))
+        existing_columns = set(row[0] for row in cursor.fetchall())
+        for col in df.columns:
+            if col not in existing_columns:
+                cursor.execute(f"ALTER TABLE [{table_name}] ADD [{col}] NVARCHAR(MAX)")
 
         for _, row in df.iterrows():
-            placeholders = ", ".join(["?"] * len(row))
-            column_names = ", ".join(f"[{col}]" for col in row.index)
+            placeholders = ','.join(['?'] * len(row))
+            column_names = ','.join(f'[{col}]' for col in row.index)
             insert_sql = f"INSERT INTO [{table_name}] ({column_names}) VALUES ({placeholders})"
-            values = tuple(None if pd.isna(row[col]) else str(row[col]) for col in df.columns)
-            cursor.execute(insert_sql, values)
+            cursor.execute(insert_sql, tuple(str(row[col]) if not pd.isna(row[col]) else None for col in row.index))
 
         conn.commit()
-        print(f"[INFO] Inserted {len(df)} rows into [{table_name}]")
-
+        print(f"[INFO] Inserted {len(df)} rows into {table_name}")
     except Exception as e:
-        print(f"[ERROR] Database error: {str(e)}")
+        print(f"[ERROR] DB insert failed: {e}")
     finally:
         if 'conn' in locals():
             conn.close()
 
+def main():
+    config = load_config()
+    ns = config['namespaces']
+    db_config = config['database']
 
-def extract_data_with_common_fields(xml_file, xpath_expr):
-    try:
-        with open(xml_file, "rb") as f:
-            content = f.read()
+    user_input_dir = input("Enter the full path to the directory containing XML files: ").strip()
+    if not os.path.isdir(user_input_dir):
+        print("[ERROR] Invalid directory path provided.")
+        return
 
-        start = content.find(b"<?xml")
-        cleaned_content = content[start:] if start != -1 else content
-        tree = etree.fromstring(cleaned_content)
-
-        elements = tree.xpath(xpath_expr, namespaces=namespaces)
-        if not elements:
-            print(f"[WARNING] No matching elements found in: {xml_file}")
-            return None
-
-        data = []
-        for elem in elements:
-            row = {}
-            for child in elem.iter():
-                tag = child.tag.split('}')[-1]
-                if child.text and child.text.strip():
-                    row[tag] = child.text.strip()
-            data.append(row)
-
-        df = pd.DataFrame(data)
-
-        # Extract and append common fields
-        common_fields = {
-            key: (
-                tree.find(xpath, namespaces=namespaces).text.strip()
-                if tree.find(xpath, namespaces=namespaces) is not None and
-                   tree.find(xpath, namespaces=namespaces).text else "NULL"
-            )
-            for key, xpath in common_fields_config.items()
-        }
-
-        for key, value in common_fields.items():
-            df[key] = value
-
-        return df
-
-    except Exception as e:
-        print(f"[ERROR] Failed to process file {xml_file}: {e}")
-        return None
-
-
-# Main
-if __name__ == "__main__":
-    xml_files = glob.glob(os.path.join(xml_folder_path, "*.xml"))
+    xml_files = glob.glob(os.path.join(user_input_dir, "*.xml"))
     if not xml_files:
-        print(f"[INFO] No XML files found in: {xml_folder_path}")
-    else:
-        print(f"[INFO] Found {len(xml_files)} XML files in: {xml_folder_path}")
-
-    # Use XPath expression to name the table
-    table_name = xpath_expr.strip("/").split("/")[-1].replace(":", "_")
+        print("[INFO] No XML files found in the provided directory.")
+        return
 
     for xml_file in xml_files:
-        print(f"\n[INFO] Processing: {xml_file}")
-        df = extract_data_with_common_fields(xml_file, xpath_expr)
-        if df is not None and not df.empty:
-            save_to_db(df, table_name)
-            print(df.head())
-        else:
-            print(f"[INFO] No data extracted from: {xml_file}")
-              
+        print(f"\n[INFO] Processing file: {xml_file}")
+        tree = clean_and_parse(xml_file)
+
+        for table_cfg in config['tables']:
+            table_name = table_cfg['name']
+            xpath_expr = table_cfg['xpath']
+            common_paths = table_cfg['common_fields']
+
+            common_values = extract_common_fields(tree, common_paths, ns)
+            df = extract_data(tree, xpath_expr, ns, common_values)
+            if df is not None:
+                save_to_db(df, table_name, db_config)
+
+if __name__ == "__main__":
+    main()
+ 
