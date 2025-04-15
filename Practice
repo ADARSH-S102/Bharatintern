@@ -1,30 +1,26 @@
+<div class="container">
+  <h1>{{ title }}</h1>
+  <p>{{ description }}</p>
 
-namespaces:
-  ns1: "http://example.com/ns1"
-  ns2: "http://example.com/ns2"
+  <form (ngSubmit)="addItem()" #itemForm="ngForm">
+    <input
+      type="text"
+      [(ngModel)]="newItem"
+      name="newItem"
+      required
+      placeholder="Enter a new item"
+    />
+    <button type="submit" [disabled]="!itemForm.form.valid">Add Item</button>
+  </form>
 
-database:
-  server: "your_server_name"
-  database: "your_database_name"
-
-tables:
-  - name: "Table1"
-    xpath: "//ns1:Record"  # Adjust this XPath to match your XML structure
-    common_fields:
-      Field1: "//ns1:CommonField1"  # Adjust these paths as needed
-      Field2: "//ns1:CommonField2"
-
-  - name: "Table2"
-    xpath: "//ns2:Entry"  # Adjust this XPath to match your XML structure
-    common_fields:
-      FieldA: "//ns2:CommonFieldA"  # Adjust these paths as needed
-      FieldB: "//ns2:CommonFieldB"
-
-  - name: "Table3"
-    xpath: "//ns1:Item"  # Adjust this XPath to match your XML structure
-    common_fields:
-      FieldX: "//ns1:CommonFieldX"  # Adjust these paths as needed
-      FieldY: "//ns1:CommonFieldY"
+  <p *ngIf="items.length === 0">No items yet. Add one above!</p>
+  <ul>
+    <li *ngFor="let item of items; let i = index">
+      {{ item }}
+      <button (click)="removeItem(i)">Remove</button>
+    </li>
+  </ul>
+</div>
 
 
 
@@ -37,40 +33,88 @@ tables:
 
 
 
-  def main():
-    config = load_config()
-    ns = config['namespaces']
-    db_config = config['database']
+.container {
+  max-width: 500px;
+  margin: auto;
+  padding: 20px;
+  font-family: 'Segoe UI', sans-serif;
+}
 
-    # Get the single XML file path from config
-    xml_file_path = config.get('file_path')
-    if not os.path.isfile(xml_file_path) or not xml_file_path.lower().endswith('.xml'):
-        print("[ERROR] Invalid XML file path provided in config.")
-        return
+input[type="text"] {
+  padding: 10px;
+  width: 70%;
+  margin-right: 10px;
+  box-sizing: border-box;
+}
 
-    # Extract filename without extension for table naming
-    filename_base = os.path.splitext(os.path.basename(xml_file_path))[0]
+button {
+  padding: 10px 15px;
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
 
-    print(f"\n[INFO] Processing file: {xml_file_path}")
-    tree = clean_and_parse(xml_file_path)
+button[disabled] {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
 
-    for table_cfg in config['tables']:
-        xpath_expr = table_cfg['xpath']
-        common_paths = table_cfg['common_fields']
+ul {
+  padding-left: 20px;
+}
 
-        # Determine table name suffix based on XPath (ntry or bal)
-        if 'ntry' in xpath_expr.lower():
-            suffix = '_ntry'
-        elif 'bal' in xpath_expr.lower():
-            suffix = '_bal'
-        else:
-            suffix = '_data'  # fallback if needed
+li {
+  margin-top: 10px;
+}
 
-        table_name = f"{filename_base}{suffix}"
+li button {
+  margin-left: 10px;
+  background-color: #e53935;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
 
-        # Extract and process data
-        common_values = extract_common_fields(tree, common_paths, ns)
-        df = extract_data(tree, xpath_expr, ns, common_values)
-        if df is not None:
-            save_to_db(df, table_name, db_config)
-  
+li button:hover {
+  background-color: #c62828;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-home',
+  standalone: true,
+  imports: [],
+  templateUrl: './home.component.html',
+  styleUrls: ['./home.component.css']
+})
+export class HomeComponent {
+  title = 'Home Page';
+  description = 'This is a functional home component in Angular.';
+  items: string[] = ['Learn Angular', 'Build Components', 'Use Services'];
+  newItem: string = '';
+
+  addItem() {
+    const trimmed = this.newItem.trim();
+    if (trimmed) {
+      this.items.push(trimmed);
+      this.newItem = '';
+    }
+  }
+
+  removeItem(index: number) {
+    this.items.splice(index, 1);
+  }
+}
