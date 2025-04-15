@@ -1,25 +1,35 @@
-<div class="container">
-  <h1>{{ title }}</h1>
-  <p>{{ description }}</p>
+  <div class="add-item">
+  <h2>Add an Item</h2>
 
-  <form (ngSubmit)="addItem()" #itemForm="ngForm">
-    <input
-      type="text"
-      [(ngModel)]="newItem"
-      name="newItem"
-      required
-      placeholder="Enter a new item"
-    />
-    <button type="submit" [disabled]="!itemForm.form.valid">Add Item</button>
+  <!-- Display success message when item is added using reactive stream -->
+  <div *ngIf="itemAdded$ | async" class="alert alert-success">
+    Item successfully added!
+  </div>
+
+  <form [formGroup]="itemForm" (ngSubmit)="addItem()">
+    <div class="form-group">
+      <label for="itemName">Item Name:</label>
+      <input id="itemName" formControlName="itemName" class="form-control" />
+      <!-- Display validation error messages -->
+      <div *ngIf="itemForm.controls['itemName'].invalid && itemForm.controls['itemName'].touched" class="text-danger">
+        <small *ngIf="itemForm.controls['itemName'].hasError('required')">Item name is required.</small>
+        <small *ngIf="itemForm.controls['itemName'].hasError('minlength')">Item name must be at least 3 characters long.</small>
+      </div>
+    </div>
+
+    <button type="submit" [disabled]="itemForm.invalid" class="btn btn-primary">Add Item</button>
   </form>
 
-  <p *ngIf="items.length === 0">No items yet. Add one above!</p>
-  <ul>
-    <li *ngFor="let item of items; let i = index">
-      {{ item }}
-      <button (click)="removeItem(i)">Remove</button>
-    </li>
-  </ul>
+  <!-- Display the list of items dynamically without ngFor -->
+  <div *ngIf="items$ | async as items">
+    <h3>Item List</h3>
+    <div *ngIf="items.length === 0">
+      <p>No items added yet.</p>
+    </div>
+    <div *ngIf="items.length > 0">
+      <div *ngFor="let item of items; let i = index">{{ i + 1 }}. {{ item }}</div>
+    </div>
+  </div>
 </div>
 
 
@@ -31,54 +41,22 @@
 
 
 
-
-
-.container {
+.add-item {
   max-width: 500px;
-  margin: auto;
+  margin: 20px auto;
   padding: 20px;
-  font-family: 'Segoe UI', sans-serif;
+  border: 1px solid #ccc;
+  border-radius: 5px;
 }
 
-input[type="text"] {
-  padding: 10px;
-  width: 70%;
-  margin-right: 10px;
-  box-sizing: border-box;
+.alert {
+  margin-bottom: 20px;
 }
 
 button {
-  padding: 10px 15px;
-  background-color: #1976d2;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-button[disabled] {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-ul {
-  padding-left: 20px;
-}
-
-li {
   margin-top: 10px;
 }
 
-li button {
-  margin-left: 10px;
-  background-color: #e53935;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-li button:hover {
-  background-color: #c62828;
-}
 
 
 
@@ -87,34 +65,41 @@ li button:hover {
 
 
 
-
-
-
-
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { BehaviorSubject } from 'rxjs'; // For reactive updates
 
 @Component({
-  selector: 'app-home',
-  standalone: true,
-  imports: [],
-  templateUrl: './home.component.html',
-  styleUrls: ['./home.component.css']
+  selector: 'app-add-item',
+  templateUrl: './add-item.component.html',
+  styleUrls: ['./add-item.component.css']
 })
-export class HomeComponent {
-  title = 'Home Page';
-  description = 'This is a functional home component in Angular.';
-  items: string[] = ['Learn Angular', 'Build Components', 'Use Services'];
-  newItem: string = '';
+export class AddItemComponent implements OnInit {
+  itemForm: FormGroup;
+  items$ = new BehaviorSubject<string[]>([]);  // Reactive stream of items
+  itemAdded$ = new BehaviorSubject<boolean>(false);  // Reactive stream for item added flag
 
-  addItem() {
-    const trimmed = this.newItem.trim();
-    if (trimmed) {
-      this.items.push(trimmed);
-      this.newItem = '';
-    }
+  constructor(private fb: FormBuilder) {
+    // Initialize form group with validation
+    this.itemForm = this.fb.group({
+      itemName: ['', [Validators.required, Validators.minLength(3)]]
+    });
   }
 
-  removeItem(index: number) {
-    this.items.splice(index, 1);
+  ngOnInit(): void {}
+
+  // Method to add item to the list
+  addItem() {
+    if (this.itemForm.valid) {
+      const newItem = this.itemForm.value.itemName;
+      const updatedItems = [...this.items$.getValue(), newItem];  // Add item to current list
+      this.items$.next(updatedItems);  // Update the items stream
+
+      this.itemForm.reset();  // Reset the form after adding item
+      this.itemAdded$.next(true);  // Update the item added flag
+
+      // Hide success message after 2 seconds
+      setTimeout(() => this.itemAdded$.next(false), 2000);
+    }
   }
 }
