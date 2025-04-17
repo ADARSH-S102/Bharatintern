@@ -1,105 +1,57 @@
-  <div class="add-item">
-  <h2>Add an Item</h2>
+import pandas as pd
+import gradio as gr
 
-  <!-- Display success message when item is added using reactive stream -->
-  <div *ngIf="itemAdded$ | async" class="alert alert-success">
-    Item successfully added!
-  </div>
+def reconcile_files(file1, file2, key_column):
+    # Load CSVs
+    df1 = pd.read_csv(file1)
+    df2 = pd.read_csv(file2)
 
-  <form [formGroup]="itemForm" (ngSubmit)="addItem()">
-    <div class="form-group">
-      <label for="itemName">Item Name:</label>
-      <input id="itemName" formControlName="itemName" class="form-control" />
-      <!-- Display validation error messages -->
-      <div *ngIf="itemForm.controls['itemName'].invalid && itemForm.controls['itemName'].touched" class="text-danger">
-        <small *ngIf="itemForm.controls['itemName'].hasError('required')">Item name is required.</small>
-        <small *ngIf="itemForm.controls['itemName'].hasError('minlength')">Item name must be at least 3 characters long.</small>
-      </div>
-    </div>
+    if key_column not in df1.columns or key_column not in df2.columns:
+        return f"Key column '{key_column}' not found in one or both files."
 
-    <button type="submit" [disabled]="itemForm.invalid" class="btn btn-primary">Add Item</button>
-  </form>
+    # Set index to key column for matching
+    df1.set_index(key_column, inplace=True)
+    df2.set_index(key_column, inplace=True)
 
-  <!-- Display the list of items dynamically without ngFor -->
-  <div *ngIf="items$ | async as items">
-    <h3>Item List</h3>
-    <div *ngIf="items.length === 0">
-      <p>No items added yet.</p>
-    </div>
-    <div *ngIf="items.length > 0">
-      <div *ngFor="let item of items; let i = index">{{ i + 1 }}. {{ item }}</div>
-    </div>
-  </div>
-</div>
+    # Align on keys
+    all_keys = sorted(set(df1.index).union(set(df2.index)))
+    
+    comparison_results = []
 
+    for key in all_keys:
+        row1 = df1.loc[key] if key in df1.index else None
+        row2 = df2.loc[key] if key in df2.index else None
 
+        if row1 is None:
+            comparison_results.append(f"{key} - Missing in File 1")
+        elif row2 is None:
+            comparison_results.append(f"{key} - Missing in File 2")
+        elif row1.equals(row2):
+            comparison_results.append(f"{key} - Match")
+        else:
+            mismatches = []
+            for col in df1.columns:
+                val1 = row1[col] if col in row1 else 'N/A'
+                val2 = row2[col] if col in row2 else 'N/A'
+                if val1 != val2:
+                    mismatches.append(f"{col}: {val1} != {val2}")
+            mismatch_details = "; ".join(mismatches)
+            comparison_results.append(f"{key} - Mismatch -> {mismatch_details}")
+    
+    return "\n".join(comparison_results)
 
+# Gradio Interface
+iface = gr.Interface(
+    fn=reconcile_files,
+    inputs=[
+        gr.File(label="CSV File 1"),
+        gr.File(label="CSV File 2"),
+        gr.Textbox(label="Key Column (e.g., TransactionID)")
+    ],
+    outputs="text",
+    title="CSV Reconciliation Tool",
+    description="Compares two CSV files using 1:1 matching based on a key column"
+)
 
-
-
-
-
-
-
-.add-item {
-  max-width: 500px;
-  margin: 20px auto;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-
-.alert {
-  margin-bottom: 20px;
-}
-
-button {
-  margin-top: 10px;
-}
-
-
-
-
-
-
-
-
-
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { BehaviorSubject } from 'rxjs'; // For reactive updates
-
-@Component({
-  selector: 'app-add-item',
-  templateUrl: './add-item.component.html',
-  styleUrls: ['./add-item.component.css']
-})
-export class AddItemComponent implements OnInit {
-  itemForm: FormGroup;
-  items$ = new BehaviorSubject<string[]>([]);  // Reactive stream of items
-  itemAdded$ = new BehaviorSubject<boolean>(false);  // Reactive stream for item added flag
-
-  constructor(private fb: FormBuilder) {
-    // Initialize form group with validation
-    this.itemForm = this.fb.group({
-      itemName: ['', [Validators.required, Validators.minLength(3)]]
-    });
-  }
-
-  ngOnInit(): void {}
-
-  // Method to add item to the list
-  addItem() {
-    if (this.itemForm.valid) {
-      const newItem = this.itemForm.value.itemName;
-      const updatedItems = [...this.items$.getValue(), newItem];  // Add item to current list
-      this.items$.next(updatedItems);  // Update the items stream
-
-      this.itemForm.reset();  // Reset the form after adding item
-      this.itemAdded$.next(true);  // Update the item added flag
-
-      // Hide success message after 2 seconds
-      setTimeout(() => this.itemAdded$.next(false), 2000);
-    }
-  }
-}
+if __name__ == "__main__":
+    iface.launch()
