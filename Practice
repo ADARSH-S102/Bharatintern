@@ -1,59 +1,56 @@
 import pandas as pd
 import gradio as gr
-import os
 
 def extract_algo_keys(df):
     if 'Agreement_name' not in df.columns:
         raise ValueError("Missing 'Agreement_name' column in ALGO file.")
-    keys = df['Agreement_name'].apply(
+    return df['Agreement_name'].apply(
         lambda x: x.replace('_RIMR', '3CR').replace('_RIMP', '3CP')
     ).tolist()
-    return keys
 
 def extract_star_keys(df):
     required_cols = ['CRDS Party Code', 'Post Direction']
     if not all(col in df.columns for col in required_cols):
         raise ValueError("Missing 'CRDS Party Code' or 'Post Direction' column in STAR file.")
-    keys = df.apply(lambda row: str(row['CRDS Party Code']) + '3' + str(row['Post Direction']), axis=1).tolist()
-    return keys
+    return df.apply(lambda row: str(row['CRDS Party Code']) + '3' + str(row['Post Direction']), axis=1).tolist()
 
 def reconcile_csv_files(algo_file, star_file):
     try:
-        # Load CSVs
         df_algo = pd.read_csv(algo_file).astype(str)
         df_star = pd.read_csv(star_file).astype(str)
 
-        # Extract match keys
         algo_keys = extract_algo_keys(df_algo)
         star_keys = extract_star_keys(df_star)
 
-        results = []
         max_len = max(len(algo_keys), len(star_keys))
 
+        result_rows = []
         for i in range(max_len):
-            key_algo = algo_keys[i] if i < len(algo_keys) else "<Missing>"
-            key_star = star_keys[i] if i < len(star_keys) else "<Missing>"
+            algo_key = algo_keys[i] if i < len(algo_keys) else "<Missing>"
+            star_key = star_keys[i] if i < len(star_keys) else "<Missing>"
+            status = "Match" if algo_key == star_key else "Mismatch"
+            result_rows.append({
+                "Row": i + 1,
+                "ALGO Key": algo_key,
+                "STAR Key": star_key,
+                "Status": status
+            })
 
-            if key_algo == key_star:
-                results.append(f"Row {i+1}: Match ({key_algo})")
-            else:
-                results.append(f"Row {i+1}: Mismatch\n  ALGO: {key_algo}\n  STAR: {key_star}\n")
-
-        return "\n".join(results)
+        return pd.DataFrame(result_rows)
 
     except Exception as e:
         return f"Error: {str(e)}"
 
-# Gradio UI
+# Gradio Interface
 iface = gr.Interface(
     fn=reconcile_csv_files,
     inputs=[
         gr.File(label="Upload ALGO CSV File"),
         gr.File(label="Upload STAR CSV File")
     ],
-    outputs="text",
+    outputs=gr.Dataframe(label="Reconciliation Result"),
     title="CSV Reconciliation App",
-    description="Upload ALGO and STAR CSV files. The tool compares transformed values using a 1:1 custom matching rule."
+    description="Uploads ALGO and STAR CSVs and matches based on a custom rule. Results shown in table format."
 )
 
 if __name__ == "__main__":
