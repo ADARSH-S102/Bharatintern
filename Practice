@@ -1,59 +1,71 @@
 import pandas as pd
 import gradio as gr
-import xml.etree.ElementTree as ET
 import os
 
-def read_file(file):
-    filename = file.name
-    ext = os.path.splitext(filename)[-1].lower()
-
-    if ext in ['.csv', '.txt']:
-        try:
-            return pd.read_csv(file).astype(str).values.tolist()
-        except:
-            return file.read().decode('utf-8').splitlines()
-    elif ext in ['.xls', '.xlsx']:
-        return pd.read_excel(file).astype(str).values.tolist()
-    elif ext == '.xml':
-        tree = ET.parse(file)
-        root = tree.getroot()
-        # Convert each immediate child to string line
-        return [ET.tostring(child, encoding='unicode').strip() for child in root]
+def get_match_keys(df, filename):
+    match_keys = []
+    
+    if "ALGO" in filename.upper():
+        if 'Agreement_name' not in df.columns:
+            raise ValueError("Missing 'Agreement_name' column in ALGO file.")
+        for val in df['Agreement_name']:
+            key = val.replace('_RIMR', '3CR').replace('_RIMP', '3CP')
+            match_keys.append(key)
+    
+    elif "STAR" in filename.upper():
+        required_cols = ['CRDS Party Code', 'Post Direction']
+        if not all(col in df.columns for col in required_cols):
+            raise ValueError("Missing required columns in STAR file.")
+        for i, row in df.iterrows():
+            key = str(row['CRDS Party Code']) + '3' + str(row['Post Direction'])
+            match_keys.append(key)
+    
     else:
-        raise ValueError("Unsupported file format.")
+        raise ValueError("Unable to determine file type from filename. Please include 'ALGO' or 'STAR' in filename.")
+    
+    return match_keys
 
-def compare_files(file1, file2):
+def reconcile_csv_files(file1, file2):
     try:
-        data1 = read_file(file1)
-        data2 = read_file(file2)
+        # Load files
+        df1 = pd.read_csv(file1).astype(str)
+        df2 = pd.read_csv(file2).astype(str)
 
-        max_len = max(len(data1), len(data2))
+        # Get filenames
+        filename1 = os.path.basename(file1.name)
+        filename2 = os.path.basename(file2.name)
+
+        # Extract match keys
+        keys1 = get_match_keys(df1, filename1)
+        keys2 = get_match_keys(df2, filename2)
+
         results = []
+        max_len = max(len(keys1), len(keys2))
 
         for i in range(max_len):
-            row1 = data1[i] if i < len(data1) else "<Missing>"
-            row2 = data2[i] if i < len(data2) else "<Missing>"
+            k1 = keys1[i] if i < len(keys1) else "<Missing>"
+            k2 = keys2[i] if i < len(keys2) else "<Missing>"
 
-            if row1 == row2:
-                results.append(f"Row {i+1}: Match")
+            if k1 == k2:
+                results.append(f"Row {i+1}: Match ({k1})")
             else:
-                results.append(f"Row {i+1}: Mismatch\n  File1: {row1}\n  File2: {row2}\n")
-        
+                results.append(f"Row {i+1}: Mismatch\n  ALGO: {k1}\n  STAR: {k2}\n")
+
         return "\n".join(results)
-    
+
     except Exception as e:
         return f"Error: {str(e)}"
 
-# Gradio Interface
+# Gradio UI
 iface = gr.Interface(
-    fn=compare_files,
+    fn=reconcile_csv_files,
     inputs=[
-        gr.File(label="Upload File 1"),
-        gr.File(label="Upload File 2")
+        gr.File(label="Upload ALGO CSV (filename must contain 'ALGO')"),
+        gr.File(label="Upload STAR CSV (filename must contain 'STAR')")
     ],
     outputs="text",
-    title="Reconciliation Tool - Full File Comparison",
-    description="Compares two files row-by-row (CSV, TXT, Excel, XML supported). No key column needed."
+    title="CSV Reconciliation - Custom Match Rule",
+    description="Compares ALGO and STAR CSV files using custom matching logic based on file type and key transformation."
 )
 
 if __name__ == "__main__":
