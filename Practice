@@ -188,3 +188,147 @@ public class ReconciliationApp {
         SpringApplication.run(ReconciliationApp.class, args);
     }
 }
+
+
+
+
+
+
+
+
+New one : 
+
+
+
+Pom.xml
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" ...>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.example</groupId>
+    <artifactId>reconciliation-app</artifactId>
+    <version>1.0.0</version>
+
+    <properties>
+        <java.version>17</java.version> <!-- Change to 11 if needed -->
+    </properties>
+
+    <dependencies>
+        <!-- Spring Boot Web -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Apache Commons CSV -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>1.10.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Spring Boot Plugin -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+
+
+
+
+
+
+
+ReconciliationApp.java
+
+package com.example.reconciliation;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class ReconciliationApp {
+    public static void main(String[] args) {
+        SpringApplication.run(ReconciliationApp.class, args);
+    }
+}
+
+
+
+
+
+ReconciliationController.java
+
+package com.example.reconciliation;
+
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.*;
+import java.util.*;
+
+@RestController
+@RequestMapping("/reconcile")
+public class ReconciliationController {
+
+    @GetMapping("/run")
+    public List<Map<String, String>> runReconciliation() throws IOException {
+        File algoFile = new File("C:/data/algo.csv"); // <-- Update with your path
+        File starFile = new File("C:/data/star.csv"); // <-- Update with your path
+
+        List<String> algoKeys = extractAlgoKeys(algoFile);
+        List<String> starKeys = extractStarKeys(starFile);
+
+        int maxLen = Math.max(algoKeys.size(), starKeys.size());
+        List<Map<String, String>> result = new ArrayList<>();
+
+        for (int i = 0; i < maxLen; i++) {
+            String key1 = i < algoKeys.size() ? algoKeys.get(i) : "<Missing>";
+            String key2 = i < starKeys.size() ? starKeys.get(i) : "<Missing>";
+            String status = key1.equals(key2) ? "Match" : "Mismatch";
+
+            Map<String, String> row = new HashMap<>();
+            row.put("Row", String.valueOf(i + 1));
+            row.put("ALGO Key", key1);
+            row.put("STAR Key", key2);
+            row.put("Status", status);
+
+            result.add(row);
+        }
+
+        return result;
+    }
+
+    private List<String> extractAlgoKeys(File file) throws IOException {
+        Reader reader = new FileReader(file);
+        CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader);
+
+        List<String> keys = new ArrayList<>();
+        for (CSVRecord record : parser) {
+            String val = record.get("Agreement_name");
+            val = val.replace("_RIMR", "3CR").replace("_RIMP", "3CP");
+            keys.add(val);
+        }
+        return keys;
+    }
+
+    private List<String> extractStarKeys(File file) throws IOException {
+        Reader reader = new FileReader(file);
+        CSVParser parser = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(reader);
+
+        List<String> keys = new ArrayList<>();
+        for (CSVRecord record : parser) {
+            String part1 = record.get("CRDS Party Code");
+            String part2 = record.get("Post Direction");
+            keys.add(part1 + "3" + part2);
+        }
+        return keys;
+    }
+}
