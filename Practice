@@ -2,54 +2,42 @@ import pandas as pd
 import gradio as gr
 import os
 
-def get_match_keys(df, filename):
-    match_keys = []
-    
-    if "ALGO" in filename.upper():
-        if 'Agreement_name' not in df.columns:
-            raise ValueError("Missing 'Agreement_name' column in ALGO file.")
-        for val in df['Agreement_name']:
-            key = val.replace('_RIMR', '3CR').replace('_RIMP', '3CP')
-            match_keys.append(key)
-    
-    elif "STAR" in filename.upper():
-        required_cols = ['CRDS Party Code', 'Post Direction']
-        if not all(col in df.columns for col in required_cols):
-            raise ValueError("Missing required columns in STAR file.")
-        for i, row in df.iterrows():
-            key = str(row['CRDS Party Code']) + '3' + str(row['Post Direction'])
-            match_keys.append(key)
-    
-    else:
-        raise ValueError("Unable to determine file type from filename. Please include 'ALGO' or 'STAR' in filename.")
-    
-    return match_keys
+def extract_algo_keys(df):
+    if 'Agreement_name' not in df.columns:
+        raise ValueError("Missing 'Agreement_name' column in ALGO file.")
+    keys = df['Agreement_name'].apply(
+        lambda x: x.replace('_RIMR', '3CR').replace('_RIMP', '3CP')
+    ).tolist()
+    return keys
 
-def reconcile_csv_files(file1, file2):
+def extract_star_keys(df):
+    required_cols = ['CRDS Party Code', 'Post Direction']
+    if not all(col in df.columns for col in required_cols):
+        raise ValueError("Missing 'CRDS Party Code' or 'Post Direction' column in STAR file.")
+    keys = df.apply(lambda row: str(row['CRDS Party Code']) + '3' + str(row['Post Direction']), axis=1).tolist()
+    return keys
+
+def reconcile_csv_files(algo_file, star_file):
     try:
-        # Load files
-        df1 = pd.read_csv(file1).astype(str)
-        df2 = pd.read_csv(file2).astype(str)
-
-        # Get filenames
-        filename1 = os.path.basename(file1.name)
-        filename2 = os.path.basename(file2.name)
+        # Load CSVs
+        df_algo = pd.read_csv(algo_file).astype(str)
+        df_star = pd.read_csv(star_file).astype(str)
 
         # Extract match keys
-        keys1 = get_match_keys(df1, filename1)
-        keys2 = get_match_keys(df2, filename2)
+        algo_keys = extract_algo_keys(df_algo)
+        star_keys = extract_star_keys(df_star)
 
         results = []
-        max_len = max(len(keys1), len(keys2))
+        max_len = max(len(algo_keys), len(star_keys))
 
         for i in range(max_len):
-            k1 = keys1[i] if i < len(keys1) else "<Missing>"
-            k2 = keys2[i] if i < len(keys2) else "<Missing>"
+            key_algo = algo_keys[i] if i < len(algo_keys) else "<Missing>"
+            key_star = star_keys[i] if i < len(star_keys) else "<Missing>"
 
-            if k1 == k2:
-                results.append(f"Row {i+1}: Match ({k1})")
+            if key_algo == key_star:
+                results.append(f"Row {i+1}: Match ({key_algo})")
             else:
-                results.append(f"Row {i+1}: Mismatch\n  ALGO: {k1}\n  STAR: {k2}\n")
+                results.append(f"Row {i+1}: Mismatch\n  ALGO: {key_algo}\n  STAR: {key_star}\n")
 
         return "\n".join(results)
 
@@ -60,12 +48,12 @@ def reconcile_csv_files(file1, file2):
 iface = gr.Interface(
     fn=reconcile_csv_files,
     inputs=[
-        gr.File(label="Upload ALGO CSV (filename must contain 'ALGO')"),
-        gr.File(label="Upload STAR CSV (filename must contain 'STAR')")
+        gr.File(label="Upload ALGO CSV File"),
+        gr.File(label="Upload STAR CSV File")
     ],
     outputs="text",
-    title="CSV Reconciliation - Custom Match Rule",
-    description="Compares ALGO and STAR CSV files using custom matching logic based on file type and key transformation."
+    title="CSV Reconciliation App",
+    description="Upload ALGO and STAR CSV files. The tool compares transformed values using a 1:1 custom matching rule."
 )
 
 if __name__ == "__main__":
