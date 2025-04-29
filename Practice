@@ -24,17 +24,16 @@ def reconcile_files(algo_file, star_file):
     algo_keys = extract_algo_keys(df_algo)
     star_keys = extract_star_keys(df_star)
 
-    max_len = max(len(algo_keys), len(star_keys))
     result = []
 
-    for i in range(max_len):
-        algo_key = algo_keys[i] if i < len(algo_keys) else "<Missing>"
-        star_key = star_keys[i] if i < len(star_keys) else "<Missing>"
-        status = "Match" if algo_key == star_key else "Mismatch"
+    for i, algo_key in enumerate(algo_keys):
+        status = "Match" if algo_key in star_keys else "Mismatch"
+        matched_star = algo_key if status == "Match" else "<Not Found>"
+
         result.append({
             "Row": i + 1,
             "ALGO Key": algo_key,
-            "STAR Key": star_key,
+            "Matching STAR Key": matched_star,
             "Status": status
         })
 
@@ -48,9 +47,8 @@ demo = gr.Interface(
         gr.File(label="Upload STAR CSV File")
     ],
     outputs=gr.Dataframe(label="Comparison Result"),
-    title="Reconciliation App - 1:1 Matching",
-    description="Upload ALGO and STAR CSV files. Keys are normalized and compared row-wise."
+    title="Reconciliation App - Flexible Matching",
+    description="Each ALGO key is matched against all STAR keys (not index-wise)."
 )
 
 demo.launch()
-
