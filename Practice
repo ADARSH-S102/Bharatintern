@@ -389,48 +389,50 @@ def reconcile_files(algo_file, star_file):
     algo_keys = extract_algo_keys(df_algo)
     star_keys = extract_star_keys(df_star)
 
-    star_counter = Counter(star_keys)
-    used_star_keys = set()
-
     matched = []
     unmatched = []
 
-    for algo_key in algo_keys:
-        count = star_counter[algo_key]
-        if count == 1 and algo_key not in used_star_keys:
+    star_key_usage = Counter()
+    algo_key_usage = Counter()
+
+    # Count all STAR keys
+    star_counter = Counter(star_keys)
+
+    # Match exactly one-to-one, one ALGO key must match exactly one STAR key (no duplicates)
+    for i, algo_key in enumerate(algo_keys):
+        match_indices = [j for j, sk in enumerate(star_keys) if sk == algo_key and star_key_usage[sk] == 0]
+        if len(match_indices) == 1:
+            j = match_indices[0]
             matched.append({
                 "ALGO Key": algo_key,
-                "STAR Key": algo_key,
+                "STAR Key": star_keys[j],
                 "Status": "Match"
             })
-            used_star_keys.add(algo_key)
-        elif count > 1:
-            unmatched.append({
-                "ALGO Key": algo_key,
-                "STAR Key": "<Duplicate in STAR>",
-                "Status": "Mismatch - Duplicate"
-            })
+            star_key_usage[star_keys[j]] += 1
+            algo_key_usage[algo_key] += 1
         else:
             unmatched.append({
                 "ALGO Key": algo_key,
-                "STAR Key": "<No Match>",
-                "Status": "Mismatch - No Match"
+                "STAR Key": "<Duplicate or Not Found>",
+                "Status": "Mismatch - No 1:1 Match"
             })
+            algo_key_usage[algo_key] += 1
 
-    # Add unmatched STAR keys that were never used
+    # Now check every STAR key — if it wasn't used in a match, it’s unmatched
     for i, star_key in enumerate(star_keys):
-        if star_key not in used_star_keys and star_counter[star_key] == 1:
+        if star_key_usage[star_key] == 0:
             unmatched.append({
                 "ALGO Key": "<No Match>",
                 "STAR Key": star_key,
-                "Status": "Mismatch - No Match"
+                "Status": "Mismatch - Not Matched"
             })
+            star_key_usage[star_key] += 1  # mark as processed to avoid counting again
 
     matched_df = pd.DataFrame(matched)
     unmatched_df = pd.DataFrame(unmatched)
 
     summary = (
-        f"Matched Records: {len(matched)}\n"
+        f"Matched Records: {len(matched_df)}\n"
         f"Unmatched Records: {len(unmatched_df)}"
     )
 
@@ -448,8 +450,8 @@ demo = gr.Interface(
         gr.Dataframe(label="Unmatched Records"),
         gr.Textbox(label="Summary")
     ],
-    title="Reconciliation App - 1:1 Matching with Accurate Count",
-    description="Matches ALGO and STAR keys one-to-one. Every mismatch row is counted."
+    title="Reconciliation App - Full Unmatched Record Reporting",
+    description="Each unmatched ALGO/STAR key appears in the output, even repeated ones."
 )
 
 demo.launch()
