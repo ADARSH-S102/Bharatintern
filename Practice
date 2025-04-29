@@ -2,140 +2,55 @@ import pandas as pd
 import gradio as gr
 
 def extract_algo_keys(df):
-    if 'Agreement_name' not in df.columns:
-        raise ValueError("Missing 'Agreement_name' column in ALGO file.")
-    return df['Agreement_name'].apply(
-        lambda x: x.replace('_RIMR', '3CR').replace('_RIMP', '3CP')
+    return df['Agreement_name'].astype(str).apply(
+        lambda x: x.replace('_RIMR', '3CR')
+                  .replace('_RIMP', '3CP')
+                  .replace(" ", "")
+                  .strip()
     ).tolist()
 
 def extract_star_keys(df):
-    required_cols = ['CRDS Party Code', 'Post Direction']
-    if not all(col in df.columns for col in required_cols):
-        raise ValueError("Missing 'CRDS Party Code' or 'Post Direction' column in STAR file.")
-    return df.apply(lambda row: str(row['CRDS Party Code']) + '3' + str(row['Post Direction']), axis=1).tolist()
+    return df.apply(
+        lambda row: (str(row['CRDS Party Code']).strip().replace(" ", "") +
+                     "3" +
+                     str(row['Post Direction']).strip().replace(" ", "")),
+        axis=1
+    ).tolist()
 
-def reconcile_csv_files(algo_file, star_file):
-    try:
-        df_algo = pd.read_csv(algo_file).astype(str)
-        df_star = pd.read_csv(star_file).astype(str)
+def reconcile_files(algo_file, star_file):
+    df_algo = pd.read_csv(algo_file).astype(str)
+    df_star = pd.read_csv(star_file).astype(str)
 
-        algo_keys = extract_algo_keys(df_algo)
-        star_keys = extract_star_keys(df_star)
+    algo_keys = extract_algo_keys(df_algo)
+    star_keys = extract_star_keys(df_star)
 
-        max_len = max(len(algo_keys), len(star_keys))
+    max_len = max(len(algo_keys), len(star_keys))
+    result = []
 
-        result_rows = []
-        for i in range(max_len):
-            algo_key = algo_keys[i] if i < len(algo_keys) else "<Missing>"
-            star_key = star_keys[i] if i < len(star_keys) else "<Missing>"
-            status = "Match" if algo_key == star_key else "Mismatch"
-            result_rows.append({
-                "Row": i + 1,
-                "ALGO Key": algo_key,
-                "STAR Key": star_key,
-                "Status": status
-            })
+    for i in range(max_len):
+        algo_key = algo_keys[i] if i < len(algo_keys) else "<Missing>"
+        star_key = star_keys[i] if i < len(star_keys) else "<Missing>"
+        status = "Match" if algo_key == star_key else "Mismatch"
+        result.append({
+            "Row": i + 1,
+            "ALGO Key": algo_key,
+            "STAR Key": star_key,
+            "Status": status
+        })
 
-        return pd.DataFrame(result_rows)
-
-    except Exception as e:
-        return f"Error: {str(e)}"
+    return pd.DataFrame(result)
 
 # Gradio Interface
-iface = gr.Interface(
-    fn=reconcile_csv_files,
+demo = gr.Interface(
+    fn=reconcile_files,
     inputs=[
         gr.File(label="Upload ALGO CSV File"),
         gr.File(label="Upload STAR CSV File")
     ],
-    outputs=gr.Dataframe(label="Reconciliation Result"),
-    title="CSV Reconciliation App",
-    description="Uploads ALGO and STAR CSVs and matches based on a custom rule. Results shown in table format."
+    outputs=gr.Dataframe(label="Comparison Result"),
+    title="Reconciliation App - 1:1 Matching",
+    description="Upload ALGO and STAR CSV files. Keys are normalized and compared row-wise."
 )
 
-if __name__ == "__main__":
-    iface.launch()
+demo.launch()
 
-
-
-
-
-
-
-
-
-
-
-
-package com.example.demo.controller;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.io.*;
-import java.nio.file.Files;
-import java.util.*;
-
-@RestController
-@RequestMapping("/reconciliation")
-public class ReconciliationController {
-
-    @GetMapping("/run")
-    public ResponseEntity<List<Map<String, Object>>> runReconciliation() throws IOException {
-        File algoFile = new File("C:\\path\\to\\algo.csv"); // <-- update the path
-        File starFile = new File("C:\\path\\to\\star.csv"); // <-- update the path
-
-        List<String[]> algoRows = readCSV(algoFile);
-        List<String[]> starRows = readCSV(starFile);
-
-        List<Map<String, Object>> result = new ArrayList<>();
-
-        int maxLen = Math.max(algoRows.size(), starRows.size());
-        for (int i = 0; i < maxLen; i++) {
-            Map<String, Object> rowResult = new HashMap<>();
-            String[] algoRow = i < algoRows.size() ? algoRows.get(i) : new String[0];
-            String[] starRow = i < starRows.size() ? starRows.get(i) : new String[0];
-
-            rowResult.put("Row", i + 1);
-
-            List<Map<String, String>> columns = new ArrayList<>();
-            int maxCols = Math.max(algoRow.length, starRow.length);
-
-            for (int j = 0; j < maxCols; j++) {
-                String algoVal = j < algoRow.length ? algoRow[j] : "Missing";
-                String starVal = j < starRow.length ? starRow[j] : "Missing";
-                String status = algoVal.equals(starVal) ? "Match" : "Mismatch";
-
-                Map<String, String> colResult = new HashMap<>();
-                colResult.put("Column", "Column " + (j + 1));
-                colResult.put("Algo Value", algoVal);
-                colResult.put("Star Value", starVal);
-                colResult.put("Status", status);
-
-                columns.add(colResult);
-            }
-
-            rowResult.put("Columns", columns);
-            result.add(rowResult);
-        }
-
-        return ResponseEntity.ok(result);
-    }
-
-    private List<String[]> readCSV(File file) throws IOException {
-        List<String[]> rows = new ArrayList<>();
-        if (!file.exists()) return rows;
-
-        try (BufferedReader br = Files.newBufferedReader(file.toPath())) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                rows.add(line.split(",", -1));
-            }
-        }
-
-        return rows;
-    }
-}
-                
