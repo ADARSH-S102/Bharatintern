@@ -345,3 +345,111 @@ demo = gr.Interface(
 )
 
 demo.launch()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+lets see 
+
+
+import pandas as pd
+import gradio as gr
+from collections import Counter
+
+def extract_algo_keys(df):
+    return df['Agreement_name'].astype(str).apply(
+        lambda x: x.replace('_RIMR', '3CR')
+                  .replace('_RIMP', '3CP')
+                  .replace(" ", "")
+                  .strip()
+    ).tolist()
+
+def extract_star_keys(df):
+    return df.apply(
+        lambda row: (str(row['CRDS Party Code']).strip().replace(" ", "") +
+                     "3" +
+                     str(row['Post Direction']).strip().replace(" ", "")),
+        axis=1
+    ).tolist()
+
+def reconcile_files(algo_file, star_file):
+    df_algo = pd.read_csv(algo_file).astype(str)
+    df_star = pd.read_csv(star_file).astype(str)
+
+    algo_keys = extract_algo_keys(df_algo)
+    star_keys = extract_star_keys(df_star)
+
+    star_counter = Counter(star_keys)
+    used_star_keys = set()
+
+    matched = []
+    unmatched = []
+
+    for algo_key in algo_keys:
+        count = star_counter[algo_key]
+        if count == 1 and algo_key not in used_star_keys:
+            matched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": algo_key,
+                "Status": "Match"
+            })
+            used_star_keys.add(algo_key)
+        elif count > 1:
+            unmatched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": "<Duplicate in STAR>",
+                "Status": "Mismatch - Duplicate"
+            })
+        else:
+            unmatched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": "<No Match>",
+                "Status": "Mismatch - No Match"
+            })
+
+    # Add unmatched STAR keys that were never used
+    for i, star_key in enumerate(star_keys):
+        if star_key not in used_star_keys and star_counter[star_key] == 1:
+            unmatched.append({
+                "ALGO Key": "<No Match>",
+                "STAR Key": star_key,
+                "Status": "Mismatch - No Match"
+            })
+
+    matched_df = pd.DataFrame(matched)
+    unmatched_df = pd.DataFrame(unmatched)
+
+    summary = (
+        f"Matched Records: {len(matched)}\n"
+        f"Unmatched Records: {len(unmatched_df)}"
+    )
+
+    return matched_df, unmatched_df, summary
+
+# Gradio Interface
+demo = gr.Interface(
+    fn=reconcile_files,
+    inputs=[
+        gr.File(label="Upload ALGO CSV File"),
+        gr.File(label="Upload STAR CSV File")
+    ],
+    outputs=[
+        gr.Dataframe(label="Matched Records"),
+        gr.Dataframe(label="Unmatched Records"),
+        gr.Textbox(label="Summary")
+    ],
+    title="Reconciliation App - 1:1 Matching with Accurate Count",
+    description="Matches ALGO and STAR keys one-to-one. Every mismatch row is counted."
+)
+
+demo.launch()
