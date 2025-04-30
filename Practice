@@ -483,8 +483,6 @@ import pandas as pd
 import gradio as gr
 from collections import defaultdict
 
-exclusion_rules = []
-
 def extract_algo_keys(df):
     return df['Agreement_name'].astype(str).apply(
         lambda x: x.replace('_RIMR', '3CR')
@@ -501,49 +499,36 @@ def extract_star_keys(df):
         axis=1
     ).tolist()
 
-def apply_exclusion_rules(df_algo, df_star, rules):
-    excluded_rows = []
-
-    df_algo_filtered = df_algo.copy()
-    df_star_filtered = df_star.copy()
-
-    for rule in rules:
-        file_type = rule['file']
-        column = rule['column']
-        op = rule['operator']
-        value = rule['value']
-
-        if file_type == "ALGO" and column in df_algo_filtered.columns:
-            if op == '=':
-                match = df_algo_filtered[df_algo_filtered[column] == value]
-                excluded_rows.extend(match.to_dict('records'))
-                df_algo_filtered = df_algo_filtered[df_algo_filtered[column] != value]
-            else:
-                match = df_algo_filtered[df_algo_filtered[column] != value]
-                excluded_rows.extend(match.to_dict('records'))
-                df_algo_filtered = df_algo_filtered[df_algo_filtered[column] == value]
-
-        elif file_type == "STAR" and column in df_star_filtered.columns:
-            if op == '=':
-                match = df_star_filtered[df_star_filtered[column] == value]
-                excluded_rows.extend(match.to_dict('records'))
-                df_star_filtered = df_star_filtered[df_star_filtered[column] != value]
-            else:
-                match = df_star_filtered[df_star_filtered[column] != value]
-                excluded_rows.extend(match.to_dict('records'))
-                df_star_filtered = df_star_filtered[df_star_filtered[column] == value]
-
-    return df_algo_filtered, df_star_filtered, pd.DataFrame(excluded_rows)
-
-def reconcile_with_rules(algo_file, star_file):
+def reconcile_with_rule(algo_file, star_file, file_type, column, operator, value):
     df_algo = pd.read_csv(algo_file).astype(str)
     df_star = pd.read_csv(star_file).astype(str)
 
-    # Apply exclusion rules
-    df_algo_filtered, df_star_filtered, excluded_df = apply_exclusion_rules(df_algo, df_star, exclusion_rules)
+    excluded_rows = []
 
-    algo_keys = extract_algo_keys(df_algo_filtered)
-    star_keys = extract_star_keys(df_star_filtered)
+    # Apply rule to selected file
+    if file_type == "ALGO":
+        if operator == "=":
+            excluded = df_algo[df_algo[column] == value]
+            df_algo = df_algo[df_algo[column] != value]
+        else:
+            excluded = df_algo[df_algo[column] != value]
+            df_algo = df_algo[df_algo[column] == value]
+    elif file_type == "STAR":
+        if operator == "=":
+            excluded = df_star[df_star[column] == value]
+            df_star = df_star[df_star[column] != value]
+        else:
+            excluded = df_star[df_star[column] != value]
+            df_star = df_star[df_star[column] == value]
+    else:
+        excluded = pd.DataFrame()
+
+    excluded_rows.extend(excluded.to_dict('records'))
+    excluded_df = pd.DataFrame(excluded_rows)
+
+    # Reconciliation
+    algo_keys = extract_algo_keys(df_algo)
+    star_keys = extract_star_keys(df_star)
 
     matched = []
     unmatched = []
@@ -601,38 +586,20 @@ def reconcile_with_rules(algo_file, star_file):
 
     return excluded_df, matched_df, unmatched_df, summary
 
-def add_rule(file, column, operator, value):
-    exclusion_rules.append({
-        "file": file,
-        "column": column,
-        "operator": operator,
-        "value": value
-    })
-    return f"Added rule: {file} → {column} {operator} {value}"
-
-def clear_rules():
-    exclusion_rules.clear()
-    return "All exclusion rules cleared."
-
+# Gradio Interface
 with gr.Blocks() as demo:
-    gr.Markdown("## Reconciliation App with Exclusion Rules")
+    gr.Markdown("## Reconciliation App with Single Exclusion Rule")
 
     with gr.Row():
         algo_file = gr.File(label="Upload ALGO CSV File")
         star_file = gr.File(label="Upload STAR CSV File")
 
+    gr.Markdown("### Exclusion Rule (only one at a time)")
     with gr.Row():
-        file_selector = gr.Dropdown(["ALGO", "STAR"], label="Select File for Exclusion")
-        column_selector = gr.Textbox(label="Column Name (type manually)")
-        operator_selector = gr.Dropdown(['=', '!='], label="Operator")
-        value_input = gr.Textbox(label="Value to Compare")
-        rule_output = gr.Textbox(label="Rule Status", interactive=False)
-
-    add_rule_btn = gr.Button("Add Rule")
-    clear_rules_btn = gr.Button("Clear All Rules")
-
-    add_rule_btn.click(fn=add_rule, inputs=[file_selector, column_selector, operator_selector, value_input], outputs=rule_output)
-    clear_rules_btn.click(fn=clear_rules, outputs=rule_output)
+        file_selector = gr.Dropdown(["ALGO", "STAR"], label="Select File")
+        column_input = gr.Textbox(label="Column Name")
+        operator_input = gr.Dropdown(['=', '!='], label="Operator")
+        value_input = gr.Textbox(label="Value")
 
     run_btn = gr.Button("Run Reconciliation")
 
@@ -642,9 +609,9 @@ with gr.Blocks() as demo:
     summary_output = gr.Textbox(label="Summary")
 
     run_btn.click(
-        fn=reconcile_with_rules,
-        inputs=[algo_file, star_file],
+        fn=reconcile_with_rule,
+        inputs=[algo_file, star_file, file_selector, column_input, operator_input, value_input],
         outputs=[excluded_table, matched_table, unmatched_table, summary_output]
     )
 
-demo.launch()
+demo.launch()    
