@@ -476,186 +476,175 @@ demo.launch()
 
 
 
-Master - spring boot
 
-1. ReconciliationController.java
-package com.example.reconciliation.controller;
+Exclusion code 
 
-import com.example.reconciliation.service.ReconciliationService;
-import com.example.reconciliation.model.ReconciliationResult;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import pandas as pd
+import gradio as gr
+from collections import defaultdict
 
-@RestController
-@RequestMapping("/api")
-public class ReconciliationController {
+exclusion_rules = []
 
-    @Autowired
-    private ReconciliationService service;
+def extract_algo_keys(df):
+    return df['Agreement_name'].astype(str).apply(
+        lambda x: x.replace('_RIMR', '3CR')
+                  .replace('_RIMP', '3CP')
+                  .replace(" ", "")
+                  .strip()
+    ).tolist()
 
-    @GetMapping("/reconcile")
-    public ReconciliationResult reconcile() {
-        // Provide file paths here
-        String algoPath = "C:/path/to/algo.csv";
-        String starPath = "C:/path/to/star.csv";
-        return service.reconcile(algoPath, starPath);
-    }
-}
+def extract_star_keys(df):
+    return df.apply(
+        lambda row: (str(row['CRDS Party Code']).strip().replace(" ", "") +
+                     "3" +
+                     str(row['Post Direction']).strip().replace(" ", "")),
+        axis=1
+    ).tolist()
 
+def apply_exclusion_rules(df_algo, df_star, rules):
+    excluded_rows = []
 
+    df_algo_filtered = df_algo.copy()
+    df_star_filtered = df_star.copy()
 
-2.ReconciliationService.java
+    for rule in rules:
+        file_type = rule['file']
+        column = rule['column']
+        op = rule['operator']
+        value = rule['value']
 
-package com.example.reconciliation.service;
+        if file_type == "ALGO" and column in df_algo_filtered.columns:
+            if op == '=':
+                match = df_algo_filtered[df_algo_filtered[column] == value]
+                excluded_rows.extend(match.to_dict('records'))
+                df_algo_filtered = df_algo_filtered[df_algo_filtered[column] != value]
+            else:
+                match = df_algo_filtered[df_algo_filtered[column] != value]
+                excluded_rows.extend(match.to_dict('records'))
+                df_algo_filtered = df_algo_filtered[df_algo_filtered[column] == value]
 
-import com.example.reconciliation.model.Record;
-import com.example.reconciliation.model.ReconciliationResult;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVRecord;
-import org.springframework.stereotype.Service;
+        elif file_type == "STAR" and column in df_star_filtered.columns:
+            if op == '=':
+                match = df_star_filtered[df_star_filtered[column] == value]
+                excluded_rows.extend(match.to_dict('records'))
+                df_star_filtered = df_star_filtered[df_star_filtered[column] != value]
+            else:
+                match = df_star_filtered[df_star_filtered[column] != value]
+                excluded_rows.extend(match.to_dict('records'))
+                df_star_filtered = df_star_filtered[df_star_filtered[column] == value]
 
-import java.io.FileReader;
-import java.util.*;
+    return df_algo_filtered, df_star_filtered, pd.DataFrame(excluded_rows)
 
-@Service
-public class ReconciliationService {
+def reconcile_with_rules(algo_file, star_file):
+    df_algo = pd.read_csv(algo_file).astype(str)
+    df_star = pd.read_csv(star_file).astype(str)
 
-    public ReconciliationResult reconcile(String algoPath, String starPath) {
-        List<String> algoKeys = new ArrayList<>();
-        List<String> starKeys = new ArrayList<>();
-        List<Record> matched = new ArrayList<>();
-        List<Record> unmatched = new ArrayList<>();
+    # Apply exclusion rules
+    df_algo_filtered, df_star_filtered, excluded_df = apply_exclusion_rules(df_algo, df_star, exclusion_rules)
 
-        try {
-            // Read ALGO file
-            FileReader readerAlgo = new FileReader(algoPath);
-            Iterable<CSVRecord> algoRecords = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(readerAlgo);
-            for (CSVRecord record : algoRecords) {
-                String key = record.get("Agreement_name")
-                        .replace("_RIMR", "3CR")
-                        .replace("_RIMP", "3CP")
-                        .replaceAll("\\s+", "")
-                        .trim();
-                algoKeys.add(key);
-            }
+    algo_keys = extract_algo_keys(df_algo_filtered)
+    star_keys = extract_star_keys(df_star_filtered)
 
-            // Read STAR file
-            FileReader readerStar = new FileReader(starPath);
-            Iterable<CSVRecord> starRecords = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(readerStar);
-            List<String> starKeyList = new ArrayList<>();
-            Map<String, List<Integer>> starKeyMap = new HashMap<>();
+    matched = []
+    unmatched = []
 
-            int index = 0;
-            for (CSVRecord record : starRecords) {
-                String key = record.get("CRDS Party Code").replaceAll("\\s+", "").trim() +
-                             "3" +
-                             record.get("Post Direction").replaceAll("\\s+", "").trim();
-                starKeys.add(key);
+    star_key_map = defaultdict(list)
+    for idx, key in enumerate(star_keys):
+        star_key_map[key].append(idx)
 
-                starKeyMap.computeIfAbsent(key, k -> new ArrayList<>()).add(index);
-                index++;
-            }
+    matched_star_indices = set()
+    matched_algo_indices = set()
 
-            Set<Integer> matchedStarIndices = new HashSet<>();
-            Set<Integer> matchedAlgoIndices = new HashSet<>();
+    for i, algo_key in enumerate(algo_keys):
+        matching_star_idxs = star_key_map.get(algo_key, [])
+        if len(matching_star_idxs) == 1 and matching_star_idxs[0] not in matched_star_indices:
+            matched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": star_keys[matching_star_idxs[0]],
+                "Status": "Match"
+            })
+            matched_star_indices.add(matching_star_idxs[0])
+            matched_algo_indices.add(i)
+        elif len(matching_star_idxs) > 1:
+            for idx in matching_star_idxs:
+                unmatched.append({
+                    "ALGO Key": algo_key,
+                    "STAR Key": star_keys[idx],
+                    "Status": "Mismatch - Multiple STAR Keys"
+                })
+            matched_algo_indices.add(i)
+        else:
+            unmatched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": "<No Match>",
+                "Status": "Mismatch - No Match"
+            })
 
-            for (int i = 0; i < algoKeys.size(); i++) {
-                String algoKey = algoKeys.get(i);
-                List<Integer> matchingStarIdxs = starKeyMap.getOrDefault(algoKey, new ArrayList<>());
+    for idx, star_key in enumerate(star_keys):
+        if idx not in matched_star_indices:
+            match_found = any(algo_key == star_key for algo_key in algo_keys)
+            if not match_found or len(star_key_map[star_key]) > 1:
+                unmatched.append({
+                    "ALGO Key": "<No Match>",
+                    "STAR Key": star_key,
+                    "Status": "Mismatch - No Match or Duplicate"
+                })
 
-                if (matchingStarIdxs.size() == 1 && !matchedStarIndices.contains(matchingStarIdxs.get(0))) {
-                    matched.add(new Record(algoKey, starKeys.get(matchingStarIdxs.get(0)), "Match"));
-                    matchedStarIndices.add(matchingStarIdxs.get(0));
-                    matchedAlgoIndices.add(i);
-                } else if (matchingStarIdxs.size() > 1) {
-                    for (Integer idxStar : matchingStarIdxs) {
-                        unmatched.add(new Record(algoKey, starKeys.get(idxStar), "Mismatch - Multiple STAR Keys"));
-                    }
-                    matchedAlgoIndices.add(i);
-                } else {
-                    unmatched.add(new Record(algoKey, "<No Match>", "Mismatch - No Match"));
-                }
-            }
+    matched_df = pd.DataFrame(matched)
+    unmatched_df = pd.DataFrame(unmatched)
 
-            for (int i = 0; i < starKeys.size(); i++) {
-                if (!matchedStarIndices.contains(i)) {
-                    unmatched.add(new Record("<No Match>", starKeys.get(i), "Mismatch - No Match or Duplicate"));
-                }
-            }
+    summary = (
+        f"Matched Records: {len(matched_df)}\n"
+        f"Unmatched Records: {len(unmatched_df)}\n"
+        f"Excluded Records: {len(excluded_df)}"
+    )
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    return excluded_df, matched_df, unmatched_df, summary
 
-        return new ReconciliationResult(matched, unmatched);
-    }
-}
+def add_rule(file, column, operator, value):
+    exclusion_rules.append({
+        "file": file,
+        "column": column,
+        "operator": operator,
+        "value": value
+    })
+    return f"Added rule: {file} → {column} {operator} {value}"
 
+def clear_rules():
+    exclusion_rules.clear()
+    return "All exclusion rules cleared."
 
+with gr.Blocks() as demo:
+    gr.Markdown("## Reconciliation App with Exclusion Rules")
 
-3. Record.java 
+    with gr.Row():
+        algo_file = gr.File(label="Upload ALGO CSV File")
+        star_file = gr.File(label="Upload STAR CSV File")
 
-package com.example.reconciliation.model;
+    with gr.Row():
+        file_selector = gr.Dropdown(["ALGO", "STAR"], label="Select File for Exclusion")
+        column_selector = gr.Textbox(label="Column Name (type manually)")
+        operator_selector = gr.Dropdown(['=', '!='], label="Operator")
+        value_input = gr.Textbox(label="Value to Compare")
+        rule_output = gr.Textbox(label="Rule Status", interactive=False)
 
-public class Record {
-    private String algoKey;
-    private String starKey;
-    private String status;
+    add_rule_btn = gr.Button("Add Rule")
+    clear_rules_btn = gr.Button("Clear All Rules")
 
-    public Record(String algoKey, String starKey, String status) {
-        this.algoKey = algoKey;
-        this.starKey = starKey;
-        this.status = status;
-    }
+    add_rule_btn.click(fn=add_rule, inputs=[file_selector, column_selector, operator_selector, value_input], outputs=rule_output)
+    clear_rules_btn.click(fn=clear_rules, outputs=rule_output)
 
-    // Getters and setters
-    public String getAlgoKey() { return algoKey; }
-    public void setAlgoKey(String algoKey) { this.algoKey = algoKey; }
+    run_btn = gr.Button("Run Reconciliation")
 
-    public String getStarKey() { return starKey; }
-    public void setStarKey(String starKey) { this.starKey = starKey; }
+    excluded_table = gr.Dataframe(label="Excluded Records")
+    matched_table = gr.Dataframe(label="Matched Records")
+    unmatched_table = gr.Dataframe(label="Unmatched Records")
+    summary_output = gr.Textbox(label="Summary")
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-}
+    run_btn.click(
+        fn=reconcile_with_rules,
+        inputs=[algo_file, star_file],
+        outputs=[excluded_table, matched_table, unmatched_table, summary_output]
+    )
 
-
-4. ReconciliationResult.java
-
-package com.example.reconciliation.model;
-
-import java.util.List;
-
-public class ReconciliationResult {
-    private List<Record> matched;
-    private List<Record> unmatched;
-
-    public ReconciliationResult(List<Record> matched, List<Record> unmatched) {
-        this.matched = matched;
-        this.unmatched = unmatched;
-    }
-
-    // Getters and setters
-    public List<Record> getMatched() { return matched; }
-    public void setMatched(List<Record> matched) { this.matched = matched; }
-
-    public List<Record> getUnmatched() { return unmatched; }
-    public void setUnmatched(List<Record> unmatched) { this.unmatched = unmatched; }
-}
-
-
-
-Dependencies (pom.xml)
-
-<dependencies>
-    <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
-    <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-csv</artifactId>
-        <version>1.10.0</version>
-    </dependency>
-</dependencies>
-
+demo.launch()
