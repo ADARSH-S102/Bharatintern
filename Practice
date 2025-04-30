@@ -476,105 +476,186 @@ demo.launch()
 
 
 
-streamlit 
+Master - spring boot
+
+1. ReconciliationController.java
+package com.example.reconciliation.controller;
+
+import com.example.reconciliation.service.ReconciliationService;
+import com.example.reconciliation.model.ReconciliationResult;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api")
+public class ReconciliationController {
+
+    @Autowired
+    private ReconciliationService service;
+
+    @GetMapping("/reconcile")
+    public ReconciliationResult reconcile() {
+        // Provide file paths here
+        String algoPath = "C:/path/to/algo.csv";
+        String starPath = "C:/path/to/star.csv";
+        return service.reconcile(algoPath, starPath);
+    }
+}
 
 
-import pandas as pd
-import streamlit as st
-from collections import defaultdict, Counter
 
-def extract_algo_keys(df):
-    return df['Agreement_name'].astype(str).apply(
-        lambda x: x.replace('_RIMR', '3CR')
-                  .replace('_RIMP', '3CP')
-                  .replace(" ", "")
-                  .strip()
-    ).tolist()
+2.ReconciliationService.java
 
-def extract_star_keys(df):
-    return df.apply(
-        lambda row: (str(row['CRDS Party Code']).strip().replace(" ", "") +
-                     "3" +
-                     str(row['Post Direction']).strip().replace(" ", "")),
-        axis=1
-    ).tolist()
+package com.example.reconciliation.service;
 
-def reconcile_files(df_algo, df_star):
-    algo_keys = extract_algo_keys(df_algo)
-    star_keys = extract_star_keys(df_star)
+import com.example.reconciliation.model.Record;
+import com.example.reconciliation.model.ReconciliationResult;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
+import org.springframework.stereotype.Service;
 
-    matched = []
-    unmatched = []
+import java.io.FileReader;
+import java.util.*;
 
-    star_key_map = defaultdict(list)
-    for idx, key in enumerate(star_keys):
-        star_key_map[key].append(idx)
+@Service
+public class ReconciliationService {
 
-    matched_star_indices = set()
-    matched_algo_indices = set()
+    public ReconciliationResult reconcile(String algoPath, String starPath) {
+        List<String> algoKeys = new ArrayList<>();
+        List<String> starKeys = new ArrayList<>();
+        List<Record> matched = new ArrayList<>();
+        List<Record> unmatched = new ArrayList<>();
 
-    for i, algo_key in enumerate(algo_keys):
-        matching_star_idxs = star_key_map.get(algo_key, [])
-        if len(matching_star_idxs) == 1 and matching_star_idxs[0] not in matched_star_indices:
-            matched.append({
-                "ALGO Key": algo_key,
-                "STAR Key": star_keys[matching_star_idxs[0]],
-                "Status": "Match"
-            })
-            matched_star_indices.add(matching_star_idxs[0])
-            matched_algo_indices.add(i)
-        elif len(matching_star_idxs) > 1:
-            for idx in matching_star_idxs:
-                unmatched.append({
-                    "ALGO Key": algo_key,
-                    "STAR Key": star_keys[idx],
-                    "Status": "Mismatch - Multiple STAR Keys"
-                })
-            matched_algo_indices.add(i)
-        else:
-            unmatched.append({
-                "ALGO Key": algo_key,
-                "STAR Key": "<No Match>",
-                "Status": "Mismatch - No Match"
-            })
+        try {
+            // Read ALGO file
+            FileReader readerAlgo = new FileReader(algoPath);
+            Iterable<CSVRecord> algoRecords = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(readerAlgo);
+            for (CSVRecord record : algoRecords) {
+                String key = record.get("Agreement_name")
+                        .replace("_RIMR", "3CR")
+                        .replace("_RIMP", "3CP")
+                        .replaceAll("\\s+", "")
+                        .trim();
+                algoKeys.add(key);
+            }
 
-    for idx, star_key in enumerate(star_keys):
-        if idx not in matched_star_indices:
-            match_found = any(algo_key == star_key for algo_key in algo_keys)
-            if not match_found or len(star_key_map[star_key]) > 1:
-                unmatched.append({
-                    "ALGO Key": "<No Match>",
-                    "STAR Key": star_key,
-                    "Status": "Mismatch - No Match or Duplicate"
-                })
+            // Read STAR file
+            FileReader readerStar = new FileReader(starPath);
+            Iterable<CSVRecord> starRecords = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(readerStar);
+            List<String> starKeyList = new ArrayList<>();
+            Map<String, List<Integer>> starKeyMap = new HashMap<>();
 
-    matched_df = pd.DataFrame(matched)
-    unmatched_df = pd.DataFrame(unmatched)
+            int index = 0;
+            for (CSVRecord record : starRecords) {
+                String key = record.get("CRDS Party Code").replaceAll("\\s+", "").trim() +
+                             "3" +
+                             record.get("Post Direction").replaceAll("\\s+", "").trim();
+                starKeys.add(key);
 
-    summary = f"Matched Records: {len(matched_df)}\nUnmatched Records: {len(unmatched_df)}"
-    return matched_df, unmatched_df, summary
+                starKeyMap.computeIfAbsent(key, k -> new ArrayList<>()).add(index);
+                index++;
+            }
 
-# Streamlit App
-st.set_page_config(page_title="Reconciliation App", layout="wide")
+            Set<Integer> matchedStarIndices = new HashSet<>();
+            Set<Integer> matchedAlgoIndices = new HashSet<>();
 
-st.title("Reconciliation App (Streamlit)")
-st.markdown("Upload ALGO and STAR CSV files. Strict 1:1 matching logic will be applied.")
+            for (int i = 0; i < algoKeys.size(); i++) {
+                String algoKey = algoKeys.get(i);
+                List<Integer> matchingStarIdxs = starKeyMap.getOrDefault(algoKey, new ArrayList<>());
 
-algo_file = st.file_uploader("Upload ALGO CSV File", type=["csv"])
-star_file = st.file_uploader("Upload STAR CSV File", type=["csv"])
+                if (matchingStarIdxs.size() == 1 && !matchedStarIndices.contains(matchingStarIdxs.get(0))) {
+                    matched.add(new Record(algoKey, starKeys.get(matchingStarIdxs.get(0)), "Match"));
+                    matchedStarIndices.add(matchingStarIdxs.get(0));
+                    matchedAlgoIndices.add(i);
+                } else if (matchingStarIdxs.size() > 1) {
+                    for (Integer idxStar : matchingStarIdxs) {
+                        unmatched.add(new Record(algoKey, starKeys.get(idxStar), "Mismatch - Multiple STAR Keys"));
+                    }
+                    matchedAlgoIndices.add(i);
+                } else {
+                    unmatched.add(new Record(algoKey, "<No Match>", "Mismatch - No Match"));
+                }
+            }
 
-if algo_file and star_file:
-    df_algo = pd.read_csv(algo_file)
-    df_star = pd.read_csv(star_file)
+            for (int i = 0; i < starKeys.size(); i++) {
+                if (!matchedStarIndices.contains(i)) {
+                    unmatched.add(new Record("<No Match>", starKeys.get(i), "Mismatch - No Match or Duplicate"));
+                }
+            }
 
-    matched_df, unmatched_df, summary = reconcile_files(df_algo, df_star)
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-    st.subheader("Matched Records")
-    st.dataframe(matched_df)
+        return new ReconciliationResult(matched, unmatched);
+    }
+}
 
-    st.subheader("Unmatched Records")
-    st.dataframe(unmatched_df)
 
-    st.subheader("Summary")
-    st.text(summary)
-    
+
+3. Record.java 
+
+package com.example.reconciliation.model;
+
+public class Record {
+    private String algoKey;
+    private String starKey;
+    private String status;
+
+    public Record(String algoKey, String starKey, String status) {
+        this.algoKey = algoKey;
+        this.starKey = starKey;
+        this.status = status;
+    }
+
+    // Getters and setters
+    public String getAlgoKey() { return algoKey; }
+    public void setAlgoKey(String algoKey) { this.algoKey = algoKey; }
+
+    public String getStarKey() { return starKey; }
+    public void setStarKey(String starKey) { this.starKey = starKey; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+}
+
+
+4. ReconciliationResult.java
+
+package com.example.reconciliation.model;
+
+import java.util.List;
+
+public class ReconciliationResult {
+    private List<Record> matched;
+    private List<Record> unmatched;
+
+    public ReconciliationResult(List<Record> matched, List<Record> unmatched) {
+        this.matched = matched;
+        this.unmatched = unmatched;
+    }
+
+    // Getters and setters
+    public List<Record> getMatched() { return matched; }
+    public void setMatched(List<Record> matched) { this.matched = matched; }
+
+    public List<Record> getUnmatched() { return unmatched; }
+    public void setUnmatched(List<Record> unmatched) { this.unmatched = unmatched; }
+}
+
+
+
+Dependencies (pom.xml)
+
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-csv</artifactId>
+        <version>1.10.0</version>
+    </dependency>
+</dependencies>
+
