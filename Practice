@@ -787,4 +787,175 @@ with gr.Blocks() as demo:
     )
 
 demo.launch()
+
+
+
+
+
+
+........
+
+
+import pandas as pd
+import gradio as gr
+from collections import defaultdict
+
+# Helper functions
+def extract_algo_keys(df):
+    return df['Agreement_name'].astype(str).apply(
+        lambda x: x.replace('_RIMR', '3CR')
+                  .replace('_RIMP', '3CP')
+                  .replace(" ", "")
+                  .strip()
+    ).tolist()
+
+def extract_star_keys(df):
+    return df.apply(
+        lambda row: (str(row['CRDS Party Code']).strip().replace(" ", "") +
+                     "3" +
+                     str(row['Post Direction']).strip().replace(" ", "")),
+        axis=1
+    ).tolist()
+
+# File loading
+def load_algo_file(file):
+    if file is None:
+        return pd.DataFrame(), gr.update(choices=[])
+    df = pd.read_csv(file).astype(str)
+    return df, gr.update(choices=list(df.columns))
+
+def load_star_file(file):
+    if file is None:
+        return pd.DataFrame(), gr.update(choices=[])
+    df = pd.read_csv(file).astype(str)
+    return df, gr.update(choices=list(df.columns))
+
+# Dropdown updater
+def update_column_dropdown(file_type, algo_df, star_df):
+    if file_type == "ALGO":
+        return gr.update(choices=list(algo_df.columns))
+    elif file_type == "STAR":
+        return gr.update(choices=list(star_df.columns))
+    return gr.update(choices=[])
+
+# Reconciliation logic with exclusion
+def reconcile_with_rule(algo_df, star_df, file_type, column, operator, value):
+    df_algo = algo_df.copy()
+    df_star = star_df.copy()
+    excluded_df = pd.DataFrame()
+
+    values = [v.strip() for v in value.split(',') if v.strip()]  # Support multiple values
+
+    if file_type == "ALGO" and column in df_algo.columns:
+        if operator == "=":
+            excluded_df = df_algo[df_algo[column].isin(values)]
+            df_algo = df_algo[~df_algo[column].isin(values)]
+        else:
+            excluded_df = df_algo[~df_algo[column].isin(values)]
+            df_algo = df_algo[df_algo[column].isin(values)]
+    elif file_type == "STAR" and column in df_star.columns:
+        if operator == "=":
+            excluded_df = df_star[df_star[column].isin(values)]
+            df_star = df_star[~df_star[column].isin(values)]
+        else:
+            excluded_df = df_star[~df_star[column].isin(values)]
+            df_star = df_star[df_star[column].isin(values)]
+
+    # Matching logic
+    algo_keys = extract_algo_keys(df_algo)
+    star_keys = extract_star_keys(df_star)
+
+    matched = []
+    unmatched = []
+
+    star_key_map = defaultdict(list)
+    for idx, key in enumerate(star_keys):
+        star_key_map[key].append(idx)
+
+    matched_star_indices = set()
+    matched_algo_indices = set()
+
+    for i, algo_key in enumerate(algo_keys):
+        matching_star_idxs = star_key_map.get(algo_key, [])
+        if len(matching_star_idxs) == 1 and matching_star_idxs[0] not in matched_star_indices:
+            matched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": star_keys[matching_star_idxs[0]],
+                "Status": "Match"
+            })
+            matched_star_indices.add(matching_star_idxs[0])
+            matched_algo_indices.add(i)
+        elif len(matching_star_idxs) > 1:
+            for idx in matching_star_idxs:
+                unmatched.append({
+                    "ALGO Key": algo_key,
+                    "STAR Key": star_keys[idx],
+                    "Status": "Mismatch - Multiple STAR Keys"
+                })
+            matched_algo_indices.add(i)
+        else:
+            unmatched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": "<No Match>",
+                "Status": "Mismatch - No Match"
+            })
+
+    for idx, star_key in enumerate(star_keys):
+        if idx not in matched_star_indices:
+            match_found = any(algo_key == star_key for algo_key in algo_keys)
+            if not match_found or len(star_key_map[star_key]) > 1:
+                unmatched.append({
+                    "ALGO Key": "<No Match>",
+                    "STAR Key": star_key,
+                    "Status": "Mismatch - No Match or Duplicate"
+                })
+
+    matched_df = pd.DataFrame(matched)
+    unmatched_df = pd.DataFrame(unmatched)
+
+    summary = (
+        f"Matched Records: {len(matched_df)}\n"
+        f"Unmatched Records: {len(unmatched_df)}\n"
+        f"Excluded Records: {len(excluded_df)}"
+    )
+
+    return excluded_df, matched_df, unmatched_df, summary
+
+# Gradio UI
+with gr.Blocks() as demo:
+    gr.Markdown("## Reconciliation App with Multi-Value Exclusion Rule")
+
+    algo_df_state = gr.State(pd.DataFrame())
+    star_df_state = gr.State(pd.DataFrame())
+
+    with gr.Row():
+        algo_file = gr.File(label="Upload ALGO CSV")
+        star_file = gr.File(label="Upload STAR CSV")
+
+    with gr.Row():
+        file_selector = gr.Dropdown(["ALGO", "STAR"], label="Select File for Rule")
+        column_selector = gr.Dropdown(label="Column Name")
+        operator_input = gr.Dropdown(["=", "!="], label="Operator")
+        value_input = gr.Textbox(label="Value (comma-separated for multiple)")
+
+    run_btn = gr.Button("Run Reconciliation")
+
+    excluded_out = gr.Dataframe(label="Excluded Records")
+    matched_out = gr.Dataframe(label="Matched Records")
+    unmatched_out = gr.Dataframe(label="Unmatched Records")
+    summary_out = gr.Textbox(label="Summary")
+
+    algo_file.change(fn=load_algo_file, inputs=algo_file, outputs=[algo_df_state, column_selector])
+    star_file.change(fn=load_star_file, inputs=star_file, outputs=[star_df_state, column_selector])
+    file_selector.change(update_column_dropdown,
+                         inputs=[file_selector, algo_df_state, star_df_state],
+                         outputs=column_selector)
+
+    run_btn.click(
+        reconcile_with_rule,
+        inputs=[algo_df_state, star_df_state, file_selector, column_selector, operator_input, value_input],
+        outputs=[excluded_out, matched_out, unmatched_out, summary_out]
+    )
+
+demo.launch()
     
