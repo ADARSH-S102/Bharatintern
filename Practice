@@ -630,10 +630,6 @@ import pandas as pd
 import gradio as gr
 from collections import defaultdict
 
-# Global to store uploaded data
-uploaded_algo_df = None
-uploaded_star_df = None
-
 def extract_algo_keys(df):
     return df['Agreement_name'].astype(str).apply(
         lambda x: x.replace('_RIMR', '3CR')
@@ -650,47 +646,33 @@ def extract_star_keys(df):
         axis=1
     ).tolist()
 
-def store_files(algo_file, star_file):
-    global uploaded_algo_df, uploaded_star_df
-    if algo_file:
-        uploaded_algo_df = pd.read_csv(algo_file).astype(str)
-    if star_file:
-        uploaded_star_df = pd.read_csv(star_file).astype(str)
-    return gr.update(), gr.update()
+def load_file(file):
+    if file is None:
+        return pd.DataFrame(), gr.update(choices=[])
+    df = pd.read_csv(file).astype(str)
+    return df, gr.update(choices=list(df.columns))
 
-def update_columns(file_type):
-    if file_type == "ALGO" and uploaded_algo_df is not None:
-        return gr.update(choices=list(uploaded_algo_df.columns))
-    elif file_type == "STAR" and uploaded_star_df is not None:
-        return gr.update(choices=list(uploaded_star_df.columns))
-    else:
-        return gr.update(choices=[])
-
-def reconcile_with_rule(file_type, column, operator, value):
-    df_algo = uploaded_algo_df.copy()
-    df_star = uploaded_star_df.copy()
-    excluded_rows = []
+def reconcile_with_rule(algo_df, star_df, file_type, column, operator, value):
+    df_algo = algo_df.copy()
+    df_star = star_df.copy()
+    excluded_df = pd.DataFrame()
 
     if file_type == "ALGO":
         if operator == "=":
-            excluded = df_algo[df_algo[column] == value]
+            excluded_df = df_algo[df_algo[column] == value]
             df_algo = df_algo[df_algo[column] != value]
         else:
-            excluded = df_algo[df_algo[column] != value]
+            excluded_df = df_algo[df_algo[column] != value]
             df_algo = df_algo[df_algo[column] == value]
     elif file_type == "STAR":
         if operator == "=":
-            excluded = df_star[df_star[column] == value]
+            excluded_df = df_star[df_star[column] == value]
             df_star = df_star[df_star[column] != value]
         else:
-            excluded = df_star[df_star[column] != value]
+            excluded_df = df_star[df_star[column] != value]
             df_star = df_star[df_star[column] == value]
-    else:
-        excluded = pd.DataFrame()
 
-    excluded_df = excluded
-
-    # Reconciliation
+    # Reconciliation logic
     algo_keys = extract_algo_keys(df_algo)
     star_keys = extract_star_keys(df_star)
 
@@ -752,33 +734,44 @@ def reconcile_with_rule(file_type, column, operator, value):
 
 # Gradio UI
 with gr.Blocks() as demo:
-    gr.Markdown("## Reconciliation App with Single Exclusion Rule & Dynamic Columns")
+    gr.Markdown("## Reconciliation App with Column-Based Exclusion")
+
+    algo_df_state = gr.State()
+    star_df_state = gr.State()
 
     with gr.Row():
-        algo_input = gr.File(label="Upload ALGO CSV File")
-        star_input = gr.File(label="Upload STAR CSV File")
-        load_btn = gr.Button("Load Files")
+        algo_file = gr.File(label="Upload ALGO CSV")
+        star_file = gr.File(label="Upload STAR CSV")
 
     with gr.Row():
-        file_selector = gr.Dropdown(["ALGO", "STAR"], label="Select File")
-        column_selector = gr.Dropdown(choices=[], label="Column Name")
-        operator_input = gr.Dropdown(['=', '!='], label="Operator")
+        file_selector = gr.Dropdown(["ALGO", "STAR"], label="Select File for Rule")
+        column_selector = gr.Dropdown(label="Column Name")
+        operator_input = gr.Dropdown(["=", "!="], label="Operator")
         value_input = gr.Textbox(label="Value")
 
     run_btn = gr.Button("Run Reconciliation")
 
-    excluded_table = gr.Dataframe(label="Excluded Records")
-    matched_table = gr.Dataframe(label="Matched Records")
-    unmatched_table = gr.Dataframe(label="Unmatched Records")
-    summary_box = gr.Textbox(label="Summary")
+    excluded_out = gr.Dataframe(label="Excluded Records")
+    matched_out = gr.Dataframe(label="Matched Records")
+    unmatched_out = gr.Dataframe(label="Unmatched Records")
+    summary_out = gr.Textbox(label="Summary")
 
-    load_btn.click(fn=store_files, inputs=[algo_input, star_input], outputs=[excluded_table, matched_table])
-    file_selector.change(fn=update_columns, inputs=file_selector, outputs=column_selector)
+    algo_file.change(fn=load_file, inputs=algo_file, outputs=[algo_df_state, gr.update()], show_progress=False)
+    star_file.change(fn=load_file, inputs=star_file, outputs=[star_df_state, gr.update()], show_progress=False)
+
+    def update_column_dropdown(file_type, algo_df, star_df):
+        if file_type == "ALGO":
+            return gr.update(choices=list(algo_df.columns))
+        elif file_type == "STAR":
+            return gr.update(choices=list(star_df.columns))
+        return gr.update(choices=[])
+
+    file_selector.change(update_column_dropdown, inputs=[file_selector, algo_df_state, star_df_state], outputs=column_selector)
 
     run_btn.click(
-        fn=reconcile_with_rule,
-        inputs=[file_selector, column_selector, operator_input, value_input],
-        outputs=[excluded_table, matched_table, unmatched_table, summary_box]
+        reconcile_with_rule,
+        inputs=[algo_df_state, star_df_state, file_selector, column_selector, operator_input, value_input],
+        outputs=[excluded_out, matched_out, unmatched_out, summary_out]
     )
 
-demo.launch()
+demo.launch()        
