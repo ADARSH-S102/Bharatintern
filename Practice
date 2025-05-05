@@ -395,7 +395,7 @@ import pandas as pd
 import gradio as gr
 from collections import defaultdict
 
-# --- Key Extraction Functions ---
+# --- Key extraction functions ---
 def extract_algo_keys(df):
     return df['Agreement_name'].astype(str).apply(
         lambda x: x.replace('_RIMR', '3CR')
@@ -412,7 +412,7 @@ def extract_star_keys(df):
         axis=1
     ).tolist()
 
-# --- Apply Exclusion Rules ---
+# --- Exclusion rule logic ---
 def apply_exclusion(df_algo, df_star, file_type, column, operator, value):
     values = [v.strip() for v in value.split(",") if v.strip()]
     excluded = pd.DataFrame()
@@ -434,7 +434,7 @@ def apply_exclusion(df_algo, df_star, file_type, column, operator, value):
 
     return df_algo, df_star, excluded
 
-# --- Main Reconciliation Logic ---
+# --- Reconciliation logic ---
 def reconcile_with_exclusion(algo_file, star_file, file_type, column, operator, value):
     df_algo = pd.read_csv(algo_file).astype(str)
     df_star = pd.read_csv(star_file).astype(str)
@@ -506,19 +506,33 @@ def reconcile_with_exclusion(algo_file, star_file, file_type, column, operator, 
 
     return excluded, matched_df, unmatched_df, summary
 
+# --- Column dropdown updater ---
+def get_columns(algo_file, star_file, file_type):
+    if file_type == "ALGO" and algo_file is not None:
+        df = pd.read_csv(algo_file, nrows=1)
+        return sorted(df.columns.tolist())
+    elif file_type == "STAR" and star_file is not None:
+        df = pd.read_csv(star_file, nrows=1)
+        return sorted(df.columns.tolist())
+    return []
+
 # --- Gradio UI ---
 with gr.Blocks() as demo:
-    gr.Markdown("## Reconciliation App with Exclusion Logic")
+    gr.Markdown("## Reconciliation App with Exclusion Rules and Column Dropdown")
 
     with gr.Row():
-        algo_file = gr.File(label="Upload ALGO CSV File")
-        star_file = gr.File(label="Upload STAR CSV File")
+        algo_file = gr.File(label="Upload ALGO CSV File", file_types=[".csv"])
+        star_file = gr.File(label="Upload STAR CSV File", file_types=[".csv"])
 
     with gr.Row():
-        file_type = gr.Dropdown(["ALGO", "STAR"], label="Select File for Exclusion Rule")
-        column = gr.Textbox(label="Column Name")
-        operator = gr.Dropdown(["=", "!="], label="Operator")
+        file_type = gr.Dropdown(["ALGO", "STAR"], label="Select File for Exclusion Rule", value="ALGO")
+        column = gr.Dropdown(label="Select Column (auto-updated)")
+        operator = gr.Dropdown(["=", "!="], label="Operator", value="=")
         value = gr.Textbox(label="Value(s) to Exclude (comma-separated)")
+
+    file_type.change(get_columns, [algo_file, star_file, file_type], column)
+    algo_file.change(get_columns, [algo_file, star_file, file_type], column)
+    star_file.change(get_columns, [algo_file, star_file, file_type], column)
 
     run_button = gr.Button("Run Reconciliation")
 
@@ -533,4 +547,4 @@ with gr.Blocks() as demo:
         outputs=[excluded_out, matched_out, unmatched_out, summary]
     )
 
-demo.launch()
+demo.launch()        
