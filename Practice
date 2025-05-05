@@ -156,3 +156,116 @@ with gr.Blocks() as demo:
     )
 
 demo.launch()
+
+
+
+
+..........
+
+
+import pandas as pd
+import gradio as gr
+from collections import defaultdict
+import tempfile
+
+def extract_algo_keys(df):
+    return df['Agreement_name'].astype(str).apply(
+        lambda x: x.replace('_RIMR', '3CR')
+                  .replace('_RIMP', '3CP')
+                  .replace(" ", "")
+                  .strip()
+    ).tolist()
+
+def extract_star_keys(df):
+    return df.apply(
+        lambda row: (str(row['CRDS Party Code']).strip().replace(" ", "") +
+                     "3" +
+                     str(row['Post Direction']).strip().replace(" ", "")),
+        axis=1
+    ).tolist()
+
+def reconcile_files(algo_file, star_file):
+    df_algo = pd.read_csv(algo_file).astype(str)
+    df_star = pd.read_csv(star_file).astype(str)
+
+    algo_keys = extract_algo_keys(df_algo)
+    star_keys = extract_star_keys(df_star)
+
+    matched = []
+    unmatched = []
+
+    star_key_map = defaultdict(list)
+    for idx, key in enumerate(star_keys):
+        star_key_map[key].append(idx)
+
+    matched_star_indices = set()
+    matched_algo_indices = set()
+
+    for i, algo_key in enumerate(algo_keys):
+        matching_star_idxs = star_key_map.get(algo_key, [])
+        if len(matching_star_idxs) == 1 and matching_star_idxs[0] not in matched_star_indices:
+            matched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": star_keys[matching_star_idxs[0]],
+                "Status": "Match"
+            })
+            matched_star_indices.add(matching_star_idxs[0])
+            matched_algo_indices.add(i)
+        elif len(matching_star_idxs) > 1:
+            for idx in matching_star_idxs:
+                unmatched.append({
+                    "ALGO Key": algo_key,
+                    "STAR Key": star_keys[idx],
+                    "Status": "Mismatch - Multiple STAR Keys"
+                })
+            matched_algo_indices.add(i)
+        else:
+            unmatched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": "<No Match>",
+                "Status": "Mismatch - No Match"
+            })
+
+    for idx, star_key in enumerate(star_keys):
+        if idx not in matched_star_indices:
+            match_found = any(algo_key == star_key for algo_key in algo_keys)
+            if not match_found or len(star_key_map[star_key]) > 1:
+                unmatched.append({
+                    "ALGO Key": "<No Match>",
+                    "STAR Key": star_key,
+                    "Status": "Mismatch - No Match or Duplicate"
+                })
+
+    matched_df = pd.DataFrame(matched)
+    unmatched_df = pd.DataFrame(unmatched)
+
+    # Save to temp files
+    matched_file = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
+    unmatched_file = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
+    matched_df.to_csv(matched_file.name, index=False)
+    unmatched_df.to_csv(unmatched_file.name, index=False)
+
+    summary = (
+        f"Matched Records: {len(matched_df)}\n"
+        f"Unmatched Records: {len(unmatched_df)}"
+    )
+
+    return matched_file.name, unmatched_file.name, summary
+
+# Gradio Interface with file downloads
+demo = gr.Interface(
+    fn=reconcile_files,
+    inputs=[
+        gr.File(label="Upload ALGO CSV File"),
+        gr.File(label="Upload STAR CSV File")
+    ],
+    outputs=[
+        gr.File(label="Download Matched Records"),
+        gr.File(label="Download Unmatched Records"),
+        gr.Textbox(label="Summary")
+    ],
+    title="Reconciliation App - Download Matched/Unmatched as CSV",
+    description="If multiple STAR keys match the same ALGO key, all are moved to the unmatched table. Results can be downloaded."
+)
+
+demo.launch()
