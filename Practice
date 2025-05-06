@@ -574,17 +574,266 @@ demo.launch()
 spring boot 🫵🫵🫵
 
 
-ReconciliationApplication.java 
+pom.xml
 
-package com.example.reconciliation;
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>com.oracle.database.jdbc</groupId>
+        <artifactId>ojdbc8</artifactId>
+        <version>19.8.0.0</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-jdbc</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-thymeleaf</artifactId>
+    </dependency>
+</dependencies>
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication
-public class ReconciliationApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(ReconciliationApplication.class, args);
+
+
+
+application.properties
+
+spring.datasource.url=jdbc:oracle:thin:@//localhost:1521/358fr305
+spring.datasource.username=RAIDBA
+spring.datasource.password=1#Socrates*UATDb Refresh#0
+spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+
+
+
+
+ExclusionRecord.java
+
+import javax.persistence.Entity;
+import javax.persistence.Id;
+
+@Entity
+public class ExclusionRecord {
+    @Id
+    private Long id;
+    private String algoKey;
+    private String starKey;
+    private String status;
+
+    // getters and setters
+}
+
+
+
+
+
+
+MatchedRecord.java
+
+import javax.persistence.Entity;
+import javax.persistence.Id;
+
+@Entity
+public class MatchedRecord {
+    @Id
+    private Long id;
+    private String algoKey;
+    private String starKey;
+    private String status;
+
+    // getters and setters
+}
+
+
+
+
+
+UnmatchedRecord.java
+
+import javax.persistence.Entity;
+import javax.persistence.Id;
+
+@Entity
+public class UnmatchedRecord {
+    @Id
+    private Long id;
+    private String algoKey;
+    private String starKey;
+    private String status;
+
+    // getters and setters
+}
+
+
+
+
+
+
+ReconciliationService.java
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+
+@Service
+public class ReconciliationService {
+
+    @Autowired
+    private ExclusionRecordRepository exclusionRecordRepository;
+
+    @Autowired
+    private MatchedRecordRepository matchedRecordRepository;
+
+    @Autowired
+    private UnmatchedRecordRepository unmatchedRecordRepository;
+
+    @Autowired
+    private DatabaseRepository databaseRepository; // Fetches ALGO and STAR data
+
+    @Transactional
+    public String reconcile() {
+        // Fetch data from DB
+        List<Map<String, String>> algoData = databaseRepository.fetchAlgoData();
+        List<Map<String, String>> starData = databaseRepository.fetchStarData();
+
+        // Apply exclusion logic
+        List<ExclusionRecord> exclusionRecords = applyExclusionRules(algoData, starData);
+
+        // Reconciliation logic
+        List<MatchedRecord> matchedRecords = new ArrayList<>();
+        List<UnmatchedRecord> unmatchedRecords = new ArrayList<>();
+
+        Map<String, List<Integer>> starKeyMap = new HashMap<>();
+        for (int i = 0; i < starData.size(); i++) {
+            String starKey = extractStarKey(starData.get(i));
+            starKeyMap.computeIfAbsent(starKey, k -> new ArrayList<>()).add(i);
+        }
+
+        for (int i = 0; i < algoData.size(); i++) {
+            String algoKey = extractAlgoKey(algoData.get(i));
+            List<Integer> matchingStarIndices = starKeyMap.get(algoKey);
+            if (matchingStarIndices != null && matchingStarIndices.size() == 1) {
+                String starKey = extractStarKey(starData.get(matchingStarIndices.get(0)));
+                matchedRecords.add(new MatchedRecord(null, algoKey, starKey, "Match"));
+            } else if (matchingStarIndices != null && matchingStarIndices.size() > 1) {
+                for (Integer idx : matchingStarIndices) {
+                    unmatchedRecords.add(new UnmatchedRecord(null, algoKey, extractStarKey(starData.get(idx)), "Mismatch - Multiple STAR Keys"));
+                }
+            } else {
+                unmatchedRecords.add(new UnmatchedRecord(null, algoKey, "<No Match>", "Mismatch - No Match"));
+            }
+        }
+
+        // Store matched and unmatched records in the DB
+        matchedRecordRepository.saveAll(matchedRecords);
+        unmatchedRecordRepository.saveAll(unmatchedRecords);
+        exclusionRecordRepository.saveAll(exclusionRecords);
+
+        return "Reconciliation complete!";
+    }
+
+    private List<ExclusionRecord> applyExclusionRules(List<Map<String, String>> algoData, List<Map<String, String>> starData) {
+        // Fetch exclusion rules from DB
+        List<ExclusionRule> exclusionRules = exclusionRecordRepository.findAll();
+
+        List<ExclusionRecord> exclusionRecords = new ArrayList<>();
+        for (ExclusionRule rule : exclusionRules) {
+            // Apply exclusion logic based on the rule
+            // Filter and collect excluded records from both ALGO and STAR data
+        }
+
+        return exclusionRecords;
+    }
+
+    private String extractAlgoKey(Map<String, String> record) {
+        String algoKey = record.get("Agreement_name").replace("_RIMR", "3CR").replace("_RIMP", "3CP").replace(" ", "").trim();
+        return algoKey;
+    }
+
+    private String extractStarKey(Map<String, String> record) {
+        String starKey = record.get("CRDS Party Code").replace(" ", "") + "3" + record.get("Post Direction").replace(" ", "");
+        return starKey;
+    }
+}
+
+
+
+
+
+ExclusionRecordRepository.java
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface ExclusionRecordRepository extends JpaRepository<ExclusionRecord, Long> {
+}
+
+
+
+
+
+MatchedRecordRepository.java
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface MatchedRecordRepository extends JpaRepository<MatchedRecord, Long> {
+}
+
+
+
+
+
+
+UnmatchedRecordRepository.java
+
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface UnmatchedRecordRepository extends JpaRepository<UnmatchedRecord, Long> {
+}
+
+
+
+
+
+
+DatabaseRepository.java
+
+import org.springframework.stereotype.Repository;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import java.util.List;
+import java.util.Map;
+
+@Repository
+public class DatabaseRepository {
+
+    private final JdbcTemplate jdbcTemplate;
+
+    public DatabaseRepository(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    public List<Map<String, String>> fetchAlgoData() {
+        String query = "SELECT * FROM INITIAL_MARGIN_EODNEW_DATA";
+        return jdbcTemplate.queryForList(query);
+    }
+
+    public List<Map<String, String>> fetchStarData() {
+        String query = "SELECT * FROM STARALGONEW_DATA";
+        return jdbcTemplate.queryForList(query);
     }
 }
 
@@ -595,148 +844,19 @@ public class ReconciliationApplication {
 
 ReconciliationController.java
 
-
-package com.example.reconciliation.controller;
-
-import com.example.reconciliation.service.ReconciliationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api")
 public class ReconciliationController {
 
     @Autowired
     private ReconciliationService reconciliationService;
 
-    @PostMapping("/reconcile")
-    public String reconcile(
-        @RequestParam String algoPath,
-        @RequestParam String starPath,
-        @RequestParam(required = false) String fileType,
-        @RequestParam(required = false) String column,
-        @RequestParam(required = false) String operator,
-        @RequestParam(required = false) String values
-    ) {
-        reconciliationService.reconcile(algoPath, starPath, fileType, column, operator, values);
-        return "Reconciliation completed and data saved to DB.";
-    }
-}
-
-
-
-
-
-ReconciliationService.java
-
-package com.example.reconciliation.service;
-
-import com.example.reconciliation.entity.MatchRecord;
-import com.example.reconciliation.entity.UnmatchedRecord;
-import com.example.reconciliation.entity.ExclusionRecord;
-import com.example.reconciliation.repo.MatchRepo;
-import com.example.reconciliation.repo.UnmatchedRepo;
-import com.example.reconciliation.repo.ExclusionRepo;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.io.*;
-import java.util.*;
-import java.util.stream.Collectors;
-import com.opencsv.CSVReader;
-
-@Service
-public class ReconciliationService {
-
-    @Autowired
-    private MatchRepo matchRepo;
-    @Autowired
-    private UnmatchedRepo unmatchedRepo;
-    @Autowired
-    private ExclusionRepo exclusionRepo;
-
-    public void reconcile(String algoPath, String starPath, String fileType, String column, String operator, String values) {
-        try {
-            List<Map<String, String>> algo = readCsv(algoPath);
-            List<Map<String, String>> star = readCsv(starPath);
-
-            // Apply exclusions
-            List<Map<String, String>> excluded = new ArrayList<>();
-            if (fileType != null && column != null && operator != null && values != null) {
-                List<String> valList = Arrays.stream(values.split(",")).map(String::trim).toList();
-                List<Map<String, String>> target = fileType.equalsIgnoreCase("ALGO") ? algo : star;
-                for (Iterator<Map<String, String>> it = target.iterator(); it.hasNext(); ) {
-                    Map<String, String> row = it.next();
-                    if (operator.equals("=") && valList.contains(row.getOrDefault(column, ""))) {
-                        excluded.add(row);
-                        it.remove();
-                    } else if (operator.equals("!=") && !valList.contains(row.getOrDefault(column, ""))) {
-                        excluded.add(row);
-                        it.remove();
-                    }
-                }
-            }
-
-            for (Map<String, String> rec : excluded) {
-                exclusionRepo.save(new ExclusionRecord(rec.toString()));
-            }
-
-            Map<String, Integer> starKeyCount = new HashMap<>();
-            Map<String, List<Map<String, String>>> starKeyMap = new HashMap<>();
-            for (Map<String, String> row : star) {
-                String key = row.get("CRDS Party Code").replaceAll(" ", "") + "3" + row.get("Post Direction").replaceAll(" ", "");
-                starKeyCount.put(key, starKeyCount.getOrDefault(key, 0) + 1);
-                starKeyMap.computeIfAbsent(key, k -> new ArrayList<>()).add(row);
-            }
-
-            Set<String> matchedStarKeys = new HashSet<>();
-
-            for (Map<String, String> row : algo) {
-                String key = row.get("Agreement_name").replace("_RIMR", "3CR").replace("_RIMP", "3CP").replaceAll(" ", "");
-                List<Map<String, String>> matches = starKeyMap.get(key);
-
-                if (matches == null || matches.isEmpty()) {
-                    unmatchedRepo.save(new UnmatchedRecord(key, "<No Match>", "Mismatch - No STAR Match"));
-                } else if (matches.size() == 1) {
-                    matchRepo.save(new MatchRecord(key, key, "Match"));
-                    matchedStarKeys.add(key);
-                } else {
-                    unmatchedRepo.save(new UnmatchedRecord(key, "<Multiple STAR Match>", "Mismatch - Multiple STAR Keys"));
-                    for (Map<String, String> s : matches) {
-                        unmatchedRepo.save(new UnmatchedRecord("<No Match>", key, "Mismatch - STAR Key in Multiple Match"));
-                        matchedStarKeys.add(key);
-                    }
-                }
-            }
-
-            // unmatched STAR
-            for (String starKey : starKeyMap.keySet()) {
-                if (!matchedStarKeys.contains(starKey)) {
-                    for (Map<String, String> s : starKeyMap.get(starKey)) {
-                        unmatchedRepo.save(new UnmatchedRecord("<No Match>", starKey, "Mismatch - No ALGO Match"));
-                    }
-                }
-            }
-
-        } catch (Exception e) {
-            throw new RuntimeException("Error during reconciliation: " + e.getMessage(), e);
-        }
-    }
-
-    private List<Map<String, String>> readCsv(String path) throws IOException {
-        List<Map<String, String>> rows = new ArrayList<>();
-        try (CSVReader reader = new CSVReader(new FileReader(path))) {
-            String[] headers = reader.readNext();
-            String[] line;
-            while ((line = reader.readNext()) != null) {
-                Map<String, String> row = new HashMap<>();
-                for (int i = 0; i < headers.length; i++) {
-                    row.put(headers[i], i < line.length ? line[i] : "");
-                }
-                rows.add(row);
-            }
-        }
-        return rows;
+    @GetMapping("/reconcile")
+    public String runReconciliation() {
+        return reconciliationService.reconcile();
     }
 }
 
@@ -746,122 +866,16 @@ public class ReconciliationService {
 
 
 
-MatchRecord.java
+ReconciliationApp.java
 
-package com.example.reconciliation.entity;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import jakarta.persistence.*;
+@SpringBootApplication
+public class ReconciliationApp {
 
-@Entity
-public class MatchRecord {
-    @Id @GeneratedValue
-    private Long id;
-    private String algoKey;
-    private String starKey;
-    private String status;
-
-    public MatchRecord() {}
-    public MatchRecord(String algoKey, String starKey, String status) {
-        this.algoKey = algoKey;
-        this.starKey = starKey;
-        this.status = status;
+    public static void main(String[] args) {
+        SpringApplication.run(ReconciliationApp.class, args);
     }
 }
-
-
-
-
-
-UnmatchedRecord.java
-
-package com.example.reconciliation.entity;
-
-import jakarta.persistence.*;
-
-@Entity
-public class UnmatchedRecord {
-    @Id @GeneratedValue
-    private Long id;
-    private String algoKey;
-    private String starKey;
-    private String status;
-
-    public UnmatchedRecord() {}
-    public UnmatchedRecord(String algoKey, String starKey, String status) {
-        this.algoKey = algoKey;
-        this.starKey = starKey;
-        this.status = status;
-    }
-}
-
-
-
-
-
-ExclusionRecord.java 
-
-package com.example.reconciliation.entity;
-
-import jakarta.persistence.*;
-
-@Entity
-public class ExclusionRecord {
-    @Id @GeneratedValue
-    private Long id;
-    @Column(length = 4000)
-    private String details;
-
-    public ExclusionRecord() {}
-    public ExclusionRecord(String details) {
-        this.details = details;
-    }
-}
-
-
-
-
-MatchRepo.java
-
-package com.example.reconciliation.repo;
-
-import com.example.reconciliation.entity.MatchRecord;
-import org.springframework.data.jpa.repository.JpaRepository;
-
-public interface MatchRepo extends JpaRepository<MatchRecord, Long> {}
-
-
-
-
-UnmatchedRepo.java
-
-package com.example.reconciliation.repo;
-
-import com.example.reconciliation.entity.UnmatchedRecord;
-import org.springframework.data.jpa.repository.JpaRepository;
-
-public interface UnmatchedRepo extends JpaRepository<UnmatchedRecord, Long> {}
-
-
-
-
-ExclusionRepo.java
-
-package com.example.reconciliation.repo;
-
-import com.example.reconciliation.entity.ExclusionRecord;
-import org.springframework.data.jpa.repository.JpaRepository;
-
-public interface ExclusionRepo extends JpaRepository<ExclusionRecord, Long> {}
-
-
-
-
-
-application.properties 
-
-spring.datasource.url=jdbc:oracle:thin:@//localhost:1521/358fr305
-spring.datasource.username=RAIDBA
-spring.datasource.password=1#Socrates*UATDb Refresh#0
-spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
+                                
