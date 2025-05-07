@@ -1,36 +1,9 @@
- import pandas as pd
+import pandas as pd
 import gradio as gr
-import cx_Oracle
+import oracledb
 from collections import defaultdict
 
-# Database connection config
-DB_CONFIG = {
-    "user": "RAIDBA",
-    "password": "1#Socrates UATDb Refresh#0",
-    "dsn": cx_Oracle.makedsn("eurvlid25121.xmp.neLintra", 1521, service_name="358fr305")
-}
-
-def get_connection():
-    return cx_Oracle.connect(**DB_CONFIG)
-
-def get_table_list():
-    try:
-        with get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT table_name FROM user_tables")
-            return [row[0] for row in cursor.fetchall()]
-    except Exception as e:
-        return []
-
-def load_table(table_name):
-    try:
-        with get_connection() as conn:
-            df = pd.read_sql(f"SELECT * FROM {table_name}", conn)
-            df = df.astype(str)
-            return df, gr.update(choices=list(df.columns))
-    except Exception as e:
-        return pd.DataFrame(), gr.update(choices=[])
-
+# Helper functions
 def extract_algo_keys(df):
     return df['Agreement_name'].astype(str).apply(
         lambda x: x.replace('_RIMR', '3CR')
@@ -47,6 +20,56 @@ def extract_star_keys(df):
         axis=1
     ).tolist()
 
+# Fetch table names from database
+def fetch_table_names():
+    try:
+        connection = oracledb.connect(
+            user="RAIDBA",
+            password="1#Socrates UATDb Refresh#0",
+            dsn="eurvlid25121.xmp.neLintra/358fr305"
+        )
+        cursor = connection.cursor()
+        cursor.execute("SELECT table_name FROM all_tables WHERE owner = 'RAIDBA'")
+        tables = [row[0] for row in cursor.fetchall()]
+        cursor.close()
+        connection.close()
+        return tables
+    except Exception as e:
+        print(f"Error fetching tables: {e}")
+        return []
+
+# Loaders (for fetching data from DB)
+def load_algo_table(table):
+    try:
+        connection = oracledb.connect(
+            user="RAIDBA",
+            password="1#Socrates UATDb Refresh#0",
+            dsn="eurvlid25121.xmp.neLintra/358fr305"
+        )
+        query = f"SELECT * FROM {table}"
+        df = pd.read_sql(query, connection)
+        connection.close()
+        return df, gr.update(choices=list(df.columns))
+    except Exception as e:
+        print(f"Error loading ALGO table: {e}")
+        return pd.DataFrame(), gr.update(choices=[])
+
+def load_star_table(table):
+    try:
+        connection = oracledb.connect(
+            user="RAIDBA",
+            password="1#Socrates UATDb Refresh#0",
+            dsn="eurvlid25121.xmp.neLintra/358fr305"
+        )
+        query = f"SELECT * FROM {table}"
+        df = pd.read_sql(query, connection)
+        connection.close()
+        return df, gr.update(choices=list(df.columns))
+    except Exception as e:
+        print(f"Error loading STAR table: {e}")
+        return pd.DataFrame(), gr.update(choices=[])
+
+# Column dropdown update
 def update_column_dropdown(file_type, algo_df, star_df):
     if file_type == "ALGO":
         return gr.update(choices=list(algo_df.columns))
@@ -54,6 +77,7 @@ def update_column_dropdown(file_type, algo_df, star_df):
         return gr.update(choices=list(star_df.columns))
     return gr.update(choices=[])
 
+# Reconciliation logic
 def reconcile_with_exclusion(algo_df, star_df, file_type, column, operator, value):
     df_algo = algo_df.copy()
     df_star = star_df.copy()
@@ -145,15 +169,17 @@ def reconcile_with_exclusion(algo_df, star_df, file_type, column, operator, valu
 
 # Gradio UI
 with gr.Blocks() as demo:
-    gr.Markdown("## Reconciliation App (Database-based with Exclusion Handling)")
+    gr.Markdown("## Reconciliation App with Exclusion and Overmatch Handling")
 
-    table_list = get_table_list()
     algo_df_state = gr.State(pd.DataFrame())
     star_df_state = gr.State(pd.DataFrame())
 
+    # Fetch table names from DB
+    table_names = fetch_table_names()
+
     with gr.Row():
-        algo_table_selector = gr.Dropdown(table_list, label="Select ALGO Table", allow_custom_value=False, filterable=True)
-        star_table_selector = gr.Dropdown(table_list, label="Select STAR Table", allow_custom_value=False, filterable=True)
+        algo_table_selector = gr.Dropdown(choices=table_names, label="Select ALGO Table", interactive=True)
+        star_table_selector = gr.Dropdown(choices=table_names, label="Select STAR Table", interactive=True)
 
     with gr.Row():
         file_selector = gr.Dropdown(["ALGO", "STAR"], label="Select File for Exclusion Rule")
@@ -168,16 +194,19 @@ with gr.Blocks() as demo:
     unmatched_out = gr.Dataframe(label="Unmatched Records")
     summary_out = gr.Textbox(label="Summary")
 
-    algo_table_selector.change(fn=load_table, inputs=algo_table_selector, outputs=[algo_df_state, column_selector])
-    star_table_selector.change(fn=load_table, inputs=star_table_selector, outputs=[star_df_state, column_selector])
-    file_selector.change(fn=update_column_dropdown,
+    algo_table_selector.change(fn=load_algo_table, inputs=algo_table_selector, outputs=[algo_df_state, column_selector])
+    star_table_selector.change(fn=load_star_table, inputs=star_table_selector, outputs=[star_df_state, column_selector])
+    
+    file_selector.change(update_column_dropdown,
                          inputs=[file_selector, algo_df_state, star_df_state],
                          outputs=column_selector)
 
     run_btn.click(
-        fn=reconcile_with_exclusion,
+        reconcile_with_exclusion,
         inputs=[algo_df_state, star_df_state, file_selector, column_selector, operator_input, value_input],
         outputs=[excluded_out, matched_out, unmatched_out, summary_out]
     )
 
-demo.launch()   
+demo.launch()     
+
+    
