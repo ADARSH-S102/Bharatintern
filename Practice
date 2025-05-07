@@ -179,34 +179,26 @@ demo.launch()
 
 
 
-
-
 import pandas as pd
 import gradio as gr
-import oracledb
 from collections import defaultdict
+import oracledb
 
-# Helper function to connect to Oracle DB
-def get_db_connection():
-    try:
-        dsn = oracledb.makedsn("eurvlid25121.xmp.neLintra", 1521, service_name="358fr305")
-        conn = oracledb.connect(
-            user="RAIDBA",
-            password="1#Socrates UATDb Refresh#0",
-            dsn=dsn
-        )
-        return conn
-    except Exception as e:
-        print(f"Error connecting to database: {e}")
-        return None
+# --- DB CONFIG ---
+DB_USER = "RAIDBA"
+DB_PASSWORD = "1#Socrates UATDb Refresh#0"
+DB_HOST = "eurvlid25121.xmp.neLintra"
+DB_PORT = 1521
+DB_SERVICE = "358fr305"
 
-# Helper functions
+def get_connection():
+    dsn = f"//{DB_HOST}:{DB_PORT}/{DB_SERVICE}"
+    return oracledb.connect(user=DB_USER, password=DB_PASSWORD, dsn=dsn)
+
+# --- Key Extractors ---
 def extract_algo_keys(df):
     return df['Agreement_name'].astype(str).apply(
-        lambda x: x.replace('_RIMR', '3CR')
-                  .replace('_RIMP', '3CP')
-                  .replace(" ", "")
-                  .strip()
+        lambda x: x.replace('_RIMR', '3CR').replace('_RIMP', '3CP').replace(" ", "").strip()
     ).tolist()
 
 def extract_star_keys(df):
@@ -217,22 +209,21 @@ def extract_star_keys(df):
         axis=1
     ).tolist()
 
-# Loaders
+# --- Loaders ---
 def load_algo_file(file):
     try:
         df = pd.read_csv(file).astype(str)
         return df, gr.update(choices=list(df.columns))
-    except Exception as e:
+    except:
         return pd.DataFrame(), gr.update(choices=[])
 
 def load_star_file(file):
     try:
         df = pd.read_csv(file).astype(str)
         return df, gr.update(choices=list(df.columns))
-    except Exception as e:
+    except:
         return pd.DataFrame(), gr.update(choices=[])
 
-# Column dropdown update
 def update_column_dropdown(file_type, algo_df, star_df):
     if file_type == "ALGO":
         return gr.update(choices=list(algo_df.columns))
@@ -240,14 +231,13 @@ def update_column_dropdown(file_type, algo_df, star_df):
         return gr.update(choices=list(star_df.columns))
     return gr.update(choices=[])
 
-# Reconciliation logic
+# --- Reconciliation Logic ---
 def reconcile_with_exclusion(algo_df, star_df, file_type, column, operator, value):
     df_algo = algo_df.copy()
     df_star = star_df.copy()
     excluded_df = pd.DataFrame()
 
     values = [v.strip() for v in value.split(',') if v.strip()]
-
     if file_type == "ALGO" and column in df_algo.columns:
         if operator == "=":
             excluded_df = df_algo[df_algo[column].isin(values)]
@@ -255,7 +245,6 @@ def reconcile_with_exclusion(algo_df, star_df, file_type, column, operator, valu
         else:
             excluded_df = df_algo[~df_algo[column].isin(values)]
             df_algo = df_algo[df_algo[column].isin(values)]
-
     elif file_type == "STAR" and column in df_star.columns:
         if operator == "=":
             excluded_df = df_star[df_star[column].isin(values)]
@@ -330,59 +319,67 @@ def reconcile_with_exclusion(algo_df, star_df, file_type, column, operator, valu
 
     return excluded_df, matched_df, unmatched_df, summary
 
-# Save results to DB
+# --- Save to DB ---
 def save_to_db(matched_df, unmatched_df, excluded_df):
-    conn = get_db_connection()
-    if conn is None:
-        print("Failed to connect to the database.")
-        return
-    
     try:
-        # Create tables if they don't exist
+        conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS matched_results (
-            algo_key VARCHAR2(255),
-            star_key VARCHAR2(255),
-            status VARCHAR2(255)
-        )""")
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS unmatched_results (
-            algo_key VARCHAR2(255),
-            star_key VARCHAR2(255),
-            status VARCHAR2(255)
-        )""")
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS excluded_results (
-            algo_key VARCHAR2(255),
-            star_key VARCHAR2(255),
-            status VARCHAR2(255)
-        )""")
-        conn.commit()
 
-        # Insert data into tables
-        for index, row in matched_df.iterrows():
+        # Create tables if they don't exist
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS matched_data (
+                algo_key VARCHAR2(255),
+                star_key VARCHAR2(255),
+                status VARCHAR2(255)
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS unmatched_data (
+                algo_key VARCHAR2(255),
+                star_key VARCHAR2(255),
+                status VARCHAR2(255)
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS excluded_data (
+                algo_key VARCHAR2(255),
+                star_key VARCHAR2(255),
+                status VARCHAR2(255)
+            )
+        """)
+
+        # Insert data into matched_data table
+        for _, row in matched_df.iterrows():
             cursor.execute("""
-            INSERT INTO matched_results (algo_key, star_key, status)
-            VALUES (:1, :2, :3)""", (row['ALGO Key'], row['STAR Key'], row['Status']))
-        for index, row in unmatched_df.iterrows():
+                INSERT INTO matched_data (algo_key, star_key, status) 
+                VALUES (:1, :2, :3)
+            """, (row['ALGO Key'], row['STAR Key'], row['Status']))
+
+        # Insert data into unmatched_data table
+        for _, row in unmatched_df.iterrows():
             cursor.execute("""
-            INSERT INTO unmatched_results (algo_key, star_key, status)
-            VALUES (:1, :2, :3)""", (row['ALGO Key'], row['STAR Key'], row['Status']))
-        for index, row in excluded_df.iterrows():
+                INSERT INTO unmatched_data (algo_key, star_key, status) 
+                VALUES (:1, :2, :3)
+            """, (row['ALGO Key'], row['STAR Key'], row['Status']))
+
+        # Insert data into excluded_data table
+        for _, row in excluded_df.iterrows():
             cursor.execute("""
-            INSERT INTO excluded_results (algo_key, star_key, status)
-            VALUES (:1, :2, :3)""", (row['ALGO Key'], row['STAR Key'], row['Status']))
-        
+                INSERT INTO excluded_data (algo_key, star_key, status) 
+                VALUES (:1, :2, :3)
+            """, (row['ALGO Key'], row['STAR Key'], row['Status']))
+
         conn.commit()
-        print("Data saved to the database.")
-    except Exception as e:
-        print(f"Error saving to DB: {e}")
-    finally:
         cursor.close()
         conn.close()
+        print("Data saved to DB successfully!")
 
-# Gradio UI
+    except Exception as e:
+        print(f"Failed to save data to DB: {e}")
+
+# --- Gradio UI ---
 with gr.Blocks() as demo:
     gr.Markdown("## Reconciliation App with Exclusion and Overmatch Handling")
 
