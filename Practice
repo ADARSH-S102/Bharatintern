@@ -179,119 +179,140 @@ demo.launch()
 
 
 
+
 import oracledb
 import pandas as pd
 from collections import defaultdict
 
-# Oracle connection details
+# Oracle DB connection
 dsn = oracledb.makedsn("eurvlid25121.xmp.neLintra", 1521, service_name="358fr305")
 conn = oracledb.connect(user="RAIDBA", password="1#Socrates UATDb Refresh#0", dsn=dsn)
 cursor = conn.cursor()
 
-# Load tables
+# Load ALGO and STAR data
 df_algo = pd.read_sql("SELECT * FROM INITIAL_MARGIN_EODNEW_DATA", conn)
 df_star = pd.read_sql("SELECT * FROM STARALGONEW_DATA", conn)
 
-# Prompt exclusion parameters
+# Ask user where to apply exclusion
 file_type = input("Apply exclusion rule to (ALGO/STAR): ").strip().upper()
 column = input("Enter column name for exclusion: ").strip()
 operator = input("Enter operator (= or !=): ").strip()
-value = input("Enter comma-separated value(s) to exclude: ").strip()
+value = input("Enter comma-separated value(s): ").strip()
 values = [v.strip() for v in value.split(",")]
 
-# Apply exclusion
 excluded_df = pd.DataFrame()
+
+# Apply exclusion
 if file_type == "ALGO" and column in df_algo.columns:
     if operator == "=":
-        excluded_df = df_algo[df_algo[column].isin(values)]
-        df_algo = df_algo[~df_algo[column].isin(values)]
-    else:
-        excluded_df = df_algo[~df_algo[column].isin(values)]
-        df_algo = df_algo[df_algo[column].isin(values)]
-
+        excluded_df = df_algo[df_algo[column].astype(str).isin(values)]
+        df_algo = df_algo[~df_algo[column].astype(str).isin(values)]
+    elif operator == "!=":
+        excluded_df = df_algo[~df_algo[column].astype(str).isin(values)]
+        df_algo = df_algo[df_algo[column].astype(str).isin(values)]
 elif file_type == "STAR" and column in df_star.columns:
     if operator == "=":
-        excluded_df = df_star[df_star[column].isin(values)]
-        df_star = df_star[~df_star[column].isin(values)]
-    else:
-        excluded_df = df_star[~df_star[column].isin(values)]
-        df_star = df_star[df_star[column].isin(values)]
+        excluded_df = df_star[df_star[column].astype(str).isin(values)]
+        df_star = df_star[~df_star[column].astype(str).isin(values)]
+    elif operator == "!=":
+        excluded_df = df_star[~df_star[column].astype(str).isin(values)]
+        df_star = df_star[df_star[column].astype(str).isin(values)]
 else:
-    print("Invalid column or file type.")
+    print("Invalid file or column name.")
     exit()
 
-# Key extraction
-algo_keys = df_algo['Agreement_name'].astype(str).apply(
-    lambda x: x.replace('_RIMR', '3CR').replace('_RIMP', '3CP').replace(" ", "").strip()
+# Extract keys
+algo_keys = df_algo['AGREEMENT_NAME'].astype(str).apply(
+    lambda x: x.replace('_RIMR', '3CR').replace('_RIMP', '3CP').replace(" ", "")
 ).tolist()
 
 star_keys = df_star.apply(
-    lambda row: str(row.get('CRDS Party Code', '')).strip().replace(" ", "") +
-                "3" + str(row.get('Post Direction', '')).strip().replace(" ", ""),
+    lambda row: str(row.get('CRDS PARTY CODE', '')).strip().replace(" ", "") + 
+                "3" + str(row.get('POST DIRECTION', '')).strip().replace(" ", ""),
     axis=1
 ).tolist()
 
-# Matching logic
+# Reconciliation logic
 matched, unmatched = [], []
 star_key_map = defaultdict(list)
+
 for idx, key in enumerate(star_keys):
     star_key_map[key].append(idx)
 
 matched_star_indices = set()
-matched_algo_indices = set()
 star_key_used_count = defaultdict(int)
 
 for i, algo_key in enumerate(algo_keys):
-    matching_idxs = star_key_map.get(algo_key, [])
-    if len(matching_idxs) == 1 and matching_idxs[0] not in matched_star_indices:
-        matched.append({"ALGO Key": algo_key, "STAR Key": star_keys[matching_idxs[0]], "Status": "Match"})
-        matched_star_indices.add(matching_idxs[0])
-        matched_algo_indices.add(i)
-        star_key_used_count[star_keys[matching_idxs[0]]] += 1
-    elif len(matching_idxs) > 1:
-        unmatched.append({"ALGO Key": algo_key, "STAR Key": "<Multiple STAR Match>", "Status": "Mismatch - Multiple STAR Keys"})
-        for idx in matching_idxs:
-            unmatched.append({"ALGO Key": "<No Match>", "STAR Key": star_keys[idx], "Status": "Mismatch - STAR Key in Multiple Match"})
-        matched_algo_indices.add(i)
-        for idx in matching_idxs:
+    match_idxs = star_key_map.get(algo_key, [])
+    if len(match_idxs) == 1 and match_idxs[0] not in matched_star_indices:
+        matched.append({
+            "ALGO_KEY": algo_key,
+            "STAR_KEY": star_keys[match_idxs[0]],
+            "STATUS": "Match"
+        })
+        matched_star_indices.add(match_idxs[0])
+        star_key_used_count[star_keys[match_idxs[0]]] += 1
+    elif len(match_idxs) > 1:
+        unmatched.append({
+            "ALGO_KEY": algo_key,
+            "STAR_KEY": "<Multiple STAR Match>",
+            "STATUS": "Mismatch - Multiple STAR Keys"
+        })
+        for idx in match_idxs:
+            unmatched.append({
+                "ALGO_KEY": "<No Match>",
+                "STAR_KEY": star_keys[idx],
+                "STATUS": "Mismatch - STAR Key in Multiple Match"
+            })
+        for idx in match_idxs:
             star_key_used_count[star_keys[idx]] += 1
     else:
-        unmatched.append({"ALGO Key": algo_key, "STAR Key": "<No Match>", "Status": "Mismatch - No STAR Match"})
+        unmatched.append({
+            "ALGO_KEY": algo_key,
+            "STAR_KEY": "<No Match>",
+            "STATUS": "Mismatch - No STAR Match"
+        })
 
 for idx, star_key in enumerate(star_keys):
     if idx not in matched_star_indices and star_key_used_count[star_key] == 0:
-        unmatched.append({"ALGO Key": "<No Match>", "STAR Key": star_key, "Status": "Mismatch - No ALGO Match"})
+        unmatched.append({
+            "ALGO_KEY": "<No Match>",
+            "STAR_KEY": star_key,
+            "STATUS": "Mismatch - No ALGO Match"
+        })
 
 matched_df = pd.DataFrame(matched)
 unmatched_df = pd.DataFrame(unmatched)
 
-# Table names
-prefix = "im_star"
-matched_tbl = f"{prefix}_matched_records"
-unmatched_tbl = f"{prefix}_unmatched_records"
-excluded_tbl = f"{prefix}_excluded_records"
-
 # Write to Oracle DB
-def write_to_db(df, table_name):
-    cursor.execute(f"BEGIN EXECUTE IMMEDIATE 'DROP TABLE {table_name}'; EXCEPTION WHEN OTHERS THEN NULL; END;")
-    cols = ', '.join([f'"{col}" VARCHAR2(4000)' for col in df.columns])
-    cursor.execute(f"CREATE TABLE {table_name} ({cols})")
-    for _, row in df.iterrows():
-        placeholders = ','.join([':{}'.format(i+1) for i in range(len(row))])
-        cursor.execute(f"INSERT INTO {table_name} VALUES ({placeholders})", list(row))
-    conn.commit()
+def write_to_oracle(df, table_name):
+    try:
+        cursor.execute(f"BEGIN EXECUTE IMMEDIATE 'DROP TABLE {table_name}'; EXCEPTION WHEN OTHERS THEN NULL; END;")
+        col_defs = ', '.join([f'"{col}" VARCHAR2(4000)' for col in df.columns])
+        cursor.execute(f'CREATE TABLE {table_name} ({col_defs})')
+        for _, row in df.iterrows():
+            values = [str(val) if val is not None else None for val in row]
+            placeholders = ','.join([':{}'.format(i+1) for i in range(len(values))])
+            cursor.execute(f'INSERT INTO {table_name} VALUES ({placeholders})', values)
+        conn.commit()
+    except Exception as e:
+        print(f"Error writing to {table_name}: {e}")
 
-write_to_db(matched_df, matched_tbl)
-write_to_db(unmatched_df, unmatched_tbl)
+# Define output table names
+matched_table = "IM_STAR_MATCHED_RECORDS"
+unmatched_table = "IM_STAR_UNMATCHED_RECORDS"
+excluded_table = "IM_STAR_EXCLUDED_RECORDS"
+
+# Write results
+write_to_oracle(matched_df, matched_table)
+write_to_oracle(unmatched_df, unmatched_table)
 if not excluded_df.empty:
-    write_to_db(excluded_df, excluded_tbl)
+    write_to_oracle(excluded_df, excluded_table)
 
-print("\nReconciliation Complete!")
-print(f"Matched: {len(matched_df)} records → Table: {matched_tbl}")
-print(f"Unmatched: {len(unmatched_df)} records → Table: {unmatched_tbl}")
-print(f"Excluded: {len(excluded_df)} records → Table: {excluded_tbl if not excluded_df.empty else 'None'}")
+print("\nReconciliation completed.")
+print(f"Matched records saved to: {matched_table}")
+print(f"Unmatched records saved to: {unmatched_table}")
+print(f"Excluded records saved to: {excluded_table if not excluded_df.empty else 'None'}")
 
-# Close connection
 cursor.close()
 conn.close()
-    
