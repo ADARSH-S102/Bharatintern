@@ -897,8 +897,8 @@ package com.example.reconciliation.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "matched_records")
-public class MatchedRecord {
+@Table(name = "exclusion_records")
+public class ExclusionRecord {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -910,20 +910,20 @@ public class MatchedRecord {
     @Column(name = "star_key")
     private String starKey;
 
-    @Column(name = "status")
-    private String status;
+    @Column(name = "excluded_column")
+    private String excludedColumn;
 
-    // Constructors
-    public MatchedRecord() {
-    }
+    @Column(name = "excluded_value")
+    private String excludedValue;
 
-    public MatchedRecord(String algoKey, String starKey, String status) {
+    public ExclusionRecord() {}
+
+    public ExclusionRecord(String algoKey, String starKey, String excludedColumn, String excludedValue) {
         this.algoKey = algoKey;
         this.starKey = starKey;
-        this.status = status;
+        this.excludedColumn = excludedColumn;
+        this.excludedValue = excludedValue;
     }
-
-    // Getters and Setters
 
     public Long getId() {
         return id;
@@ -949,11 +949,19 @@ public class MatchedRecord {
         this.starKey = starKey;
     }
 
-    public String getStatus() {
-        return status;
+    public String getExcludedColumn() {
+        return excludedColumn;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void setExcludedColumn(String excludedColumn) {
+        this.excludedColumn = excludedColumn;
+    }
+
+    public String getExcludedValue() {
+        return excludedValue;
+    }
+
+    public void setExcludedValue(String excludedValue) {
+        this.excludedValue = excludedValue;
     }
 }
