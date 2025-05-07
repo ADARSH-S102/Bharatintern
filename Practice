@@ -1,6 +1,7 @@
+main : 
+
 import pandas as pd
 import gradio as gr
-import oracledb
 from collections import defaultdict
 
 # Helper functions
@@ -20,53 +21,19 @@ def extract_star_keys(df):
         axis=1
     ).tolist()
 
-# Fetch table names from database
-def fetch_table_names():
+# Loaders
+def load_algo_file(file):
     try:
-        connection = oracledb.connect(
-            user="RAIDBA",
-            password="1#Socrates UATDb Refresh#0",
-            dsn="eurvlid25121.xmp.neLintra/358fr305"
-        )
-        cursor = connection.cursor()
-        cursor.execute("SELECT table_name FROM all_tables WHERE owner = 'RAIDBA'")
-        tables = [row[0] for row in cursor.fetchall()]
-        cursor.close()
-        connection.close()
-        return tables
-    except Exception as e:
-        print(f"Error fetching tables: {e}")
-        return []
-
-# Loaders (for fetching data from DB)
-def load_algo_table(table):
-    try:
-        connection = oracledb.connect(
-            user="RAIDBA",
-            password="1#Socrates UATDb Refresh#0",
-            dsn="eurvlid25121.xmp.neLintra/358fr305"
-        )
-        query = f"SELECT * FROM {table}"
-        df = pd.read_sql(query, connection)
-        connection.close()
+        df = pd.read_csv(file).astype(str)
         return df, gr.update(choices=list(df.columns))
     except Exception as e:
-        print(f"Error loading ALGO table: {e}")
         return pd.DataFrame(), gr.update(choices=[])
 
-def load_star_table(table):
+def load_star_file(file):
     try:
-        connection = oracledb.connect(
-            user="RAIDBA",
-            password="1#Socrates UATDb Refresh#0",
-            dsn="eurvlid25121.xmp.neLintra/358fr305"
-        )
-        query = f"SELECT * FROM {table}"
-        df = pd.read_sql(query, connection)
-        connection.close()
+        df = pd.read_csv(file).astype(str)
         return df, gr.update(choices=list(df.columns))
     except Exception as e:
-        print(f"Error loading STAR table: {e}")
         return pd.DataFrame(), gr.update(choices=[])
 
 # Column dropdown update
@@ -174,12 +141,9 @@ with gr.Blocks() as demo:
     algo_df_state = gr.State(pd.DataFrame())
     star_df_state = gr.State(pd.DataFrame())
 
-    # Fetch table names from DB
-    table_names = fetch_table_names()
-
     with gr.Row():
-        algo_table_selector = gr.Dropdown(choices=table_names, label="Select ALGO Table", interactive=True)
-        star_table_selector = gr.Dropdown(choices=table_names, label="Select STAR Table", interactive=True)
+        algo_file = gr.File(label="Upload ALGO CSV")
+        star_file = gr.File(label="Upload STAR CSV")
 
     with gr.Row():
         file_selector = gr.Dropdown(["ALGO", "STAR"], label="Select File for Exclusion Rule")
@@ -194,9 +158,8 @@ with gr.Blocks() as demo:
     unmatched_out = gr.Dataframe(label="Unmatched Records")
     summary_out = gr.Textbox(label="Summary")
 
-    algo_table_selector.change(fn=load_algo_table, inputs=algo_table_selector, outputs=[algo_df_state, column_selector])
-    star_table_selector.change(fn=load_star_table, inputs=star_table_selector, outputs=[star_df_state, column_selector])
-    
+    algo_file.change(fn=load_algo_file, inputs=algo_file, outputs=[algo_df_state, column_selector])
+    star_file.change(fn=load_star_file, inputs=star_file, outputs=[star_df_state, column_selector])
     file_selector.change(update_column_dropdown,
                          inputs=[file_selector, algo_df_state, star_df_state],
                          outputs=column_selector)
@@ -207,6 +170,200 @@ with gr.Blocks() as demo:
         outputs=[excluded_out, matched_out, unmatched_out, summary_out]
     )
 
-demo.launch()     
+demo.launch()
 
-    
+
+
+
+..............
+
+
+
+import pandas as pd
+import gradio as gr
+import oracledb
+from collections import defaultdict
+
+# DB config
+DB_CONFIG = {
+    "user": "RAIDBA",
+    "password": "1#Socrates UATDb Refresh#0",
+    "dsn": "eurvlid25121.xmp.neLintra:1521/358fr305"
+}
+
+# Table names
+ALGO_TABLE = "INITIAL_MARGIN_EODNEW_DATA"
+STAR_TABLE = "STARALGONEW_DATA"
+
+MATCHED_TABLE = "im_star_matched_records"
+UNMATCHED_TABLE = "im_star_unmatched_records"
+EXCLUDED_TABLE = "im_star_excluded_records"
+
+def get_db_connection():
+    return oracledb.connect(**DB_CONFIG)
+
+def fetch_table_data(table_name):
+    conn = get_db_connection()
+    df = pd.read_sql(f"SELECT * FROM {table_name}", conn)
+    conn.close()
+    return df.astype(str)
+
+def extract_algo_keys(df):
+    return df['AGREEMENT_NAME'].astype(str).apply(
+        lambda x: x.replace('_RIMR', '3CR')
+                  .replace('_RIMP', '3CP')
+                  .replace(" ", "")
+                  .strip()
+    ).tolist()
+
+def extract_star_keys(df):
+    return df.apply(
+        lambda row: (str(row.get('CRDS PARTY CODE', '')).strip().replace(" ", "") +
+                     "3" +
+                     str(row.get('POST DIRECTION', '')).strip().replace(" ", "")),
+        axis=1
+    ).tolist()
+
+def apply_exclusion(df, file_type, column, operator, value):
+    values = [v.strip() for v in value.split(',') if v.strip()]
+    if column not in df.columns:
+        return df.copy(), pd.DataFrame()
+
+    if operator == "=":
+        excluded_df = df[df[column].isin(values)]
+        included_df = df[~df[column].isin(values)]
+    else:
+        excluded_df = df[~df[column].isin(values)]
+        included_df = df[df[column].isin(values)]
+
+    return included_df, excluded_df
+
+def store_to_db(df, table_name):
+    if df.empty:
+        return
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cols = df.columns.tolist()
+    placeholders = ','.join([':' + str(i + 1) for i in range(len(cols))])
+    col_str = ','.join(cols)
+
+    try:
+        cursor.execute(f"DROP TABLE {table_name}")
+    except:
+        pass  # Table might not exist
+
+    create_stmt = f"""
+    CREATE TABLE {table_name} (
+        {', '.join([f'{col} VARCHAR2(4000)' for col in cols])}
+    )
+    """
+    cursor.execute(create_stmt)
+
+    insert_stmt = f"INSERT INTO {table_name} ({col_str}) VALUES ({placeholders})"
+    for _, row in df.iterrows():
+        cursor.execute(insert_stmt, row.tolist())
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+def reconcile(column, operator, value):
+    df_algo = fetch_table_data(ALGO_TABLE)
+    df_star = fetch_table_data(STAR_TABLE)
+
+    df_algo, excluded_algo = apply_exclusion(df_algo, "ALGO", column, operator, value)
+    df_star, excluded_star = apply_exclusion(df_star, "STAR", column, operator, value)
+
+    excluded_combined = pd.concat([excluded_algo, excluded_star], ignore_index=True)
+
+    algo_keys = extract_algo_keys(df_algo)
+    star_keys = extract_star_keys(df_star)
+
+    matched = []
+    unmatched = []
+
+    star_key_map = defaultdict(list)
+    for idx, key in enumerate(star_keys):
+        star_key_map[key].append(idx)
+
+    matched_star_indices = set()
+    matched_algo_indices = set()
+    star_key_used_count = defaultdict(int)
+
+    for i, algo_key in enumerate(algo_keys):
+        matching_star_idxs = star_key_map.get(algo_key, [])
+        if len(matching_star_idxs) == 1 and matching_star_idxs[0] not in matched_star_indices:
+            matched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": star_keys[matching_star_idxs[0]],
+                "Status": "Match"
+            })
+            matched_star_indices.add(matching_star_idxs[0])
+            matched_algo_indices.add(i)
+            star_key_used_count[star_keys[matching_star_idxs[0]]] += 1
+        elif len(matching_star_idxs) > 1:
+            unmatched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": "<Multiple STAR Match>",
+                "Status": "Mismatch - Multiple STAR Keys"
+            })
+            for idx in matching_star_idxs:
+                unmatched.append({
+                    "ALGO Key": "<No Match>",
+                    "STAR Key": star_keys[idx],
+                    "Status": "Mismatch - STAR Key in Multiple Match"
+                })
+            matched_algo_indices.add(i)
+            for idx in matching_star_idxs:
+                star_key_used_count[star_keys[idx]] += 1
+        else:
+            unmatched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": "<No Match>",
+                "Status": "Mismatch - No STAR Match"
+            })
+
+    for idx, star_key in enumerate(star_keys):
+        if idx not in matched_star_indices and star_key_used_count[star_key] == 0:
+            unmatched.append({
+                "ALGO Key": "<No Match>",
+                "STAR Key": star_key,
+                "Status": "Mismatch - No ALGO Match"
+            })
+
+    matched_df = pd.DataFrame(matched)
+    unmatched_df = pd.DataFrame(unmatched)
+
+    # Store results
+    store_to_db(matched_df, MATCHED_TABLE)
+    store_to_db(unmatched_df, UNMATCHED_TABLE)
+    store_to_db(excluded_combined, EXCLUDED_TABLE)
+
+    summary = (
+        f"Matched Records: {len(matched_df)}\n"
+        f"Unmatched Records: {len(unmatched_df)}\n"
+        f"Excluded Records: {len(excluded_combined)}"
+    )
+
+    return excluded_combined, matched_df, unmatched_df, summary
+
+# Gradio UI
+with gr.Blocks() as demo:
+    gr.Markdown("## Reconciliation App with Oracle DB Integration")
+
+    column = gr.Textbox(label="Exclusion Column")
+    operator = gr.Dropdown(["=", "!="], label="Operator")
+    value = gr.Textbox(label="Exclusion Value(s), comma-separated")
+    run_btn = gr.Button("Run Reconciliation")
+
+    excluded_out = gr.Dataframe(label="Excluded Records")
+    matched_out = gr.Dataframe(label="Matched Records")
+    unmatched_out = gr.Dataframe(label="Unmatched Records")
+    summary_out = gr.Textbox(label="Summary")
+
+    run_btn.click(
+        reconcile,
+        inputs=[column, operator, value],
+        outputs=[excluded_out, matched_out, unmatched_out, summary_out]
+    )
+
+demo.launch()
