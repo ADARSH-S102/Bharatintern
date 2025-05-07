@@ -178,13 +178,11 @@ demo.launch()
 ..............
 
 
-
 import pandas as pd
-import gradio as gr
 import oracledb
 from collections import defaultdict
 
-# DB config
+# DB configuration
 DB_CONFIG = {
     "user": "RAIDBA",
     "password": "1#Socrates UATDb Refresh#0",
@@ -194,7 +192,6 @@ DB_CONFIG = {
 # Table names
 ALGO_TABLE = "INITIAL_MARGIN_EODNEW_DATA"
 STAR_TABLE = "STARALGONEW_DATA"
-
 MATCHED_TABLE = "im_star_matched_records"
 UNMATCHED_TABLE = "im_star_unmatched_records"
 EXCLUDED_TABLE = "im_star_excluded_records"
@@ -224,9 +221,10 @@ def extract_star_keys(df):
         axis=1
     ).tolist()
 
-def apply_exclusion(df, file_type, column, operator, value):
+def apply_exclusion(df, column, operator, value):
     values = [v.strip() for v in value.split(',') if v.strip()]
     if column not in df.columns:
+        print(f"Warning: Column '{column}' not found in dataframe.")
         return df.copy(), pd.DataFrame()
 
     if operator == "=":
@@ -250,7 +248,7 @@ def store_to_db(df, table_name):
     try:
         cursor.execute(f"DROP TABLE {table_name}")
     except:
-        pass  # Table might not exist
+        pass  # Ignore if not exists
 
     create_stmt = f"""
     CREATE TABLE {table_name} (
@@ -270,8 +268,8 @@ def reconcile(column, operator, value):
     df_algo = fetch_table_data(ALGO_TABLE)
     df_star = fetch_table_data(STAR_TABLE)
 
-    df_algo, excluded_algo = apply_exclusion(df_algo, "ALGO", column, operator, value)
-    df_star, excluded_star = apply_exclusion(df_star, "STAR", column, operator, value)
+    df_algo, excluded_algo = apply_exclusion(df_algo, column, operator, value)
+    df_star, excluded_star = apply_exclusion(df_star, column, operator, value)
 
     excluded_combined = pd.concat([excluded_algo, excluded_star], ignore_index=True)
 
@@ -333,37 +331,21 @@ def reconcile(column, operator, value):
     matched_df = pd.DataFrame(matched)
     unmatched_df = pd.DataFrame(unmatched)
 
-    # Store results
     store_to_db(matched_df, MATCHED_TABLE)
     store_to_db(unmatched_df, UNMATCHED_TABLE)
     store_to_db(excluded_combined, EXCLUDED_TABLE)
 
-    summary = (
-        f"Matched Records: {len(matched_df)}\n"
-        f"Unmatched Records: {len(unmatched_df)}\n"
-        f"Excluded Records: {len(excluded_combined)}"
-    )
+    print("\nReconciliation Completed.")
+    print(f"Matched records stored in table: {MATCHED_TABLE}")
+    print(f"Unmatched records stored in table: {UNMATCHED_TABLE}")
+    print(f"Excluded records stored in table: {EXCLUDED_TABLE}")
+    print(f"Matched: {len(matched_df)} | Unmatched: {len(unmatched_df)} | Excluded: {len(excluded_combined)}")
 
-    return excluded_combined, matched_df, unmatched_df, summary
-
-# Gradio UI
-with gr.Blocks() as demo:
-    gr.Markdown("## Reconciliation App with Oracle DB Integration")
-
-    column = gr.Textbox(label="Exclusion Column")
-    operator = gr.Dropdown(["=", "!="], label="Operator")
-    value = gr.Textbox(label="Exclusion Value(s), comma-separated")
-    run_btn = gr.Button("Run Reconciliation")
-
-    excluded_out = gr.Dataframe(label="Excluded Records")
-    matched_out = gr.Dataframe(label="Matched Records")
-    unmatched_out = gr.Dataframe(label="Unmatched Records")
-    summary_out = gr.Textbox(label="Summary")
-
-    run_btn.click(
-        reconcile,
-        inputs=[column, operator, value],
-        outputs=[excluded_out, matched_out, unmatched_out, summary_out]
-    )
-
-demo.launch()
+# --------- MAIN ---------
+if __name__ == "__main__":
+    print("=== Reconciliation Tool ===")
+    col = input("Enter column name for exclusion: ").strip()
+    op = input("Enter operator (= or !=): ").strip()
+    val = input("Enter value(s) to exclude (comma-separated): ").strip()
+    reconcile(col, op, val)
+    
