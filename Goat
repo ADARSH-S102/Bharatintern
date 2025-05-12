@@ -162,3 +162,65 @@ public class ReconciliationService {
         return nonExcludedStar;
     }
 }
+
+
+
+
+
+
+
+
+
+
+package com.example.demo.controller;
+
+import com.example.demo.model.ReconciliationResult;
+import com.example.demo.service.ReconciliationService;
+import org.apache.commons.csv.CSVRecord;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.*;
+
+@RestController
+@RequestMapping("/reconcile")
+public class ReconciliationController {
+
+    @Autowired
+    private ReconciliationService reconciliationService;
+
+    private final String algoPath = "C:\\Users\\59944\\OneDrive\\Desktop\\test\\Initial_Margin_800_28258387.csv";
+    private final String starPath = "C:\\Users\\59944\\OneDrive\\Desktop\\test\\STARALGONEM 3428 20250387 1.csv";
+
+    @GetMapping("/exclude")
+    public ReconciliationResult exclude() {
+        return reconciliationService.excludeAndTransform(algoPath, starPath);
+    }
+
+    @GetMapping("/match/{type}")
+    public ReconciliationResult match(@PathVariable String type) {
+        return reconciliationService.match(type);
+    }
+
+    @GetMapping("/nonexcluded")
+    public Map<String, List<Map<String, String>>> getNonExcludedRecords() {
+        List<CSVRecord> algoRecords = reconciliationService.getNonExcludedAlgo();
+        List<CSVRecord> starRecords = reconciliationService.getNonExcludedStar();
+
+        List<Map<String, String>> algoData = new ArrayList<>();
+        for (CSVRecord record : algoRecords) {
+            algoData.add(record.toMap());
+        }
+
+        List<Map<String, String>> starData = new ArrayList<>();
+        for (CSVRecord record : starRecords) {
+            starData.add(record.toMap());
+        }
+
+        Map<String, List<Map<String, String>>> result = new HashMap<>();
+        result.put("nonExcludedAlgo", algoData);
+        result.put("nonExcludedStar", starData);
+
+        return result;
+    }
+}
