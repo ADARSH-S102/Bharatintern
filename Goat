@@ -1,3 +1,39 @@
+package com.example.demo.controller;
+
+import com.example.demo.model.ReconciliationResult;
+import com.example.demo.service.ReconciliationService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/reconcile")
+public class ReconciliationController {
+
+    @Autowired
+    private ReconciliationService reconciliationService;
+
+    private final String algoPath = "C:\\Users\\59944\\OneDrive\\Desktop\\test\\Initial_Margin_800_28258387.csv";
+    private final String starPath = "C:\\Users\\59944\\OneDrive\\Desktop\\test\\STARALGONEM 3428 20250387 1.csv";
+
+    @GetMapping("/exclude")
+    public ReconciliationResult exclude() {
+        return reconciliationService.excludeAndTransform(algoPath, starPath);
+    }
+
+    @GetMapping("/match/{type}")
+    public ReconciliationResult match(@PathVariable String type) {
+        return reconciliationService.match(type);
+    }
+}
+
+
+
+
+
+
+
+
+
 Here are the updated Java files with all necessary changes. Each one is provided in copy-paste-friendly code blocks.
 
 ---
