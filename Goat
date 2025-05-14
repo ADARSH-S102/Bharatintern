@@ -1,3 +1,126 @@
+import pandas as pd
+import gradio as gr
+
+# Loaders
+def load_file(file):
+    try:
+        df = pd.read_csv(file).astype(str)
+        return df, gr.update(choices=list(df.columns), value=None)
+    except Exception:
+        return pd.DataFrame(), gr.update(choices=[])
+
+# Reconciliation logic
+def reconcile_with_exclusion(algo_df, star_df, algo_key, star_key, file_type, column, operator, value):
+    df_algo = algo_df.copy()
+    df_star = star_df.copy()
+    excluded_df = pd.DataFrame()
+
+    values = [v.strip() for v in value.split(',') if v.strip()]
+
+    # Apply exclusion
+    if file_type == "ALGO" and column in df_algo.columns:
+        if operator == "=":
+            excluded_df = df_algo[df_algo[column].isin(values)]
+            df_algo = df_algo[~df_algo[column].isin(values)]
+        else:
+            excluded_df = df_algo[~df_algo[column].isin(values)]
+            df_algo = df_algo[df_algo[column].isin(values)]
+
+    elif file_type == "STAR" and column in df_star.columns:
+        if operator == "=":
+            excluded_df = df_star[df_star[column].isin(values)]
+            df_star = df_star[~df_star[column].isin(values)]
+        else:
+            excluded_df = df_star[~df_star[column].isin(values)]
+            df_star = df_star[df_star[column].isin(values)]
+
+    # Matching logic based on selected keys
+    df_algo['__key__'] = df_algo[algo_key].str.strip().str.replace(" ", "")
+    df_star['__key__'] = df_star[star_key].str.strip().str.replace(" ", "")
+
+    matched_df = pd.merge(df_algo, df_star, on="__key__", how="inner", suffixes=('_ALGO', '_STAR'))
+    unmatched_algo = df_algo[~df_algo['__key__'].isin(matched_df['__key__'])]
+    unmatched_star = df_star[~df_star['__key__'].isin(matched_df['__key__'])]
+
+    unmatched_df = pd.concat([
+        unmatched_algo.assign(Status="Mismatch - No STAR Match"),
+        unmatched_star.assign(Status="Mismatch - No ALGO Match")
+    ])
+
+    summary = (
+        f"Matched Records: {len(matched_df)}\n"
+        f"Unmatched Records: {len(unmatched_df)}\n"
+        f"Excluded Records: {len(excluded_df)}"
+    )
+
+    return excluded_df.drop(columns="__key__", errors='ignore'), matched_df.drop(columns="__key__", errors='ignore'), unmatched_df.drop(columns="__key__", errors='ignore'), summary
+
+# Gradio UI
+with gr.Blocks() as demo:
+    gr.Markdown("## Reconciliation App with Column-Based Matching and Exclusion")
+
+    algo_df_state = gr.State(pd.DataFrame())
+    star_df_state = gr.State(pd.DataFrame())
+
+    with gr.Row():
+        algo_file = gr.File(label="Upload ALGO CSV")
+        star_file = gr.File(label="Upload STAR CSV")
+
+    with gr.Row():
+        algo_key_col = gr.Dropdown(label="ALGO Key Column")
+        star_key_col = gr.Dropdown(label="STAR Key Column")
+
+    with gr.Row():
+        file_selector = gr.Dropdown(["ALGO", "STAR"], label="Select File for Exclusion Rule")
+        column_selector = gr.Dropdown(label="Column Name")
+        operator_input = gr.Dropdown(["=", "!="], label="Operator")
+        value_input = gr.Textbox(label="Value (comma-separated)")
+
+    run_btn = gr.Button("Run Reconciliation")
+
+    excluded_out = gr.Dataframe(label="Excluded Records")
+    matched_out = gr.Dataframe(label="Matched Records")
+    unmatched_out = gr.Dataframe(label="Unmatched Records")
+    summary_out = gr.Textbox(label="Summary")
+
+    algo_file.change(load_file, inputs=algo_file, outputs=[algo_df_state, algo_key_col])
+    star_file.change(load_file, inputs=star_file, outputs=[star_df_state, star_key_col])
+    file_selector.change(
+        lambda ft, a_df, s_df: gr.update(choices=list(a_df.columns) if ft == "ALGO" else list(s_df.columns)),
+        inputs=[file_selector, algo_df_state, star_df_state],
+        outputs=column_selector
+    )
+
+    run_btn.click(
+        reconcile_with_exclusion,
+        inputs=[algo_df_state, star_df_state, algo_key_col, star_key_col, file_selector, column_selector, operator_input, value_input],
+        outputs=[excluded_out, matched_out, unmatched_out, summary_out]
+    )
+
+demo.launch()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Here is the complete set of Java files in copy code format:
 
 
