@@ -1,51 +1,106 @@
 import pandas as pd
 import gradio as gr
+from collections import defaultdict
 
-# Loaders
+# Load file and return dataframe and column names
 def load_file(file):
     try:
         df = pd.read_csv(file).astype(str)
-        return df, gr.update(choices=list(df.columns), value=None)
-    except Exception:
-        return pd.DataFrame(), gr.update(choices=[])
+        return df, gr.update(choices=list(df.columns), interactive=True)
+    except Exception as e:
+        return pd.DataFrame(), gr.update(choices=[], interactive=False)
 
-# Reconciliation logic
-def reconcile_with_exclusion(algo_df, star_df, algo_key, star_key, file_type, column, operator, value):
+# Update column dropdown when file is chosen for exclusion
+def update_column_dropdown(file_type, algo_df, star_df):
+    if file_type == "ALGO":
+        return gr.update(choices=list(algo_df.columns), interactive=True)
+    elif file_type == "STAR":
+        return gr.update(choices=list(star_df.columns), interactive=True)
+    return gr.update(choices=[], interactive=False)
+
+# Reconciliation with exclusion
+def reconcile(algo_df, star_df, algo_key_col, star_key_col,
+              file_type, excl_column, operator, excl_value):
+    
     df_algo = algo_df.copy()
     df_star = star_df.copy()
     excluded_df = pd.DataFrame()
 
-    values = [v.strip() for v in value.split(',') if v.strip()]
+    values = [v.strip() for v in excl_value.split(',') if v.strip()]
 
-    # Apply exclusion
-    if file_type == "ALGO" and column in df_algo.columns:
+    if file_type == "ALGO" and excl_column in df_algo.columns:
         if operator == "=":
-            excluded_df = df_algo[df_algo[column].isin(values)]
-            df_algo = df_algo[~df_algo[column].isin(values)]
+            excluded_df = df_algo[df_algo[excl_column].isin(values)]
+            df_algo = df_algo[~df_algo[excl_column].isin(values)]
         else:
-            excluded_df = df_algo[~df_algo[column].isin(values)]
-            df_algo = df_algo[df_algo[column].isin(values)]
+            excluded_df = df_algo[~df_algo[excl_column].isin(values)]
+            df_algo = df_algo[df_algo[excl_column].isin(values)]
 
-    elif file_type == "STAR" and column in df_star.columns:
+    elif file_type == "STAR" and excl_column in df_star.columns:
         if operator == "=":
-            excluded_df = df_star[df_star[column].isin(values)]
-            df_star = df_star[~df_star[column].isin(values)]
+            excluded_df = df_star[df_star[excl_column].isin(values)]
+            df_star = df_star[~df_star[excl_column].isin(values)]
         else:
-            excluded_df = df_star[~df_star[column].isin(values)]
-            df_star = df_star[df_star[column].isin(values)]
+            excluded_df = df_star[~df_star[excl_column].isin(values)]
+            df_star = df_star[df_star[excl_column].isin(values)]
 
-    # Matching logic based on selected keys
-    df_algo['__key__'] = df_algo[algo_key].str.strip().str.replace(" ", "")
-    df_star['__key__'] = df_star[star_key].str.strip().str.replace(" ", "")
+    algo_keys = df_algo[algo_key_col].astype(str).str.strip().tolist()
+    star_keys = df_star[star_key_col].astype(str).str.strip().tolist()
 
-    matched_df = pd.merge(df_algo, df_star, on="__key__", how="inner", suffixes=('_ALGO', '_STAR'))
-    unmatched_algo = df_algo[~df_algo['__key__'].isin(matched_df['__key__'])]
-    unmatched_star = df_star[~df_star['__key__'].isin(matched_df['__key__'])]
+    matched = []
+    unmatched = []
 
-    unmatched_df = pd.concat([
-        unmatched_algo.assign(Status="Mismatch - No STAR Match"),
-        unmatched_star.assign(Status="Mismatch - No ALGO Match")
-    ])
+    star_key_map = defaultdict(list)
+    for idx, key in enumerate(star_keys):
+        star_key_map[key].append(idx)
+
+    matched_star_indices = set()
+    matched_algo_indices = set()
+    star_key_used_count = defaultdict(int)
+
+    for i, algo_key in enumerate(algo_keys):
+        matching_star_idxs = star_key_map.get(algo_key, [])
+        if len(matching_star_idxs) == 1 and matching_star_idxs[0] not in matched_star_indices:
+            matched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": star_keys[matching_star_idxs[0]],
+                "Status": "Match"
+            })
+            matched_star_indices.add(matching_star_idxs[0])
+            matched_algo_indices.add(i)
+            star_key_used_count[star_keys[matching_star_idxs[0]]] += 1
+        elif len(matching_star_idxs) > 1:
+            unmatched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": "<Multiple STAR Match>",
+                "Status": "Mismatch - Multiple STAR Keys"
+            })
+            for idx in matching_star_idxs:
+                unmatched.append({
+                    "ALGO Key": "<No Match>",
+                    "STAR Key": star_keys[idx],
+                    "Status": "Mismatch - STAR Key in Multiple Match"
+                })
+            matched_algo_indices.add(i)
+            for idx in matching_star_idxs:
+                star_key_used_count[star_keys[idx]] += 1
+        else:
+            unmatched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": "<No Match>",
+                "Status": "Mismatch - No STAR Match"
+            })
+
+    for idx, star_key in enumerate(star_keys):
+        if idx not in matched_star_indices and star_key_used_count[star_key] == 0:
+            unmatched.append({
+                "ALGO Key": "<No Match>",
+                "STAR Key": star_key,
+                "Status": "Mismatch - No ALGO Match"
+            })
+
+    matched_df = pd.DataFrame(matched)
+    unmatched_df = pd.DataFrame(unmatched)
 
     summary = (
         f"Matched Records: {len(matched_df)}\n"
@@ -53,11 +108,11 @@ def reconcile_with_exclusion(algo_df, star_df, algo_key, star_key, file_type, co
         f"Excluded Records: {len(excluded_df)}"
     )
 
-    return excluded_df.drop(columns="__key__", errors='ignore'), matched_df.drop(columns="__key__", errors='ignore'), unmatched_df.drop(columns="__key__", errors='ignore'), summary
+    return excluded_df, matched_df, unmatched_df, summary
 
 # Gradio UI
 with gr.Blocks() as demo:
-    gr.Markdown("## Reconciliation App with Column-Based Matching and Exclusion")
+    gr.Markdown("## Reconciliation App with Exclusion and Column-Based Matching")
 
     algo_df_state = gr.State(pd.DataFrame())
     star_df_state = gr.State(pd.DataFrame())
@@ -67,14 +122,14 @@ with gr.Blocks() as demo:
         star_file = gr.File(label="Upload STAR CSV")
 
     with gr.Row():
-        algo_key_col = gr.Dropdown(label="ALGO Key Column")
-        star_key_col = gr.Dropdown(label="STAR Key Column")
+        algo_key_col = gr.Dropdown(label="ALGO Key Column", interactive=False)
+        star_key_col = gr.Dropdown(label="STAR Key Column", interactive=False)
 
     with gr.Row():
-        file_selector = gr.Dropdown(["ALGO", "STAR"], label="Select File for Exclusion Rule")
-        column_selector = gr.Dropdown(label="Column Name")
+        file_selector = gr.Dropdown(["ALGO", "STAR"], label="File for Exclusion Rule")
+        column_selector = gr.Dropdown(label="Exclusion Column")
         operator_input = gr.Dropdown(["=", "!="], label="Operator")
-        value_input = gr.Textbox(label="Value (comma-separated)")
+        value_input = gr.Textbox(label="Value(s), comma-separated")
 
     run_btn = gr.Button("Run Reconciliation")
 
@@ -83,21 +138,23 @@ with gr.Blocks() as demo:
     unmatched_out = gr.Dataframe(label="Unmatched Records")
     summary_out = gr.Textbox(label="Summary")
 
-    algo_file.change(load_file, inputs=algo_file, outputs=[algo_df_state, algo_key_col])
-    star_file.change(load_file, inputs=star_file, outputs=[star_df_state, star_key_col])
-    file_selector.change(
-        lambda ft, a_df, s_df: gr.update(choices=list(a_df.columns) if ft == "ALGO" else list(s_df.columns)),
-        inputs=[file_selector, algo_df_state, star_df_state],
-        outputs=column_selector
-    )
+    algo_file.change(fn=load_file, inputs=algo_file, outputs=[algo_df_state, algo_key_col])
+    star_file.change(fn=load_file, inputs=star_file, outputs=[star_df_state, star_key_col])
 
-    run_btn.click(
-        reconcile_with_exclusion,
-        inputs=[algo_df_state, star_df_state, algo_key_col, star_key_col, file_selector, column_selector, operator_input, value_input],
-        outputs=[excluded_out, matched_out, unmatched_out, summary_out]
-    )
+    file_selector.change(fn=update_column_dropdown,
+                         inputs=[file_selector, algo_df_state, star_df_state],
+                         outputs=column_selector)
+
+    run_btn.click(fn=reconcile,
+                  inputs=[algo_df_state, star_df_state,
+                          algo_key_col, star_key_col,
+                          file_selector, column_selector,
+                          operator_input, value_input],
+                  outputs=[excluded_out, matched_out, unmatched_out, summary_out])
 
 demo.launch()
+
+    
 
 
 
