@@ -1,8 +1,8 @@
- import pandas as pd
+import pandas as pd
 import gradio as gr
 from collections import defaultdict
 
-# Global DataFrames (simplifies debugging vs using gr.State)
+# Global DataFrames
 algo_df = pd.DataFrame()
 star_df = pd.DataFrame()
 
@@ -23,7 +23,7 @@ def get_exclusion_columns(file_type):
         return gr.update(choices=star_df.columns.tolist(), value=None)
     return gr.update(choices=[], value=None)
 
-def reconcile(algo_key_col, star_key_col, file_type, exclusion_col, operator, value):
+def reconcile(algo_key_col, star_key_col, file_type, exclusion_col, operator, value, match_type):
     global algo_df, star_df
     if algo_df.empty or star_df.empty:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), "Missing file(s)"
@@ -32,6 +32,7 @@ def reconcile(algo_key_col, star_key_col, file_type, exclusion_col, operator, va
     df_star = star_df.copy()
     excluded_df = pd.DataFrame()
 
+    # Apply exclusion
     values = [v.strip() for v in value.split(",") if v.strip()]
     if file_type == "ALGO" and exclusion_col in df_algo.columns:
         if operator == "=":
@@ -54,35 +55,76 @@ def reconcile(algo_key_col, star_key_col, file_type, exclusion_col, operator, va
     matched = []
     unmatched = []
 
+    # Build key-to-index mappings
     star_key_map = defaultdict(list)
-    for idx, key in enumerate(star_keys):
-        star_key_map[key].append(idx)
+    algo_key_map = defaultdict(list)
+    for i, key in enumerate(star_keys):
+        star_key_map[key].append(i)
+    for i, key in enumerate(algo_keys):
+        algo_key_map[key].append(i)
 
-    matched_star_indices = set()
-    matched_algo_indices = set()
-    star_key_used_count = defaultdict(int)
+    matched_star = set()
+    matched_algo = set()
 
-    for i, algo_key in enumerate(algo_keys):
-        matching_star_idxs = star_key_map.get(algo_key, [])
-        if len(matching_star_idxs) == 1 and matching_star_idxs[0] not in matched_star_indices:
-            matched.append({"ALGO Key": algo_key, "STAR Key": star_keys[matching_star_idxs[0]], "Status": "Match"})
-            matched_star_indices.add(matching_star_idxs[0])
-            matched_algo_indices.add(i)
-        elif len(matching_star_idxs) > 1:
-            unmatched.append({"ALGO Key": algo_key, "STAR Key": "<Multiple>", "Status": "Mismatch - Multiple"})
-        else:
-            unmatched.append({"ALGO Key": algo_key, "STAR Key": "<None>", "Status": "Mismatch - No Match"})
+    for algo_key, a_indices in algo_key_map.items():
+        s_indices = star_key_map.get(algo_key, [])
 
-    for idx, star_key in enumerate(star_keys):
-        if idx not in matched_star_indices:
-            unmatched.append({"ALGO Key": "<None>", "STAR Key": star_key, "Status": "Unmatched STAR"})
+        if match_type == "Strict One-to-One":
+            if len(a_indices) == 1 and len(s_indices) == 1:
+                matched.append({
+                    "ALGO Key": algo_key,
+                    "STAR Key": algo_key,
+                    "Status": "Match 1-1"
+                })
+                matched_algo.update(a_indices)
+                matched_star.update(s_indices)
+
+        elif match_type == "One-to-Many":
+            if len(a_indices) == 1 and len(s_indices) > 1:
+                matched.append({
+                    "ALGO Key": algo_key,
+                    "STAR Key": f"{len(s_indices)} matches",
+                    "Status": "Match 1-Many"
+                })
+                matched_algo.update(a_indices)
+                matched_star.update(s_indices)
+
+        elif match_type == "Many-to-One":
+            if len(a_indices) > 1 and len(s_indices) == 1:
+                matched.append({
+                    "ALGO Key": f"{len(a_indices)} matches",
+                    "STAR Key": algo_key,
+                    "Status": "Match Many-1"
+                })
+                matched_algo.update(a_indices)
+                matched_star.update(s_indices)
+
+        elif match_type == "Many-to-Many":
+            if len(a_indices) > 0 and len(s_indices) > 0:
+                matched.append({
+                    "ALGO Key": f"{len(a_indices)} match(es)",
+                    "STAR Key": f"{len(s_indices)} match(es)",
+                    "Status": "Match Many-Many"
+                })
+                matched_algo.update(a_indices)
+                matched_star.update(s_indices)
+
+    # Unmatched ALGO
+    for i, key in enumerate(algo_keys):
+        if i not in matched_algo:
+            unmatched.append({"ALGO Key": key, "STAR Key": "<None>", "Status": "Unmatched ALGO"})
+
+    # Unmatched STAR
+    for i, key in enumerate(star_keys):
+        if i not in matched_star:
+            unmatched.append({"ALGO Key": "<None>", "STAR Key": key, "Status": "Unmatched STAR"})
 
     return pd.DataFrame(excluded_df), pd.DataFrame(matched), pd.DataFrame(unmatched), (
         f"Excluded: {len(excluded_df)}\nMatched: {len(matched)}\nUnmatched: {len(unmatched)}"
     )
 
 with gr.Blocks() as demo:
-    gr.Markdown("### File Reconciliation Tool")
+    gr.Markdown("### File Reconciliation Tool with Matching Type")
 
     with gr.Row():
         algo_file = gr.File(label="Upload ALGO CSV")
@@ -98,6 +140,11 @@ with gr.Blocks() as demo:
         operator = gr.Dropdown(["=", "!="], label="Operator")
         value = gr.Textbox(label="Value(s), comma-separated")
 
+    match_type = gr.Dropdown(
+        ["Strict One-to-One", "One-to-Many", "Many-to-One", "Many-to-Many"],
+        label="Matching Type"
+    )
+
     run = gr.Button("Reconcile")
 
     excluded_df = gr.Dataframe(label="Excluded")
@@ -111,7 +158,7 @@ with gr.Blocks() as demo:
 
     run.click(
         reconcile,
-        inputs=[algo_key, star_key, file_type, exclusion_column, operator, value],
+        inputs=[algo_key, star_key, file_type, exclusion_column, operator, value, match_type],
         outputs=[excluded_df, matched_df, unmatched_df, summary]
     )
 
