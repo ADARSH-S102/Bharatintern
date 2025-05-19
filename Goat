@@ -2,6 +2,214 @@ import pandas as pd
 import gradio as gr
 from collections import defaultdict
 
+# Helper: Apply update rules
+def apply_update_rules(df, update_rules):
+    for rule in update_rules:
+        column = rule.get("column")
+        find = rule.get("find")
+        replace = rule.get("replace")
+        if column in df.columns:
+            df[column] = df[column].astype(str).str.replace(find, replace, regex=False)
+    return df
+
+# Key extraction
+def extract_algo_keys(df):
+    return df['Agreement_name'].astype(str).apply(
+        lambda x: x.replace(" ", "").strip()
+    ).tolist()
+
+def extract_star_keys(df):
+    return df.apply(
+        lambda row: (str(row.get('CRDS Party Code', '')).strip().replace(" ", "") +
+                     "3" +
+                     str(row.get('Post Direction', '')).strip().replace(" ", "")),
+        axis=1
+    ).tolist()
+
+# File loaders
+def load_algo_file(file):
+    try:
+        df = pd.read_csv(file).astype(str)
+        return df, gr.update(choices=list(df.columns))
+    except Exception as e:
+        return pd.DataFrame(), gr.update(choices=[])
+
+def load_star_file(file):
+    try:
+        df = pd.read_csv(file).astype(str)
+        return df, gr.update(choices=list(df.columns))
+    except Exception as e:
+        return pd.DataFrame(), gr.update(choices=[])
+
+# Dropdown updater
+def update_column_dropdown(file_type, algo_df, star_df):
+    if file_type == "ALGO":
+        return gr.update(choices=list(algo_df.columns))
+    elif file_type == "STAR":
+        return gr.update(choices=list(star_df.columns))
+    return gr.update(choices=[])
+
+# Main reconciliation
+def reconcile_with_exclusion_and_update(algo_df, star_df, file_type, column, operator, value, update_column, find_val, replace_val):
+    # Apply update rules
+    update_rules = []
+    if update_column and find_val:
+        update_rules.append({"column": update_column, "find": find_val, "replace": replace_val})
+    algo_df = apply_update_rules(algo_df.copy(), update_rules)
+    star_df = apply_update_rules(star_df.copy(), update_rules)
+
+    excluded_df = pd.DataFrame()
+    values = [v.strip() for v in value.split(',') if v.strip()]
+
+    if file_type == "ALGO" and column in algo_df.columns:
+        if operator == "=":
+            excluded_df = algo_df[algo_df[column].isin(values)]
+            algo_df = algo_df[~algo_df[column].isin(values)]
+        else:
+            excluded_df = algo_df[~algo_df[column].isin(values)]
+            algo_df = algo_df[algo_df[column].isin(values)]
+    elif file_type == "STAR" and column in star_df.columns:
+        if operator == "=":
+            excluded_df = star_df[star_df[column].isin(values)]
+            star_df = star_df[~star_df[column].isin(values)]
+        else:
+            excluded_df = star_df[~star_df[column].isin(values)]
+            star_df = star_df[star_df[column].isin(values)]
+
+    algo_keys = extract_algo_keys(algo_df)
+    star_keys = extract_star_keys(star_df)
+
+    matched = []
+    unmatched = []
+
+    star_key_map = defaultdict(list)
+    for idx, key in enumerate(star_keys):
+        star_key_map[key].append(idx)
+
+    matched_star_indices = set()
+    matched_algo_indices = set()
+    star_key_used_count = defaultdict(int)
+
+    for i, algo_key in enumerate(algo_keys):
+        matching_star_idxs = star_key_map.get(algo_key, [])
+        if len(matching_star_idxs) == 1 and matching_star_idxs[0] not in matched_star_indices:
+            matched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": star_keys[matching_star_idxs[0]],
+                "Status": "Match"
+            })
+            matched_star_indices.add(matching_star_idxs[0])
+            matched_algo_indices.add(i)
+            star_key_used_count[star_keys[matching_star_idxs[0]]] += 1
+        elif len(matching_star_idxs) > 1:
+            unmatched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": "<Multiple STAR Match>",
+                "Status": "Mismatch - Multiple STAR Keys"
+            })
+            for idx in matching_star_idxs:
+                unmatched.append({
+                    "ALGO Key": "<No Match>",
+                    "STAR Key": star_keys[idx],
+                    "Status": "Mismatch - STAR Key in Multiple Match"
+                })
+            matched_algo_indices.add(i)
+            for idx in matching_star_idxs:
+                star_key_used_count[star_keys[idx]] += 1
+        else:
+            unmatched.append({
+                "ALGO Key": algo_key,
+                "STAR Key": "<No Match>",
+                "Status": "Mismatch - No STAR Match"
+            })
+
+    for idx, star_key in enumerate(star_keys):
+        if idx not in matched_star_indices and star_key_used_count[star_key] == 0:
+            unmatched.append({
+                "ALGO Key": "<No Match>",
+                "STAR Key": star_key,
+                "Status": "Mismatch - No ALGO Match"
+            })
+
+    matched_df = pd.DataFrame(matched)
+    unmatched_df = pd.DataFrame(unmatched)
+
+    summary = (
+        f"Matched Records: {len(matched_df)}\n"
+        f"Unmatched Records: {len(unmatched_df)}\n"
+        f"Excluded Records: {len(excluded_df)}"
+    )
+
+    return excluded_df, matched_df, unmatched_df, summary
+
+# Gradio UI
+with gr.Blocks() as demo:
+    gr.Markdown("## Reconciliation App with Exclusion + Update Rule")
+
+    algo_df_state = gr.State(pd.DataFrame())
+    star_df_state = gr.State(pd.DataFrame())
+
+    with gr.Row():
+        algo_file = gr.File(label="Upload ALGO CSV")
+        star_file = gr.File(label="Upload STAR CSV")
+
+    with gr.Row():
+        file_selector = gr.Dropdown(["ALGO", "STAR"], label="Select File for Exclusion Rule")
+        column_selector = gr.Dropdown(label="Column Name")
+        operator_input = gr.Dropdown(["=", "!="], label="Operator")
+        value_input = gr.Textbox(label="Exclusion Value(s), comma-separated")
+
+    with gr.Row():
+        update_column = gr.Textbox(label="Update Column")
+        find_val = gr.Textbox(label="Find (e.g. _rimr)")
+        replace_val = gr.Textbox(label="Replace With (e.g. 3cr)")
+
+    run_btn = gr.Button("Run Reconciliation")
+
+    excluded_out = gr.Dataframe(label="Excluded Records")
+    matched_out = gr.Dataframe(label="Matched Records")
+    unmatched_out = gr.Dataframe(label="Unmatched Records")
+    summary_out = gr.Textbox(label="Summary")
+
+    algo_file.change(fn=load_algo_file, inputs=algo_file, outputs=[algo_df_state, column_selector])
+    star_file.change(fn=load_star_file, inputs=star_file, outputs=[star_df_state, column_selector])
+    file_selector.change(update_column_dropdown,
+                         inputs=[file_selector, algo_df_state, star_df_state],
+                         outputs=column_selector)
+
+    run_btn.click(
+        reconcile_with_exclusion_and_update,
+        inputs=[algo_df_state, star_df_state, file_selector, column_selector, operator_input, value_input,
+                update_column, find_val, replace_val],
+        outputs=[excluded_out, matched_out, unmatched_out, summary_out]
+    )
+
+demo.launch()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import pandas as pd
+import gradio as gr
+from collections import defaultdict
+
 # Load CSVs
 def load_csv(file):
     try:
