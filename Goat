@@ -2,21 +2,15 @@ import pandas as pd
 import gradio as gr
 from collections import defaultdict
 
-# Helper: Apply update rules
-def apply_update_rules(df, update_rules):
-    for rule in update_rules:
-        column = rule.get("column")
-        find = rule.get("find")
-        replace = rule.get("replace")
-        if column in df.columns:
-            df[column] = df[column].astype(str).str.replace(find, replace, regex=False)
+# Helper: Apply update rule
+def apply_update_rule(df, column, find_val, replace_val):
+    if column and find_val and column in df.columns:
+        df[column] = df[column].astype(str).str.replace(find_val, replace_val, regex=False)
     return df
 
 # Key extraction
 def extract_algo_keys(df):
-    return df['Agreement_name'].astype(str).apply(
-        lambda x: x.replace(" ", "").strip()
-    ).tolist()
+    return df['Agreement_name'].astype(str).apply(lambda x: x.replace(" ", "").strip()).tolist()
 
 def extract_star_keys(df):
     return df.apply(
@@ -26,20 +20,20 @@ def extract_star_keys(df):
         axis=1
     ).tolist()
 
-# File loaders
+# Loaders
 def load_algo_file(file):
     try:
         df = pd.read_csv(file).astype(str)
-        return df, gr.update(choices=list(df.columns))
-    except Exception as e:
-        return pd.DataFrame(), gr.update(choices=[])
+        return df, gr.update(choices=list(df.columns)), gr.update(choices=list(df.columns))
+    except:
+        return pd.DataFrame(), gr.update(choices=[]), gr.update(choices=[])
 
 def load_star_file(file):
     try:
         df = pd.read_csv(file).astype(str)
-        return df, gr.update(choices=list(df.columns))
-    except Exception as e:
-        return pd.DataFrame(), gr.update(choices=[])
+        return df, gr.update(choices=list(df.columns)), gr.update(choices=list(df.columns))
+    except:
+        return pd.DataFrame(), gr.update(choices=[]), gr.update(choices=[])
 
 # Dropdown updater
 def update_column_dropdown(file_type, algo_df, star_df):
@@ -49,72 +43,66 @@ def update_column_dropdown(file_type, algo_df, star_df):
         return gr.update(choices=list(star_df.columns))
     return gr.update(choices=[])
 
-# Main reconciliation
-def reconcile_with_exclusion_and_update(algo_df, star_df, file_type, column, operator, value, update_column, find_val, replace_val):
-    # Apply update rules
-    update_rules = []
-    if update_column and find_val:
-        update_rules.append({"column": update_column, "find": find_val, "replace": replace_val})
-    algo_df = apply_update_rules(algo_df.copy(), update_rules)
-    star_df = apply_update_rules(star_df.copy(), update_rules)
+# Reconciliation logic
+def reconcile_with_updates_and_exclusion(
+    algo_df, star_df, file_type, column, operator, value,
+    update_col_algo, find_algo, replace_algo,
+    update_col_star, find_star, replace_star
+):
+    df_algo = apply_update_rule(algo_df.copy(), update_col_algo, find_algo, replace_algo)
+    df_star = apply_update_rule(star_df.copy(), update_col_star, find_star, replace_star)
 
     excluded_df = pd.DataFrame()
     values = [v.strip() for v in value.split(',') if v.strip()]
 
-    if file_type == "ALGO" and column in algo_df.columns:
+    if file_type == "ALGO" and column in df_algo.columns:
         if operator == "=":
-            excluded_df = algo_df[algo_df[column].isin(values)]
-            algo_df = algo_df[~algo_df[column].isin(values)]
+            excluded_df = df_algo[df_algo[column].isin(values)]
+            df_algo = df_algo[~df_algo[column].isin(values)]
         else:
-            excluded_df = algo_df[~algo_df[column].isin(values)]
-            algo_df = algo_df[algo_df[column].isin(values)]
-    elif file_type == "STAR" and column in star_df.columns:
+            excluded_df = df_algo[~df_algo[column].isin(values)]
+            df_algo = df_algo[df_algo[column].isin(values)]
+    elif file_type == "STAR" and column in df_star.columns:
         if operator == "=":
-            excluded_df = star_df[star_df[column].isin(values)]
-            star_df = star_df[~star_df[column].isin(values)]
+            excluded_df = df_star[df_star[column].isin(values)]
+            df_star = df_star[~df_star[column].isin(values)]
         else:
-            excluded_df = star_df[~star_df[column].isin(values)]
-            star_df = star_df[star_df[column].isin(values)]
+            excluded_df = df_star[~df_star[column].isin(values)]
+            df_star = df_star[df_star[column].isin(values)]
 
-    algo_keys = extract_algo_keys(algo_df)
-    star_keys = extract_star_keys(star_df)
+    algo_keys = extract_algo_keys(df_algo)
+    star_keys = extract_star_keys(df_star)
 
-    matched = []
-    unmatched = []
-
+    matched, unmatched = [], []
     star_key_map = defaultdict(list)
+    matched_star_indices = set()
+    star_key_used_count = defaultdict(int)
+
     for idx, key in enumerate(star_keys):
         star_key_map[key].append(idx)
 
-    matched_star_indices = set()
-    matched_algo_indices = set()
-    star_key_used_count = defaultdict(int)
-
     for i, algo_key in enumerate(algo_keys):
-        matching_star_idxs = star_key_map.get(algo_key, [])
-        if len(matching_star_idxs) == 1 and matching_star_idxs[0] not in matched_star_indices:
+        match_idxs = star_key_map.get(algo_key, [])
+        if len(match_idxs) == 1 and match_idxs[0] not in matched_star_indices:
             matched.append({
                 "ALGO Key": algo_key,
-                "STAR Key": star_keys[matching_star_idxs[0]],
+                "STAR Key": star_keys[match_idxs[0]],
                 "Status": "Match"
             })
-            matched_star_indices.add(matching_star_idxs[0])
-            matched_algo_indices.add(i)
-            star_key_used_count[star_keys[matching_star_idxs[0]]] += 1
-        elif len(matching_star_idxs) > 1:
+            matched_star_indices.add(match_idxs[0])
+            star_key_used_count[star_keys[match_idxs[0]]] += 1
+        elif len(match_idxs) > 1:
             unmatched.append({
                 "ALGO Key": algo_key,
                 "STAR Key": "<Multiple STAR Match>",
                 "Status": "Mismatch - Multiple STAR Keys"
             })
-            for idx in matching_star_idxs:
+            for idx in match_idxs:
                 unmatched.append({
                     "ALGO Key": "<No Match>",
                     "STAR Key": star_keys[idx],
                     "Status": "Mismatch - STAR Key in Multiple Match"
                 })
-            matched_algo_indices.add(i)
-            for idx in matching_star_idxs:
                 star_key_used_count[star_keys[idx]] += 1
         else:
             unmatched.append({
@@ -133,18 +121,16 @@ def reconcile_with_exclusion_and_update(algo_df, star_df, file_type, column, ope
 
     matched_df = pd.DataFrame(matched)
     unmatched_df = pd.DataFrame(unmatched)
-
     summary = (
         f"Matched Records: {len(matched_df)}\n"
         f"Unmatched Records: {len(unmatched_df)}\n"
         f"Excluded Records: {len(excluded_df)}"
     )
-
     return excluded_df, matched_df, unmatched_df, summary
 
 # Gradio UI
 with gr.Blocks() as demo:
-    gr.Markdown("## Reconciliation App with Exclusion + Update Rule")
+    gr.Markdown("## Reconciliation App with Update & Exclusion Rules")
 
     algo_df_state = gr.State(pd.DataFrame())
     star_df_state = gr.State(pd.DataFrame())
@@ -154,15 +140,20 @@ with gr.Blocks() as demo:
         star_file = gr.File(label="Upload STAR CSV")
 
     with gr.Row():
-        file_selector = gr.Dropdown(["ALGO", "STAR"], label="Select File for Exclusion Rule")
-        column_selector = gr.Dropdown(label="Column Name")
+        file_selector = gr.Dropdown(["ALGO", "STAR"], label="File to Apply Exclusion")
+        column_selector = gr.Dropdown(label="Exclusion Column")
         operator_input = gr.Dropdown(["=", "!="], label="Operator")
-        value_input = gr.Textbox(label="Exclusion Value(s), comma-separated")
+        value_input = gr.Textbox(label="Exclusion Values (comma-separated)")
 
     with gr.Row():
-        update_column = gr.Textbox(label="Update Column")
-        find_val = gr.Textbox(label="Find (e.g. _rimr)")
-        replace_val = gr.Textbox(label="Replace With (e.g. 3cr)")
+        update_col_algo = gr.Dropdown(label="ALGO Update Column")
+        find_algo = gr.Textbox(label="ALGO Find")
+        replace_algo = gr.Textbox(label="ALGO Replace")
+
+    with gr.Row():
+        update_col_star = gr.Dropdown(label="STAR Update Column")
+        find_star = gr.Textbox(label="STAR Find")
+        replace_star = gr.Textbox(label="STAR Replace")
 
     run_btn = gr.Button("Run Reconciliation")
 
@@ -171,16 +162,15 @@ with gr.Blocks() as demo:
     unmatched_out = gr.Dataframe(label="Unmatched Records")
     summary_out = gr.Textbox(label="Summary")
 
-    algo_file.change(fn=load_algo_file, inputs=algo_file, outputs=[algo_df_state, column_selector])
-    star_file.change(fn=load_star_file, inputs=star_file, outputs=[star_df_state, column_selector])
-    file_selector.change(update_column_dropdown,
-                         inputs=[file_selector, algo_df_state, star_df_state],
-                         outputs=column_selector)
+    algo_file.change(fn=load_algo_file, inputs=algo_file, outputs=[algo_df_state, update_col_algo, column_selector])
+    star_file.change(fn=load_star_file, inputs=star_file, outputs=[star_df_state, update_col_star, column_selector])
+    file_selector.change(update_column_dropdown, inputs=[file_selector, algo_df_state, star_df_state], outputs=column_selector)
 
     run_btn.click(
-        reconcile_with_exclusion_and_update,
+        reconcile_with_updates_and_exclusion,
         inputs=[algo_df_state, star_df_state, file_selector, column_selector, operator_input, value_input,
-                update_column, find_val, replace_val],
+                update_col_algo, find_algo, replace_algo,
+                update_col_star, find_star, replace_star],
         outputs=[excluded_out, matched_out, unmatched_out, summary_out]
     )
 
