@@ -1,14 +1,29 @@
+`reconciliation_app.py`
+```py
 import pandas as pd
 import gradio as gr
 from collections import defaultdict
 
 # --- Helper functions ---
 
-def apply_update_rules(df, rules):
+def apply_update_rules(df, update_rules):
     df = df.copy()
-    for col, find_val, replace_val in rules:
-        if col and find_val and replace_val and col in df.columns:
-            df[col] = df[col].astype(str).str.replace(find_val, replace_val, regex=False)
+    for rule in update_rules:
+        mode = rule.get("mode", "replace")  # "replace" or "concat"
+        if mode == "replace":
+            col = rule.get("target_col")
+            find_val = rule.get("find")
+            replace_val = rule.get("replace")
+            if col and find_val is not None and replace_val is not None and col in df.columns:
+                df[col] = df[col].astype(str).str.replace(find_val, replace_val, regex=False)
+        elif mode == "concat":
+            target_col = rule.get("target_col")
+            source_col1 = rule.get("source_col1")
+            source_col2 = rule.get("source_col2")
+            sep = rule.get("separator", "")  # Separator between two columns
+            if target_col and source_col1 and source_col2:
+                if source_col1 in df.columns and source_col2 in df.columns:
+                    df[target_col] = df[source_col1].astype(str) + sep + df[source_col2].astype(str)
     return df
 
 def extract_algo_keys(df):
@@ -28,14 +43,14 @@ def load_algo_file(file):
     try:
         df = pd.read_csv(file).astype(str)
         return df, gr.update(choices=list(df.columns))
-    except:
+    except Exception as e:
         return pd.DataFrame(), gr.update(choices=[])
 
 def load_star_file(file):
     try:
         df = pd.read_csv(file).astype(str)
         return df, gr.update(choices=list(df.columns))
-    except:
+    except Exception as e:
         return pd.DataFrame(), gr.update(choices=[])
 
 def update_column_dropdown(file_type, algo_df, star_df):
@@ -49,20 +64,10 @@ def update_column_dropdown(file_type, algo_df, star_df):
 
 def reconcile_with_exclusion(
     algo_df, star_df, file_type, column, operator, value,
-    algo_col1, algo_find1, algo_replace1,
-    algo_col2, algo_find2, algo_replace2,
-    star_col1, star_find1, star_replace1,
-    star_col2, star_find2, star_replace2
+    algo_update_rules, star_update_rules
 ):
-    # Apply update rules
-    algo_df = apply_update_rules(algo_df, [
-        (algo_col1, algo_find1, algo_replace1),
-        (algo_col2, algo_find2, algo_replace2)
-    ])
-    star_df = apply_update_rules(star_df, [
-        (star_col1, star_find1, star_replace1),
-        (star_col2, star_find2, star_replace2)
-    ])
+    algo_df = apply_update_rules(algo_df, algo_update_rules)
+    star_df = apply_update_rules(star_df, star_update_rules)
 
     df_algo = algo_df.copy()
     df_star = star_df.copy()
@@ -156,7 +161,7 @@ def reconcile_with_exclusion(
 # --- Gradio UI ---
 
 with gr.Blocks() as demo:
-    gr.Markdown("## Reconciliation App with Update & Exclusion Rules")
+    gr.Markdown("## Reconciliation App with Replace & Concat Update Rules")
 
     algo_df_state = gr.State(pd.DataFrame())
     star_df_state = gr.State(pd.DataFrame())
@@ -172,26 +177,52 @@ with gr.Blocks() as demo:
         value_input = gr.Textbox(label="Value(s) comma-separated")
 
     gr.Markdown("### ALGO File Update Rules")
+
     with gr.Row():
-        algo_col1 = gr.Dropdown(label="Column 1")
+        algo_update_mode1 = gr.Dropdown(["replace", "concat"], label="Update Mode 1", value="replace")
+        algo_target_col1 = gr.Dropdown(label="Target Column 1")
+        # Replace mode inputs
         algo_find1 = gr.Textbox(label="Find 1")
         algo_replace1 = gr.Textbox(label="Replace with 1")
+        # Concat mode inputs
+        algo_source_col1_1 = gr.Dropdown(label="Source Column 1 (concat)")
+        algo_source_col1_2 = gr.Dropdown(label="Source Column 2 (concat)")
+        algo_concat_sep1 = gr.Textbox(label="Separator (concat)", value="")
 
     with gr.Row():
-        algo_col2 = gr.Dropdown(label="Column 2")
+        algo_update_mode2 = gr.Dropdown(["replace", "concat"], label="Update Mode 2", value="replace")
+        algo_target_col2 = gr.Dropdown(label="Target Column 2")
+        # Replace mode inputs
         algo_find2 = gr.Textbox(label="Find 2")
         algo_replace2 = gr.Textbox(label="Replace with 2")
+        # Concat mode inputs
+        algo_source_col2_1 = gr.Dropdown(label="Source Column 1 (concat)")
+        algo_source_col2_2 = gr.Dropdown(label="Source Column 2 (concat)")
+        algo_concat_sep2 = gr.Textbox(label="Separator (concat)", value="")
 
     gr.Markdown("### STAR File Update Rules")
-    with gr.Row():
-        star_col1 = gr.Dropdown(label="Column 1")
-        star_find1 = gr.Textbox(label="Find 1")
-        star_replace1 = gr.Textbox(label="Replace with 1")
 
     with gr.Row():
-        star_col2 = gr.Dropdown(label="Column 2")
+        star_update_mode1 = gr.Dropdown(["replace", "concat"], label="Update Mode 1", value="replace")
+        star_target_col1 = gr.Dropdown(label="Target Column 1")
+        # Replace mode inputs
+        star_find1 = gr.Textbox(label="Find 1")
+        star_replace1 = gr.Textbox(label="Replace with 1")
+        # Concat mode inputs
+        star_source_col1_1 = gr.Dropdown(label="Source Column 1 (concat)")
+        star_source_col1_2 = gr.Dropdown(label="Source Column 2 (concat)")
+        star_concat_sep1 = gr.Textbox(label="Separator (concat)", value="")
+
+    with gr.Row():
+        star_update_mode2 = gr.Dropdown(["replace", "concat"], label="Update Mode 2", value="replace")
+        star_target_col2 = gr.Dropdown(label="Target Column 2")
+        # Replace mode inputs
         star_find2 = gr.Textbox(label="Find 2")
         star_replace2 = gr.Textbox(label="Replace with 2")
+        # Concat mode inputs
+        star_source_col2_1 = gr.Dropdown(label="Source Column 1 (concat)")
+        star_source_col2_2 = gr.Dropdown(label="Source Column 2 (concat)")
+        star_concat_sep2 = gr.Textbox(label="Separator (concat)", value="")
 
     run_btn = gr.Button("Run Reconciliation")
 
@@ -200,30 +231,231 @@ with gr.Blocks() as demo:
     unmatched_out = gr.Dataframe(label="Unmatched Records")
     summary_out = gr.Textbox(label="Summary")
 
-    # Events
-    algo_file.change(fn=load_algo_file, inputs=algo_file, outputs=[algo_df_state, algo_col1])
-    algo_file.change(fn=load_algo_file, inputs=algo_file, outputs=[algo_df_state, algo_col2])
-    star_file.change(fn=load_star_file, inputs=star_file, outputs=[star_df_state, star_col1])
-    star_file.change(fn=load_star_file, inputs=star_file, outputs=[star_df_state, star_col2])
+    # Load files and update related dropdowns
+    def load_algo_and_update_cols(file):
+        df, update = load_algo_file(file)
+        # Return df state and update all relevant dropdowns for the columns
+        return (
+            df,
+            update,
+            update,
+            update,
+            update,
+            update,
+            update,
+        )
 
+    def load_star_and_update_cols(file):
+        df, update = load_star_file(file)
+        return (
+            df,
+            update,
+            update,
+            update,
+            update,
+            update,
+            update,
+        )
+
+    algo_file.change(
+        fn=load_algo_and_update_cols,
+        inputs=algo_file,
+        outputs=[
+            algo_df_state,
+            algo_target_col1, algo_source_col1_1, algo_source_col1_2,
+            algo_target_col2, algo_source_col2_1, algo_source_col2_2,
+        ],
+    )
+
+    star_file.change(
+        fn=load_star_and_update_cols,
+        inputs=star_file,
+        outputs=[
+            star_df_state,
+            star_target_col1, star_source_col1_1, star_source_col1_2,
+            star_target_col2, star_source_col2_1, star_source_col2_2,
+        ],
+    )
+
+    # Update the exclusion column dropdown depending on which file is selected
     file_selector.change(update_column_dropdown,
                          inputs=[file_selector, algo_df_state, star_df_state],
                          outputs=column_selector)
 
+    # Show/hide replace/concat inputs depending on update mode selection
+    def toggle_algo_mode_1(mode):
+        if mode == "replace":
+            return gr.update(visible=True), gr.update(visible=True), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)
+        else:
+            return gr.update(visible=False), gr.update(visible=False), gr.update(visible=True), gr.update(visible=True), gr.update(visible=True)
+
+    def toggle_algo_mode_2(mode):
+        if mode == "replace":
+            return gr.update(visible=True), gr.update(visible=True), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)
+        else:
+            return gr.update(visible=False), gr.update(visible=False), gr.update(visible=True), gr.update(visible=True), gr.update(visible=True)
+
+    def toggle_star_mode_1(mode):
+        if mode == "replace":
+            return gr.update(visible=True), gr.update(visible=True), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)
+        else:
+            return gr.update(visible=False), gr.update(visible=False), gr.update(visible=True), gr.update(visible=True), gr.update(visible=True)
+
+    def toggle_star_mode_2(mode):
+        if mode == "replace":
+            return gr.update(visible=True), gr.update(visible=True), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)
+        else:
+            return gr.update(visible=False), gr.update(visible=False), gr.update(visible=True), gr.update(visible=True), gr.update(visible=True)
+
+    algo_update_mode1.change(
+        fn=toggle_algo_mode_1,
+        inputs=algo_update_mode1,
+        outputs=[algo_find1, algo_replace1, algo_source_col1_1, algo_source_col1_2, algo_concat_sep1]
+    )
+    algo_update_mode2.change(
+        fn=toggle_algo_mode_2,
+        inputs=algo_update_mode2,
+        outputs=[algo_find2, algo_replace2, algo_source_col2_1, algo_source_col2_2, algo_concat_sep2]
+    )
+    star_update_mode1.change(
+        fn=toggle_star_mode_1,
+        inputs=star_update_mode1,
+        outputs=[star_find1, star_replace1, star_source_col1_1, star_source_col1_2, star_concat_sep1]
+    )
+    star_update_mode2.change(
+        fn=toggle_star_mode_2,
+        inputs=star_update_mode2,
+        outputs=[star_find2, star_replace2, star_source_col2_1, star_source_col2_2, star_concat_sep2]
+    )
+
+    # Initialize visibility on page load to show only replace inputs (default mode)
+    toggle_algo_mode_1("replace")
+    toggle_algo_mode_2("replace")
+    toggle_star_mode_1("replace")
+    toggle_star_mode_2("replace")
+
+    def collect_algo_update_rules(
+        mode1, target1, find1, replace1, source1_1, source1_2, sep1,
+        mode2, target2, find2, replace2, source2_1, source2_2, sep2,
+    ):
+        rules = []
+        # Rule 1
+        if target1:
+            if mode1 == "replace":
+                rules.append({
+                    "mode": "replace",
+                    "target_col": target1,
+                    "find": find1,
+                    "replace": replace1,
+                })
+            elif mode1 == "concat":
+                if source1_1 and source1_2:
+                    rules.append({
+                        "mode": "concat",
+                        "target_col": target1,
+                        "source_col1": source1_1,
+                        "source_col2": source1_2,
+                        "separator": sep1 or "",
+                    })
+        # Rule 2
+        if target2:
+            if mode2 == "replace":
+                rules.append({
+                    "mode": "replace",
+                    "target_col": target2,
+                    "find": find2,
+                    "replace": replace2,
+                })
+            elif mode2 == "concat":
+                if source2_1 and source2_2:
+                    rules.append({
+                        "mode": "concat",
+                        "target_col": target2,
+                        "source_col1": source2_1,
+                        "source_col2": source2_2,
+                        "separator": sep2 or "",
+                    })
+        return rules
+
+    def collect_star_update_rules(
+        mode1, target1, find1, replace1, source1_1, source1_2, sep1,
+        mode2, target2, find2, replace2, source2_1, source2_2, sep2,
+    ):
+        rules = []
+        # Rule 1
+        if target1:
+            if mode1 == "replace":
+                rules.append({
+                    "mode": "replace",
+                    "target_col": target1,
+                    "find": find1,
+                    "replace": replace1,
+                })
+            elif mode1 == "concat":
+                if source1_1 and source1_2:
+                    rules.append({
+                        "mode": "concat",
+                        "target_col": target1,
+                        "source_col1": source1_1,
+                        "source_col2": source1_2,
+                        "separator": sep1 or "",
+                    })
+        # Rule 2
+        if target2:
+            if mode2 == "replace":
+                rules.append({
+                    "mode": "replace",
+                    "target_col": target2,
+                    "find": find2,
+                    "replace": replace2,
+                })
+            elif mode2 == "concat":
+                if source2_1 and source2_2:
+                    rules.append({
+                        "mode": "concat",
+                        "target_col": target2,
+                        "source_col1": source2_1,
+                        "source_col2": source2_2,
+                        "separator": sep2 or "",
+                    })
+        return rules
+
+    def run_reconciliation(
+        algo_df, star_df, file_type, column, operator, value,
+        algo_update_mode1, algo_target_col1, algo_find1, algo_replace1, algo_source_col1_1, algo_source_col1_2, algo_concat_sep1,
+        algo_update_mode2, algo_target_col2, algo_find2, algo_replace2, algo_source_col2_1, algo_source_col2_2, algo_concat_sep2,
+        star_update_mode1, star_target_col1, star_find1, star_replace1, star_source_col1_1, star_source_col1_2, star_concat_sep1,
+        star_update_mode2, star_target_col2, star_find2, star_replace2, star_source_col2_1, star_source_col2_2, star_concat_sep2,
+    ):
+        algo_rules = collect_algo_update_rules(
+            algo_update_mode1, algo_target_col1, algo_find1, algo_replace1, algo_source_col1_1, algo_source_col1_2, algo_concat_sep1,
+            algo_update_mode2, algo_target_col2, algo_find2, algo_replace2, algo_source_col2_1, algo_source_col2_2, algo_concat_sep2,
+        )
+        star_rules = collect_star_update_rules(
+            star_update_mode1, star_target_col1, star_find1, star_replace1, star_source_col1_1, star_source_col1_2, star_concat_sep1,
+            star_update_mode2, star_target_col2, star_find2, star_replace2, star_source_col2_1, star_source_col2_2, star_concat_sep2,
+        )
+        return reconcile_with_exclusion(
+            algo_df, star_df, file_type, column, operator, value,
+            algo_rules, star_rules
+        )
+
     run_btn.click(
-        reconcile_with_exclusion,
+        run_reconciliation,
         inputs=[
             algo_df_state, star_df_state,
             file_selector, column_selector, operator_input, value_input,
-            algo_col1, algo_find1, algo_replace1,
-            algo_col2, algo_find2, algo_replace2,
-            star_col1, star_find1, star_replace1,
-            star_col2, star_find2, star_replace2
+            algo_update_mode1, algo_target_col1, algo_find1, algo_replace1, algo_source_col1_1, algo_source_col1_2, algo_concat_sep1,
+            algo_update_mode2, algo_target_col2, algo_find2, algo_replace2, algo_source_col2_1, algo_source_col2_2, algo_concat_sep2,
+            star_update_mode1, star_target_col1, star_find1, star_replace1, star_source_col1_1, star_source_col1_2, star_concat_sep1,
+            star_update_mode2, star_target_col2, star_find2, star_replace2, star_source_col2_1, star_source_col2_2, star_concat_sep2,
         ],
         outputs=[excluded_out, matched_out, unmatched_out, summary_out]
     )
 
 demo.launch()
+
+```
 
 
 
