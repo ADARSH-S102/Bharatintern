@@ -2,7 +2,13 @@ import pandas as pd
 import gradio as gr
 from collections import defaultdict
 
-# Helper functions
+# Apply value update rules
+def apply_update_rules(df, rules):
+    for col, op, src, target in rules:
+        if col and op == "replace":
+            df[col] = df[col].str.replace(src, target, regex=False)
+    return df
+
 def extract_algo_keys(df):
     return df['Agreement_name'].astype(str).apply(
         lambda x: x.replace('_RIMR', '3CR')
@@ -19,27 +25,31 @@ def extract_star_keys(df):
         axis=1
     ).tolist()
 
-def apply_update_rules(df, rules):
-    for rule in rules:
-        col, action, from_val, to_val = rule
-        if col in df.columns and action == "replace":
-            df[col] = df[col].astype(str).str.replace(from_val, to_val)
-    return df
-
-# Loaders
 def load_algo_file(file):
     try:
         df = pd.read_csv(file).astype(str)
-        return df, gr.update(choices=list(df.columns))
+        cols = list(df.columns)
+        return (
+            df,
+            gr.update(choices=cols),  # column_selector
+            gr.update(choices=cols),  # algo_col1
+            gr.update(choices=cols),  # algo_col2
+        )
     except:
-        return pd.DataFrame(), gr.update(choices=[])
+        return pd.DataFrame(), gr.update(choices=[]), gr.update(choices=[]), gr.update(choices=[])
 
 def load_star_file(file):
     try:
         df = pd.read_csv(file).astype(str)
-        return df, gr.update(choices=list(df.columns))
+        cols = list(df.columns)
+        return (
+            df,
+            gr.update(choices=cols),  # column_selector
+            gr.update(choices=cols),  # star_col1
+            gr.update(choices=cols),  # star_col2
+        )
     except:
-        return pd.DataFrame(), gr.update(choices=[])
+        return pd.DataFrame(), gr.update(choices=[]), gr.update(choices=[]), gr.update(choices=[])
 
 def update_column_dropdown(file_type, algo_df, star_df):
     if file_type == "ALGO":
@@ -50,25 +60,31 @@ def update_column_dropdown(file_type, algo_df, star_df):
 
 def reconcile_with_exclusion(
     algo_df, star_df, file_type, column, operator, value,
-    algo_col1, algo_rule1, algo_val1, algo_val2,
-    algo_col2, algo_rule2, algo_val3, algo_val4,
-    star_col1, star_rule1, star_val1, star_val2,
-    star_col2, star_rule2, star_val3, star_val4,
+    algo_col1, algo_op1, algo_src1, algo_target1,
+    algo_col2, algo_op2, algo_src2, algo_target2,
+    star_col1, star_op1, star_src1, star_target1,
+    star_col2, star_op2, star_src2, star_target2
 ):
     df_algo = algo_df.copy()
     df_star = star_df.copy()
+
+    # Apply ALGO update rules
+    algo_updates = [
+        (algo_col1, algo_op1, algo_src1, algo_target1),
+        (algo_col2, algo_op2, algo_src2, algo_target2),
+    ]
+    df_algo = apply_update_rules(df_algo, algo_updates)
+
+    # Apply STAR update rules
+    star_updates = [
+        (star_col1, star_op1, star_src1, star_target1),
+        (star_col2, star_op2, star_src2, star_target2),
+    ]
+    df_star = apply_update_rules(df_star, star_updates)
+
     excluded_df = pd.DataFrame()
-
-    # Apply updation rules
-    algo_rules = [(algo_col1, algo_rule1, algo_val1, algo_val2),
-                  (algo_col2, algo_rule2, algo_val3, algo_val4)]
-    star_rules = [(star_col1, star_rule1, star_val1, star_val2),
-                  (star_col2, star_rule2, star_val3, star_val4)]
-    df_algo = apply_update_rules(df_algo, algo_rules)
-    df_star = apply_update_rules(df_star, star_rules)
-
-    # Apply exclusion
     values = [v.strip() for v in value.split(',') if v.strip()]
+
     if file_type == "ALGO" and column in df_algo.columns:
         if operator == "=":
             excluded_df = df_algo[df_algo[column].isin(values)]
@@ -76,6 +92,7 @@ def reconcile_with_exclusion(
         else:
             excluded_df = df_algo[~df_algo[column].isin(values)]
             df_algo = df_algo[df_algo[column].isin(values)]
+
     elif file_type == "STAR" and column in df_star.columns:
         if operator == "=":
             excluded_df = df_star[df_star[column].isin(values)]
@@ -84,11 +101,12 @@ def reconcile_with_exclusion(
             excluded_df = df_star[~df_star[column].isin(values)]
             df_star = df_star[df_star[column].isin(values)]
 
-    # Key extraction
     algo_keys = extract_algo_keys(df_algo)
     star_keys = extract_star_keys(df_star)
 
-    matched, unmatched = [], []
+    matched = []
+    unmatched = []
+
     star_key_map = defaultdict(list)
     for idx, key in enumerate(star_keys):
         star_key_map[key].append(idx)
@@ -140,6 +158,7 @@ def reconcile_with_exclusion(
 
     matched_df = pd.DataFrame(matched)
     unmatched_df = pd.DataFrame(unmatched)
+
     summary = (
         f"Matched Records: {len(matched_df)}\n"
         f"Unmatched Records: {len(unmatched_df)}\n"
@@ -148,7 +167,6 @@ def reconcile_with_exclusion(
 
     return excluded_df, matched_df, unmatched_df, summary
 
-# Gradio UI
 with gr.Blocks() as demo:
     gr.Markdown("## Reconciliation App with Exclusion and Updation Rules")
 
@@ -160,34 +178,36 @@ with gr.Blocks() as demo:
         star_file = gr.File(label="Upload STAR CSV")
 
     with gr.Row():
-        file_selector = gr.Dropdown(["ALGO", "STAR"], label="Exclusion File")
+        file_selector = gr.Dropdown(["ALGO", "STAR"], label="File for Exclusion")
         column_selector = gr.Dropdown(label="Exclusion Column")
         operator_input = gr.Dropdown(["=", "!="], label="Operator")
-        value_input = gr.Textbox(label="Value(s)")
+        value_input = gr.Textbox(label="Value(s) (comma-separated)")
 
-    gr.Markdown("### ALGO Updation Rules")
+    gr.Markdown("### ALGO File Update Rules")
     with gr.Row():
-        algo_col1 = gr.Dropdown(label="Column")
-        algo_rule1 = gr.Dropdown(choices=["replace"], label="Rule")
-        algo_val1 = gr.Textbox(label="From")
-        algo_val2 = gr.Textbox(label="To")
-    with gr.Row():
-        algo_col2 = gr.Dropdown(label="Column")
-        algo_rule2 = gr.Dropdown(choices=["replace"], label="Rule")
-        algo_val3 = gr.Textbox(label="From")
-        algo_val4 = gr.Textbox(label="To")
+        algo_col1 = gr.Dropdown(label="ALGO Column 1")
+        algo_op1 = gr.Dropdown(["replace"], label="Operation")
+        algo_src1 = gr.Textbox(label="Find")
+        algo_target1 = gr.Textbox(label="Replace With")
 
-    gr.Markdown("### STAR Updation Rules")
     with gr.Row():
-        star_col1 = gr.Dropdown(label="Column")
-        star_rule1 = gr.Dropdown(choices=["replace"], label="Rule")
-        star_val1 = gr.Textbox(label="From")
-        star_val2 = gr.Textbox(label="To")
+        algo_col2 = gr.Dropdown(label="ALGO Column 2")
+        algo_op2 = gr.Dropdown(["replace"], label="Operation")
+        algo_src2 = gr.Textbox(label="Find")
+        algo_target2 = gr.Textbox(label="Replace With")
+
+    gr.Markdown("### STAR File Update Rules")
     with gr.Row():
-        star_col2 = gr.Dropdown(label="Column")
-        star_rule2 = gr.Dropdown(choices=["replace"], label="Rule")
-        star_val3 = gr.Textbox(label="From")
-        star_val4 = gr.Textbox(label="To")
+        star_col1 = gr.Dropdown(label="STAR Column 1")
+        star_op1 = gr.Dropdown(["replace"], label="Operation")
+        star_src1 = gr.Textbox(label="Find")
+        star_target1 = gr.Textbox(label="Replace With")
+
+    with gr.Row():
+        star_col2 = gr.Dropdown(label="STAR Column 2")
+        star_op2 = gr.Dropdown(["replace"], label="Operation")
+        star_src2 = gr.Textbox(label="Find")
+        star_target2 = gr.Textbox(label="Replace With")
 
     run_btn = gr.Button("Run Reconciliation")
 
@@ -196,24 +216,36 @@ with gr.Blocks() as demo:
     unmatched_out = gr.Dataframe(label="Unmatched Records")
     summary_out = gr.Textbox(label="Summary")
 
-    algo_file.change(fn=load_algo_file, inputs=algo_file, outputs=[algo_df_state, column_selector])
-    star_file.change(fn=load_star_file, inputs=star_file, outputs=[star_df_state, column_selector])
-    file_selector.change(update_column_dropdown, inputs=[file_selector, algo_df_state, star_df_state], outputs=column_selector)
+    algo_file.change(fn=load_algo_file, inputs=algo_file,
+                     outputs=[algo_df_state, column_selector, algo_col1, algo_col2])
+    star_file.change(fn=load_star_file, inputs=star_file,
+                     outputs=[star_df_state, column_selector, star_col1, star_col2])
+
+    file_selector.change(fn=update_column_dropdown,
+                         inputs=[file_selector, algo_df_state, star_df_state],
+                         outputs=column_selector)
 
     run_btn.click(
-        reconcile_with_exclusion,
+        fn=reconcile_with_exclusion,
         inputs=[
-            algo_df_state, star_df_state,
-            file_selector, column_selector, operator_input, value_input,
-            algo_col1, algo_rule1, algo_val1, algo_val2,
-            algo_col2, algo_rule2, algo_val3, algo_val4,
-            star_col1, star_rule1, star_val1, star_val2,
-            star_col2, star_rule2, star_val3, star_val4,
+            algo_df_state, star_df_state, file_selector, column_selector,
+            operator_input, value_input,
+            algo_col1, algo_op1, algo_src1, algo_target1,
+            algo_col2, algo_op2, algo_src2, algo_target2,
+            star_col1, star_op1, star_src1, star_target1,
+            star_col2, star_op2, star_src2, star_target2
         ],
         outputs=[excluded_out, matched_out, unmatched_out, summary_out]
     )
 
 demo.launch()
+
+
+
+
+
+
+
 
 
 
