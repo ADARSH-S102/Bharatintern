@@ -1,231 +1,170 @@
 import pandas as pd
 import gradio as gr
-from collections import defaultdict
 
-# --- Helper functions ---
+# --- Helper Functions ---
 
-def apply_update_rules(df, update_rules):
+def apply_update_rules(df, rules):
     df = df.copy()
-    for rule in update_rules:
-        mode = rule.get("mode", "replace")
+    for rule in rules:
+        mode = rule.get("mode")
         if mode == "replace":
             col = rule.get("target_col")
             find_val = rule.get("find")
             replace_val = rule.get("replace")
-            if col and find_val is not None and replace_val is not None and col in df.columns:
+            if col in df.columns:
                 df[col] = df[col].astype(str).str.replace(find_val, replace_val, regex=False)
         elif mode == "concat":
-            target_col = rule.get("target_col")
-            source_col1 = rule.get("source_col1")
-            source_col2 = rule.get("source_col2")
+            target = rule.get("target_col")
+            src1 = rule.get("source_col1")
+            src2 = rule.get("source_col2")
             sep = rule.get("separator", "")
-            if target_col and source_col1 and source_col2:
-                if source_col1 in df.columns and source_col2 in df.columns:
-                    df[target_col] = df[source_col1].astype(str) + sep + df[source_col2].astype(str)
+            if src1 in df.columns and src2 in df.columns:
+                df[target] = df[src1].astype(str) + sep + df[src2].astype(str)
     return df
 
-def extract_algo_keys(df):
-    return df['Agreement_name'].astype(str).apply(lambda x: x.replace(" ", "").strip()).tolist()
+def reconcile(algo_df, star_df, exclusion_file, exclusion_column, operator, exclusion_values,
+              algo_rules, star_rules):
+    if algo_df.empty or star_df.empty:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), "Error: Upload both ALGO and STAR files"
 
-def extract_star_keys(df):
-    return df.apply(
-        lambda row: (str(row.get('CRDS Party Code', '')).strip().replace(" ", "") +
-                     "3" +
-                     str(row.get('Post Direction', '')).strip().replace(" ", "")),
-        axis=1
-    ).tolist()
+    # Apply update rules
+    algo_df = apply_update_rules(algo_df, algo_rules)
+    star_df = apply_update_rules(star_df, star_rules)
 
-def load_algo_file(file):
-    try:
-        df = pd.read_csv(file).astype(str)
-        return df, gr.update(choices=list(df.columns))
-    except:
-        return pd.DataFrame(), gr.update(choices=[])
-
-def load_star_file(file):
-    try:
-        df = pd.read_csv(file).astype(str)
-        return df, gr.update(choices=list(df.columns))
-    except:
-        return pd.DataFrame(), gr.update(choices=[])
-
-def update_column_dropdown(file_type, algo_df, star_df):
-    if file_type == "ALGO":
-        return gr.update(choices=list(algo_df.columns))
-    elif file_type == "STAR":
-        return gr.update(choices=list(star_df.columns))
-    return gr.update(choices=[])
-
-def reconcile_with_exclusion(
-    algo_df, star_df, file_type, column, operator, value,
-    algo_update_rules, star_update_rules
-):
-    algo_df = apply_update_rules(algo_df, algo_update_rules)
-    star_df = apply_update_rules(star_df, star_update_rules)
-
-    df_algo = algo_df.copy()
-    df_star = star_df.copy()
-    excluded_df = pd.DataFrame()
-
-    values = [v.strip() for v in value.split(',') if v.strip()]
-
-    if file_type == "ALGO" and column in df_algo.columns:
+    # Apply exclusion
+    values = [v.strip() for v in exclusion_values.split(",")]
+    excluded = pd.DataFrame()
+    if exclusion_file == "ALGO" and exclusion_column in algo_df.columns:
         if operator == "=":
-            excluded_df = df_algo[df_algo[column].isin(values)]
-            df_algo = df_algo[~df_algo[column].isin(values)]
-        else:
-            excluded_df = df_algo[~df_algo[column].isin(values)]
-            df_algo = df_algo[df_algo[column].isin(values)]
-
-    elif file_type == "STAR" and column in df_star.columns:
+            excluded = algo_df[algo_df[exclusion_column].isin(values)]
+            algo_df = algo_df[~algo_df[exclusion_column].isin(values)]
+        elif operator == "!=":
+            excluded = algo_df[~algo_df[exclusion_column].isin(values)]
+            algo_df = algo_df[algo_df[exclusion_column].isin(values)]
+    elif exclusion_file == "STAR" and exclusion_column in star_df.columns:
         if operator == "=":
-            excluded_df = df_star[df_star[column].isin(values)]
-            df_star = df_star[~df_star[column].isin(values)]
-        else:
-            excluded_df = df_star[~df_star[column].isin(values)]
-            df_star = df_star[df_star[column].isin(values)]
+            excluded = star_df[star_df[exclusion_column].isin(values)]
+            star_df = star_df[~star_df[exclusion_column].isin(values)]
+        elif operator == "!=":
+            excluded = star_df[~star_df[exclusion_column].isin(values)]
+            star_df = star_df[star_df[exclusion_column].isin(values)]
 
-    algo_keys = extract_algo_keys(df_algo)
-    star_keys = extract_star_keys(df_star)
+    # Build keys
+    algo_df["__key__"] = algo_df["Agreement_name"].str.replace(" ", "")
+    star_df["__key__"] = star_df["CRDS Party Code"].str.replace(" ", "") + "3" + star_df["Post Direction"].str.replace(" ", "")
 
-    matched = []
-    unmatched = []
+    # Match
+    merged = pd.merge(algo_df, star_df, on="__key__", how="inner")
+    matched = merged.drop(columns=["__key__"])
 
-    star_key_map = defaultdict(list)
-    for idx, key in enumerate(star_keys):
-        star_key_map[key].append(idx)
+    # Unmatched
+    unmatched_algo = algo_df[~algo_df["__key__"].isin(matched["__key__"])]
+    unmatched_star = star_df[~star_df["__key__"].isin(matched["__key__"])]
 
-    matched_star_indices = set()
-    matched_algo_indices = set()
-    star_key_used_count = defaultdict(int)
+    summary = f"Matched: {len(matched)} | Unmatched ALGO: {len(unmatched_algo)} | Unmatched STAR: {len(unmatched_star)} | Excluded: {len(excluded)}"
 
-    for i, algo_key in enumerate(algo_keys):
-        matching_star_idxs = star_key_map.get(algo_key, [])
-        if len(matching_star_idxs) == 1 and matching_star_idxs[0] not in matched_star_indices:
-            matched.append({"ALGO Key": algo_key, "STAR Key": star_keys[matching_star_idxs[0]], "Status": "Match"})
-            matched_star_indices.add(matching_star_idxs[0])
-            matched_algo_indices.add(i)
-            star_key_used_count[star_keys[matching_star_idxs[0]]] += 1
-        elif len(matching_star_idxs) > 1:
-            unmatched.append({"ALGO Key": algo_key, "STAR Key": "<Multiple STAR Match>", "Status": "Mismatch - Multiple STAR Keys"})
-            for idx in matching_star_idxs:
-                unmatched.append({"ALGO Key": "<No Match>", "STAR Key": star_keys[idx], "Status": "Mismatch - STAR Key in Multiple Match"})
-            matched_algo_indices.add(i)
-            for idx in matching_star_idxs:
-                star_key_used_count[star_keys[idx]] += 1
-        else:
-            unmatched.append({"ALGO Key": algo_key, "STAR Key": "<No Match>", "Status": "Mismatch - No STAR Match"})
+    return excluded, matched, pd.concat([unmatched_algo, unmatched_star]), summary
 
-    for idx, star_key in enumerate(star_keys):
-        if idx not in matched_star_indices and star_key_used_count[star_key] == 0:
-            unmatched.append({"ALGO Key": "<No Match>", "STAR Key": star_key, "Status": "Mismatch - No ALGO Match"})
-
-    matched_df = pd.DataFrame(matched)
-    unmatched_df = pd.DataFrame(unmatched)
-
-    summary = (
-        f"Matched Records: {len(matched_df)}\n"
-        f"Unmatched Records: {len(unmatched_df)}\n"
-        f"Excluded Records: {len(excluded_df)}"
-    )
-
-    return excluded_df, matched_df, unmatched_df, summary
-
-# --- UI ---
+# --- Gradio UI ---
 
 with gr.Blocks() as demo:
-    gr.Markdown("## Reconciliation App with Replace & Concat Update Rules")
-
-    algo_df_state = gr.State(pd.DataFrame())
-    star_df_state = gr.State(pd.DataFrame())
+    gr.Markdown("## Reconciliation App")
 
     with gr.Row():
         algo_file = gr.File(label="Upload ALGO CSV")
         star_file = gr.File(label="Upload STAR CSV")
 
     with gr.Row():
-        file_selector = gr.Dropdown(["ALGO", "STAR"], label="File for Exclusion")
-        column_selector = gr.Dropdown(label="Column")
-        operator_input = gr.Dropdown(["=", "!="], label="Operator")
-        value_input = gr.Textbox(label="Value(s) comma-separated")
+        exclusion_file = gr.Dropdown(["ALGO", "STAR"], label="Exclusion File")
+        exclusion_column = gr.Textbox(label="Exclusion Column")
+        operator = gr.Dropdown(["=", "!="], label="Operator")
+        exclusion_value = gr.Textbox(label="Value(s), comma separated")
 
-    gr.Markdown("### ALGO File Update Rules")
+    gr.Markdown("### ALGO Update Rules")
     with gr.Row():
-        algo_update_mode1 = gr.Dropdown(["replace", "concat"], label="Update Mode 1", value="replace")
-        algo_target_col1 = gr.Dropdown(label="Target Column 1")
-        algo_find1 = gr.Textbox(label="Find 1")
-        algo_replace1 = gr.Textbox(label="Replace with 1")
-        algo_source_col1_1 = gr.Dropdown(label="Source Column 1 (concat)")
-        algo_source_col1_2 = gr.Dropdown(label="Source Column 2 (concat)")
-        algo_concat_sep1 = gr.Textbox(label="Separator (concat)", value="")
-
-    with gr.Row():
-        algo_update_mode2 = gr.Dropdown(["replace", "concat"], label="Update Mode 2", value="replace")
-        algo_target_col2 = gr.Dropdown(label="Target Column 2")
-        algo_find2 = gr.Textbox(label="Find 2")
-        algo_replace2 = gr.Textbox(label="Replace with 2")
-        algo_source_col2_1 = gr.Dropdown(label="Source Column 1 (concat)")
-        algo_source_col2_2 = gr.Dropdown(label="Source Column 2 (concat)")
-        algo_concat_sep2 = gr.Textbox(label="Separator (concat)", value="")
-
-    gr.Markdown("### STAR File Update Rules")
-    with gr.Row():
-        star_update_mode1 = gr.Dropdown(["replace", "concat"], label="Update Mode 1", value="replace")
-        star_target_col1 = gr.Dropdown(label="Target Column 1")
-        star_find1 = gr.Textbox(label="Find 1")
-        star_replace1 = gr.Textbox(label="Replace with 1")
-        star_source_col1_1 = gr.Dropdown(label="Source Column 1 (concat)")
-        star_source_col1_2 = gr.Dropdown(label="Source Column 2 (concat)")
-        star_concat_sep1 = gr.Textbox(label="Separator (concat)", value="")
+        algo_mode1 = gr.Dropdown(["replace", "concat"], label="Mode 1")
+        algo_target1 = gr.Textbox(label="Target Column")
+        algo_find1 = gr.Textbox(label="Find (for replace)")
+        algo_replace1 = gr.Textbox(label="Replace With (for replace)")
+        algo_src1a = gr.Textbox(label="Source Col 1 (for concat)")
+        algo_src1b = gr.Textbox(label="Source Col 2 (for concat)")
+        algo_sep1 = gr.Textbox(label="Separator", value="")
 
     with gr.Row():
-        star_update_mode2 = gr.Dropdown(["replace", "concat"], label="Update Mode 2", value="replace")
-        star_target_col2 = gr.Dropdown(label="Target Column 2")
-        star_find2 = gr.Textbox(label="Find 2")
-        star_replace2 = gr.Textbox(label="Replace with 2")
-        star_source_col2_1 = gr.Dropdown(label="Source Column 1 (concat)")
-        star_source_col2_2 = gr.Dropdown(label="Source Column 2 (concat)")
-        star_concat_sep2 = gr.Textbox(label="Separator (concat)", value="")
+        algo_mode2 = gr.Dropdown(["replace", "concat"], label="Mode 2")
+        algo_target2 = gr.Textbox(label="Target Column")
+        algo_find2 = gr.Textbox(label="Find (for replace)")
+        algo_replace2 = gr.Textbox(label="Replace With (for replace)")
+        algo_src2a = gr.Textbox(label="Source Col 1 (for concat)")
+        algo_src2b = gr.Textbox(label="Source Col 2 (for concat)")
+        algo_sep2 = gr.Textbox(label="Separator", value="")
+
+    gr.Markdown("### STAR Update Rules")
+    with gr.Row():
+        star_mode1 = gr.Dropdown(["replace", "concat"], label="Mode 1")
+        star_target1 = gr.Textbox(label="Target Column")
+        star_find1 = gr.Textbox(label="Find (for replace)")
+        star_replace1 = gr.Textbox(label="Replace With (for replace)")
+        star_src1a = gr.Textbox(label="Source Col 1 (for concat)")
+        star_src1b = gr.Textbox(label="Source Col 2 (for concat)")
+        star_sep1 = gr.Textbox(label="Separator", value="")
+
+    with gr.Row():
+        star_mode2 = gr.Dropdown(["replace", "concat"], label="Mode 2")
+        star_target2 = gr.Textbox(label="Target Column")
+        star_find2 = gr.Textbox(label="Find (for replace)")
+        star_replace2 = gr.Textbox(label="Replace With (for replace)")
+        star_src2a = gr.Textbox(label="Source Col 1 (for concat)")
+        star_src2b = gr.Textbox(label="Source Col 2 (for concat)")
+        star_sep2 = gr.Textbox(label="Separator", value="")
 
     run_btn = gr.Button("Run Reconciliation")
 
-    excluded_out = gr.Dataframe(label="Excluded Records")
-    matched_out = gr.Dataframe(label="Matched Records")
-    unmatched_out = gr.Dataframe(label="Unmatched Records")
-    summary_out = gr.Textbox(label="Summary")
+    excluded_output = gr.Dataframe(label="Excluded Records")
+    matched_output = gr.Dataframe(label="Matched Records")
+    unmatched_output = gr.Dataframe(label="Unmatched Records")
+    summary_output = gr.Textbox(label="Summary")
 
-    def collect_rules(mode1, target1, find1, replace1, src1a, src1b, sep1,
-                      mode2, target2, find2, replace2, src2a, src2b, sep2):
-        rules = []
-        if target1:
-            if mode1 == "replace":
-                rules.append({"mode": "replace", "target_col": target1, "find": find1, "replace": replace1})
-            elif mode1 == "concat":
-                rules.append({"mode": "concat", "target_col": target1, "source_col1": src1a, "source_col2": src1b, "separator": sep1})
-        if target2:
-            if mode2 == "replace":
-                rules.append({"mode": "replace", "target_col": target2, "find": find2, "replace": replace2})
-            elif mode2 == "concat":
-                rules.append({"mode": "concat", "target_col": target2, "source_col1": src2a, "source_col2": src2b, "separator": sep2})
-        return rules
+    def wrap_run(algo_file, star_file, *args):
+        algo_df = pd.read_csv(algo_file.name)
+        star_df = pd.read_csv(star_file.name)
+
+        def build_rules(mode1, tgt1, find1, repl1, src1a, src1b, sep1,
+                        mode2, tgt2, find2, repl2, src2a, src2b, sep2):
+            rules = []
+            if tgt1:
+                if mode1 == "replace":
+                    rules.append({"mode": "replace", "target_col": tgt1, "find": find1, "replace": repl1})
+                elif mode1 == "concat":
+                    rules.append({"mode": "concat", "target_col": tgt1, "source_col1": src1a, "source_col2": src1b, "separator": sep1})
+            if tgt2:
+                if mode2 == "replace":
+                    rules.append({"mode": "replace", "target_col": tgt2, "find": find2, "replace": repl2})
+                elif mode2 == "concat":
+                    rules.append({"mode": "concat", "target_col": tgt2, "source_col1": src2a, "source_col2": src2b, "separator": sep2})
+            return rules
+
+        algo_rules = build_rules(*args[:14])
+        star_rules = build_rules(*args[14:])
+        return reconcile(algo_df, star_df, args[0], args[1], args[2], args[3], algo_rules, star_rules)
 
     run_btn.click(
-        fn=lambda algo_df, star_df, file_type, column, op, val, *args: reconcile_with_exclusion(
-            algo_df, star_df, file_type, column, op, val,
-            collect_rules(*args[:14]),
-            collect_rules(*args[14:])
-        ),
+        wrap_run,
         inputs=[
-            algo_df_state, star_df_state, file_selector, column_selector, operator_input, value_input,
-            algo_update_mode1, algo_target_col1, algo_find1, algo_replace1, algo_source_col1_1, algo_source_col1_2, algo_concat_sep1,
-            algo_update_mode2, algo_target_col2, algo_find2, algo_replace2, algo_source_col2_1, algo_source_col2_2, algo_concat_sep2,
-            star_update_mode1, star_target_col1, star_find1, star_replace1, star_source_col1_1, star_source_col1_2, star_concat_sep1,
-            star_update_mode2, star_target_col2, star_find2, star_replace2, star_source_col2_1, star_source_col2_2, star_concat_sep2,
+            algo_file, star_file,
+            exclusion_file, exclusion_column, operator, exclusion_value,
+            algo_mode1, algo_target1, algo_find1, algo_replace1, algo_src1a, algo_src1b, algo_sep1,
+            algo_mode2, algo_target2, algo_find2, algo_replace2, algo_src2a, algo_src2b, algo_sep2,
+            star_mode1, star_target1, star_find1, star_replace1, star_src1a, star_src1b, star_sep1,
+            star_mode2, star_target2, star_find2, star_replace2, star_src2a, star_src2b, star_sep2
         ],
-        outputs=[excluded_out, matched_out, unmatched_out, summary_out]
+        outputs=[excluded_output, matched_output, unmatched_output, summary_output]
     )
 
 demo.launch()
+        
+
+
 
 
 
