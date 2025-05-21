@@ -1,190 +1,113 @@
-import gradio as gr
 import pandas as pd
+import gradio as gr
 
-# Global rule lists
+# Global variables
+algo_df = pd.DataFrame()
+star_df_original = pd.DataFrame()
 algo_exclusion_rules = []
 star_exclusion_rules = []
 star_update_rules = []
 
-# Load ALGO file
-def load_algo_file(file):
-    df = pd.read_csv(file.name)
-    return df
+def load_files(algo_file, star_file):
+    global algo_df, star_df_original
+    try:
+        algo_df = pd.read_csv(algo_file.name)
+        star_df_original = pd.read_csv(star_file.name)
+        return "Files loaded successfully.", algo_df.head(), star_df_original.head()
+    except Exception as e:
+        return f"Error loading files: {str(e)}", None, None
 
-# Load STAR file
-def load_star_file(file):
-    df = pd.read_csv(file.name)
-    return df
+def add_exclusion_rule(source, column, condition, value):
+    rule = {"column": column, "condition": condition, "value": value}
+    if source == "ALGO":
+        algo_exclusion_rules.append(rule)
+    else:
+        star_exclusion_rules.append(rule)
+    return f"Added exclusion rule for {source}: {rule}"
 
-# Apply exclusion rules to a DataFrame
 def apply_exclusion_rules(df, rules):
+    if df.empty or not rules:
+        return pd.DataFrame(), df
+    mask = pd.Series([True] * len(df))
     for rule in rules:
-        column = rule["column"]
-        condition = rule["condition"]
-        value = rule["value"]
-        if condition == "=":
-            df = df[df[column] != value]
-        elif condition == "!=":
-            df = df[df[column] == value]
+        if rule["condition"] == "=":
+            mask &= df[rule["column"]] == rule["value"]
+        else:
+            mask &= df[rule["column"]] != rule["value"]
+    excluded = df[mask]
+    non_excluded = df[~mask]
+    return excluded, non_excluded
+
+def add_star_update_rule(column, condition, value, direction):
+    rule = {"column": column, "condition": condition, "value": value, "direction": direction}
+    star_update_rules.append(rule)
+    return f"Added STAR update rule: {rule}"
+
+def apply_star_update_rules(df):
+    df = df.copy()
+    if "KEY" not in df.columns:
+        return df  # Avoid error if KEY doesn't exist
+    for rule in star_update_rules:
+        cond = (df[rule["column"]] == rule["value"]) if rule["condition"] == "=" else (df[rule["column"]] != rule["value"])
+        df.loc[cond, "KEY"] = df.loc[cond, "KEY"].astype(str) + "_" + rule["direction"]
     return df
 
-# Apply STAR update rules (e.g., post direction transformation)
-def apply_star_update_rules(df, rules):
-    for rule in rules:
-        if rule["mode"] == "concat":
-            col1 = rule["column1"]
-            col2 = rule["column2"]
-            new_col = rule["new_column"]
-            df[new_col] = df[col1].astype(str) + "_" + df[col2].astype(str)
-        elif rule["mode"] == "replace":
-            col = rule["column"]
-            to_replace = rule["to_replace"]
-            replacement = rule["replacement"]
-            df[col] = df[col].replace(to_replace, replacement)
-    return df
+def reconcile():
+    if algo_df.empty or star_df_original.empty:
+        return "Please upload files first.", None, None, None
 
-# Main reconcile function
-def reconcile(algo_file, star_file):
-    # Load input data
-    df_algo = load_algo_file(algo_file)
-    df_star = load_star_file(star_file)
+    algo_excluded, algo_non_excluded = apply_exclusion_rules(algo_df, algo_exclusion_rules)
+    star_excluded, star_non_excluded = apply_exclusion_rules(star_df_original, star_exclusion_rules)
 
-    # Save original indexes for exclusions
-    df_algo_orig = df_algo.copy()
-    df_star_orig = df_star.copy()
+    # Apply STAR post direction transformation only after rules
+    star_transformed = apply_star_update_rules(star_non_excluded)
 
-    # Apply exclusion rules
-    df_algo_clean = apply_exclusion_rules(df_algo, algo_exclusion_rules)
-    df_star_clean = apply_exclusion_rules(df_star, star_exclusion_rules)
+    matched = pd.merge(algo_non_excluded, star_transformed, on="KEY", how="inner", suffixes=('_ALGO', '_STAR'))
 
-    # Show excluded
-    df_algo_excluded = df_algo_orig[~df_algo_orig.index.isin(df_algo_clean.index)]
-    df_star_excluded = df_star_orig[~df_star_orig.index.isin(df_star_clean.index)]
+    status = f"Reconciliation done.\nExcluded ALGO: {len(algo_excluded)}\nExcluded STAR: {len(star_excluded)}\nMatched Records: {len(matched)}"
+    return status, algo_excluded, star_excluded, matched
 
-    # Apply STAR update rules after exclusions
-    df_star_transformed = apply_star_update_rules(df_star_clean.copy(), star_update_rules)
+# UI
+with gr.Blocks() as app:
+    gr.Markdown("## Reconciliation App")
 
-    # Reconciliation
-    df_algo_clean = df_algo_clean.rename(columns={"KEY": "ALGO_KEY"})
-    df_star_transformed = df_star_transformed.rename(columns={"KEY": "STAR_KEY"})
+    with gr.Tab("1. Load CSV Files"):
+        algo_file = gr.File(label="Upload ALGO CSV")
+        star_file = gr.File(label="Upload STAR CSV")
+        load_btn = gr.Button("Load Files")
+        load_status = gr.Textbox(label="Status")
+        algo_preview = gr.Dataframe()
+        star_preview = gr.Dataframe()
+        load_btn.click(load_files, [algo_file, star_file], [load_status, algo_preview, star_preview])
 
-    matched = pd.merge(df_algo_clean, df_star_transformed, left_on="ALGO_KEY", right_on="STAR_KEY", how="inner")
-    unmatched_algo = df_algo_clean[~df_algo_clean["ALGO_KEY"].isin(matched["ALGO_KEY"])]
-    unmatched_star = df_star_transformed[~df_star_transformed["STAR_KEY"].isin(matched["STAR_KEY"])]
+    with gr.Tab("2. Add Exclusion Rules"):
+        source_input = gr.Dropdown(["ALGO", "STAR"], label="Data Source")
+        column_input = gr.Textbox(label="Column")
+        condition_input = gr.Radio(["=", "!="], label="Condition")
+        value_input = gr.Textbox(label="Value")
+        excl_btn = gr.Button("Add Rule")
+        excl_output = gr.Textbox(label="Rule Status")
+        excl_btn.click(add_exclusion_rule, [source_input, column_input, condition_input, value_input], excl_output)
 
-    return (
-        df_algo_excluded,
-        df_star_excluded,
-        df_algo_clean,
-        df_star_transformed,
-        matched,
-        unmatched_algo,
-        unmatched_star,
-    )
+    with gr.Tab("3. Add STAR Post Direction Rules"):
+        update_column = gr.Textbox(label="Column")
+        update_condition = gr.Radio(["=", "!="], label="Condition")
+        update_value = gr.Textbox(label="Value")
+        post_dir = gr.Textbox(label="Post Direction to Append")
+        update_btn = gr.Button("Add Update Rule")
+        update_status = gr.Textbox(label="Update Rule Status")
+        update_btn.click(add_star_update_rule, [update_column, update_condition, update_value, post_dir], update_status)
 
-# Add exclusion rules
-def collect_algo_exclusion_rules(column, condition, value):
-    algo_exclusion_rules.append({"column": column, "condition": condition, "value": value})
-    return f"Added ALGO exclusion rule: {column} {condition} {value}"
-
-def collect_star_exclusion_rules(column, condition, value):
-    star_exclusion_rules.append({"column": column, "condition": condition, "value": value})
-    return f"Added STAR exclusion rule: {column} {condition} {value}"
-
-# Add update rules for STAR
-def collect_star_update_rules(mode, column1, column2, new_column, column, to_replace, replacement):
-    if mode == "concat":
-        star_update_rules.append({
-            "mode": "concat",
-            "column1": column1,
-            "column2": column2,
-            "new_column": new_column
-        })
-        return f"Added STAR concat rule: {new_column} = {column1} + {column2}"
-    elif mode == "replace":
-        star_update_rules.append({
-            "mode": "replace",
-            "column": column,
-            "to_replace": to_replace,
-            "replacement": replacement
-        })
-        return f"Added STAR replace rule: {column}: {to_replace} -> {replacement}"
-    return "Invalid rule"
-
-# Gradio Interface
-with gr.Blocks() as demo:
-    gr.Markdown("# Reconciliation App")
-
-    with gr.Tab("Inputs"):
-        algo_file_input = gr.File(label="Upload ALGO File (CSV)")
-        star_file_input = gr.File(label="Upload STAR File (CSV)")
-
-    with gr.Tab("Exclusion Rules"):
-        gr.Markdown("## ALGO Exclusion Rules")
-        algo_column = gr.Textbox(label="ALGO Column Name")
-        algo_condition = gr.Dropdown(["=", "!="], label="Condition")
-        algo_value = gr.Textbox(label="Value")
-        algo_rule_output = gr.Textbox(label="Status")
-        algo_add_rule = gr.Button("Add ALGO Rule")
-        algo_add_rule.click(
-            collect_algo_exclusion_rules,
-            inputs=[algo_column, algo_condition, algo_value],
-            outputs=algo_rule_output,
-        )
-
-        gr.Markdown("## STAR Exclusion Rules")
-        star_column = gr.Textbox(label="STAR Column Name")
-        star_condition = gr.Dropdown(["=", "!="], label="Condition")
-        star_value = gr.Textbox(label="Value")
-        star_rule_output = gr.Textbox(label="Status")
-        star_add_rule = gr.Button("Add STAR Rule")
-        star_add_rule.click(
-            collect_star_exclusion_rules,
-            inputs=[star_column, star_condition, star_value],
-            outputs=star_rule_output,
-        )
-
-    with gr.Tab("STAR Update Rules"):
-        update_mode = gr.Dropdown(["concat", "replace"], label="Mode")
-        update_column1 = gr.Textbox(label="Column 1 (for concat)")
-        update_column2 = gr.Textbox(label="Column 2 (for concat)")
-        update_new_column = gr.Textbox(label="New Column Name (for concat)")
-        update_column = gr.Textbox(label="Column (for replace)")
-        update_to_replace = gr.Textbox(label="Value to Replace")
-        update_replacement = gr.Textbox(label="Replacement Value")
-        update_status = gr.Textbox(label="Status")
-        add_update_rule = gr.Button("Add STAR Update Rule")
-        add_update_rule.click(
-            collect_star_update_rules,
-            inputs=[
-                update_mode, update_column1, update_column2,
-                update_new_column, update_column,
-                update_to_replace, update_replacement
-            ],
-            outputs=update_status
-        )
-
-    with gr.Tab("Run Reconciliation"):
-        run_button = gr.Button("Run Reconciliation")
-        algo_excluded_output = gr.Dataframe(label="ALGO Excluded Records")
-        star_excluded_output = gr.Dataframe(label="STAR Excluded Records")
-        algo_clean_output = gr.Dataframe(label="ALGO Remaining Records")
-        star_clean_output = gr.Dataframe(label="STAR Remaining Records")
+    with gr.Tab("4. Run Reconciliation"):
+        rec_btn = gr.Button("Reconcile Now")
+        rec_status = gr.Textbox(label="Reconciliation Summary")
+        excluded_algo = gr.Dataframe(label="Excluded ALGO Records")
+        excluded_star = gr.Dataframe(label="Excluded STAR Records")
         matched_output = gr.Dataframe(label="Matched Records")
-        unmatched_algo_output = gr.Dataframe(label="Unmatched ALGO Records")
-        unmatched_star_output = gr.Dataframe(label="Unmatched STAR Records")
+        rec_btn.click(reconcile, [], [rec_status, excluded_algo, excluded_star, matched_output])
 
-        run_button.click(
-            reconcile,
-            inputs=[algo_file_input, star_file_input],
-            outputs=[
-                algo_excluded_output, star_excluded_output,
-                algo_clean_output, star_clean_output,
-                matched_output, unmatched_algo_output, unmatched_star_output
-            ]
-        )
-
-demo.launch()
+app.launch()
+        
 
         
 
