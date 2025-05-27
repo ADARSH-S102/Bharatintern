@@ -1,3 +1,23 @@
+INSERT INTO currencies (abbr, description, decimal_places, decimal_char, thousand_separator) VALUES 
+('EUR', 'Euro', 2, ',', '.'),
+('JPY', 'Japanese Yen', 0, '.', ','),
+('GBP', 'British Pound Sterling', 2, '.', ','),
+('CNY', 'Chinese Yuan Renminbi', 2, '.', ','),
+('AUD', 'Australian Dollar', 2, '.', ','),
+('CAD', 'Canadian Dollar', 2, '.', ','),
+('CHF', 'Swiss Franc', 2, '.', '\''),
+('SEK', 'Swedish Krona', 2, ',', '.');
+
+
+
+
+
+
+
+
+
+
+
 Thanks! Since you're using **SQL Developer**, you're working with **Oracle Database**.
 
 Here's the correct and Oracle-compatible SQL code to create the `currencies` table, including identity-based auto-increment for the `id` column.
