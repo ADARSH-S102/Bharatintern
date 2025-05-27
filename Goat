@@ -1,3 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Currencies</title>
+  <style>
+    .toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+    .toolbar button {
+      margin-left: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+    }
+    th {
+      background-color: #f0f0f0;
+    }
+    .status-icon {
+      font-weight: bold;
+    }
+    .valid {
+      color: green;
+    }
+    .warning {
+      color: orange;
+    }
+    .error {
+      color: red;
+    }
+    /* Modal styles */
+    .modal {
+      display: none; 
+      position: fixed; 
+      z-index: 1; 
+      left: 0;
+      top: 0;
+      width: 100%; 
+      height: 100%; 
+      overflow: auto; 
+      background-color: rgb(0,0,0); 
+      background-color: rgba(0,0,0,0.4); 
+      padding-top: 60px;
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: 5% auto; 
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%; 
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .close:hover,
+    .close:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+&nbsp;
+&nbsp;
+
+  <div class="toolbar">
+    <button onclick="openModal()">+</button>
+    <button onclick="refreshTable()">⟳</button>
+    <button onclick="deleteSelected()">🗑</button>
+  </div>
+&nbsp;
+&nbsp;
+
+  <table id="currencyTable">
+    <thead>
+      <tr>
+        <th>Select</th>
+        <th>Status</th>
+        <th>Abbreviation</th>
+        <th>Description</th>
+        <th>Decimal Places</th>
+        <th>Decimal Char</th>
+        <th>Thousand Separator</th>
+      </tr>
+    </thead>
+    <tbody id="currencyBody">
+      <!-- Rows will be added dynamically -->
+    </tbody>
+  </table>
+&nbsp;
+&nbsp;
+
+  <!-- Modal for adding currency -->
+  <div id="currencyModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h2>Add New Currency</h2>
+      <label for="abbreviation">Abbreviation:</label>
+      <input type="text" id="abbreviation" required>
+      <br>
+      <label for="description">Description:</label>
+      <input type="text" id="description" required>
+      <br>
+      <label for="decimalPlaces">Decimal Places:</label>
+      <input type="number" id="decimalPlaces" value="2" min="0" max="6">
+      <br>
+      <label for="decimalChar">Decimal Char:</label>
+      <input type="text" id="decimalChar" maxlength="1" value=".">
+      <br>
+      <label for="thousandSeparator">Thousand Separator:</label>
+      <input type="text" id="thousandSeparator" value=",">
+      <br>
+      <button onclick="addCurrencyFromModal()">Add Currency</button>
+    </div>
+  </div>
+&nbsp;
+&nbsp;
+
+  <script>
+    let currencies = [];
+&nbsp;
+&nbsp;
+
+    function openModal() {
+      document.getElementById('currencyModal').style.display = 'block';
+    }
+&nbsp;
+&nbsp;
+
+    function closeModal() {
+      document.getElementById('currencyModal').style.display = 'none';
+    }
+&nbsp;
+&nbsp;
+
+    function addCurrencyFromModal() {
+      const abbreviation = document.getElementById('abbreviation').value;
+      const description = document.getElementById('description').value;
+      const decimalPlaces = parseInt(document.getElementById('decimalPlaces').value);
+      const decimalChar = document.getElementById('decimalChar').value;
+      const thousandSeparator = document.getElementById('thousandSeparator').value;
+&nbsp;
+&nbsp;
+
+      const newCurrency = {
+        id: Date.now(),
+        abbreviation: abbreviation,
+        description: description,
+        decimalPlaces: decimalPlaces,
+        decimalChar: decimalChar,
+        thousandSeparator: thousandSeparator,
+        selected: false,
+        status: 'warning'
+      };
+      currencies.push(newCurrency);
+      renderTable();
+      closeModal();
+    }
+&nbsp;
+&nbsp;
+
+    function deleteSelected() {
+      currencies = currencies.filter(c => !c.selected);
+      renderTable();
+    }
+&nbsp;
+&nbsp;
+
+    function refreshTable() {
+      renderTable();
+    }
+&nbsp;
+&nbsp;
+
+    function updateCurrency(index, field, value) {
+      currencies[index][field] = field === 'decimalPlaces' ? parseInt(value) : value;
+      validate(index);
+    }
+&nbsp;
+&nbsp;
+
+    function toggleSelection(index) {
+      currencies[index].selected = !currencies[index].selected;
+    }
+&nbsp;
+&nbsp;
+
+    function validate(index) {
+      const c = currencies[index];
+      if (!c.abbreviation || !c.description) {
+        c.status = 'error';
+      } else if (c.decimalPlaces < 0 || c.decimalPlaces > 6 || !['.', ','].includes(c.decimalChar)) {
+        c.status = 'warning';
+      } else {
+        c.status = 'valid';
+      }
+      renderTable();
+    }
+&nbsp;
+&nbsp;
+
+    function renderTable() {
+      const tbody = document.getElementById('currencyBody');
+      tbody.innerHTML = '';
+      currencies.forEach((c, i) => {
+        const row = document.createElement('tr');
+&nbsp;
+&nbsp;
+
+        row.innerHTML = `
+          <td><input type="checkbox" ${c.selected ? 'checked' : ''} onchange="toggleSelection(${i})"></td>
+          <td><span class="status-icon ${c.status}">${c.status === 'valid' ? '✓' : c.status === 'warning' ? '!' : '×'}</span></td>
+          <td><input type="text" value="${c.abbreviation}" oninput="updateCurrency(${i}, 'abbreviation', this.value)"></td>
+          <td><input type="text" value="${c.description}" oninput="updateCurrency(${i}, 'description', this.value)"></td>
+          <td><input type="number" value="${c.decimalPlaces}" oninput="updateCurrency(${i}, 'decimalPlaces', this.value)"></td>
+          <td><input type="text" maxlength="1" value="${c.decimalChar}" oninput="updateCurrency(${i}, 'decimalChar', this.value)"></td>
+          <td><input type="text" value="${c.thousandSeparator}" oninput="updateCurrency(${i}, 'thousandSeparator', this.value)"></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+&nbsp;
+&nbsp;
+
+    // Initial seed
+    addCurrency();
+  </script>
+&nbsp;
+&nbsp;
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
