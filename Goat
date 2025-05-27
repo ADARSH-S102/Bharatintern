@@ -1,68 +1,9 @@
-Great! Let's start with #1: The Angular codebase for the Currency Module — including the full UI structure with table, modal form, validations, and service integration.
+Sure! Below is the complete Angular code for your Currency Module with CRUD operations.
 
 
 ---
 
-Angular Currency Module (Step-by-Step)
-
-1. Generate Component and Service
-
-ng generate component currencies
-ng generate service currency
-
-
----
-
-2. currencies.component.html (UI Template)
-
-<div class="toolbar">
-  <button (click)="openModal()">+ Add Currency</button>
-</div>
-
-<table>
-  <thead>
-    <tr>
-      <th>Abbreviation</th>
-      <th>Description</th>
-      <th>Decimal Places</th>
-      <th>Decimal Char</th>
-      <th>Thousand Separator</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr *ngFor="let currency of currencies">
-      <td>{{ currency.abbr }}</td>
-      <td>{{ currency.description }}</td>
-      <td>{{ currency.decimalPlaces }}</td>
-      <td>{{ currency.decimalChar }}</td>
-      <td>{{ currency.thousandSeparator }}</td>
-      <td>
-        <button (click)="editCurrency(currency)">Edit</button>
-        <button (click)="deleteCurrency(currency.id)">Delete</button>
-      </td>
-    </tr>
-  </tbody>
-</table>
-
-<!-- Modal -->
-<div *ngIf="showModal" class="modal">
-  <form (ngSubmit)="saveCurrency()" #currencyForm="ngForm">
-    <input name="abbr" [(ngModel)]="form.abbr" placeholder="Abbreviation" required />
-    <input name="description" [(ngModel)]="form.description" placeholder="Description" required />
-    <input name="decimalPlaces" [(ngModel)]="form.decimalPlaces" type="number" placeholder="Decimal Places" required />
-    <input name="decimalChar" [(ngModel)]="form.decimalChar" placeholder="Decimal Char" required maxlength="1" />
-    <input name="thousandSeparator" [(ngModel)]="form.thousandSeparator" placeholder="Thousand Separator" required maxlength="1" />
-    
-    <button type="submit" [disabled]="!currencyForm.form.valid">Save</button>
-    <button type="button" (click)="closeModal()">Cancel</button>
-  </form>
-</div>
-
-
----
-
-3. currencies.component.ts (Logic)
+1. currencies.component.ts (Component Logic)
 
 import { Component, OnInit } from '@angular/core';
 import { CurrencyService } from '../currency.service';
@@ -123,10 +64,59 @@ export class CurrenciesComponent implements OnInit {
 
 ---
 
-4. currency.service.ts (API Service)
+2. currencies.component.html (UI Template)
 
-import { HttpClient } from '@angular/common/http';
+<div class="toolbar">
+  <button (click)="openModal()">+ Add Currency</button>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Abbreviation</th>
+      <th>Description</th>
+      <th>Decimal Places</th>
+      <th>Decimal Char</th>
+      <th>Thousand Separator</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let currency of currencies">
+      <td>{{ currency.abbr }}</td>
+      <td>{{ currency.description }}</td>
+      <td>{{ currency.decimalPlaces }}</td>
+      <td>{{ currency.decimalChar }}</td>
+      <td>{{ currency.thousandSeparator }}</td>
+      <td>
+        <button (click)="editCurrency(currency)">Edit</button>
+        <button (click)="deleteCurrency(currency.id)">Delete</button>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Modal -->
+<div *ngIf="showModal" class="modal">
+  <form (ngSubmit)="saveCurrency()" #currencyForm="ngForm">
+    <input name="abbr" [(ngModel)]="form.abbr" placeholder="Abbreviation" required />
+    <input name="description" [(ngModel)]="form.description" placeholder="Description" required />
+    <input name="decimalPlaces" [(ngModel)]="form.decimalPlaces" type="number" placeholder="Decimal Places" required />
+    <input name="decimalChar" [(ngModel)]="form.decimalChar" placeholder="Decimal Char" required maxlength="1" />
+    <input name="thousandSeparator" [(ngModel)]="form.thousandSeparator" placeholder="Thousand Separator" required maxlength="1" />
+    
+    <button type="submit" [disabled]="!currencyForm.form.valid">Save</button>
+    <button type="button" (click)="closeModal()">Cancel</button>
+  </form>
+</div>
+
+
+---
+
+3. currency.service.ts (API Service)
+
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root'
@@ -156,22 +146,35 @@ export class CurrencyService {
 
 ---
 
-5. Import FormsModule and HttpClientModule
+4. app.module.ts (Module Setup)
 
-In app.module.ts:
-
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 
+import { AppComponent } from './app.component';
+import { CurrenciesComponent } from './currencies/currencies.component';
+
 @NgModule({
-  imports: [FormsModule, HttpClientModule]
+  declarations: [
+    AppComponent,
+    CurrenciesComponent
+  ],
+  imports: [
+    BrowserModule,
+    FormsModule,
+    HttpClientModule
+  ],
+  providers: [],
+  bootstrap: [AppComponent]
 })
-export class AppModule {}
+export class AppModule { }
 
 
 ---
 
-6. Basic CSS (currencies.component.css)
+5. Basic CSS (currencies.component.css)
 
 .modal {
   background: white;
@@ -185,15 +188,32 @@ export class AppModule {}
   z-index: 1000;
 }
 
+button {
+  margin-top: 10px;
+}
+
 
 ---
 
-Next:
+6. Backend (Spring Boot)
 
-Want me to provide the Spring Boot backend to connect this to?
-
-I can also provide test cases and documentation templates next.
+The backend part is already shared previously (currency entity, repository, controller). You should now have the Spring Boot backend running at http://localhost:8080/api/currencies and handling CRUD operations.
 
 
-Let me know!
+---
+
+Final Steps
+
+1. Run Spring Boot API: Make sure the Spring Boot backend is up and running.
+
+
+2. Run Angular App: Make sure your Angular app is connected to the backend and serves the frontend correctly.
+
+
+
+
+---
+
+Let me know if you need help with any other part of the setup or if there’s an issue with this code!
+
 
