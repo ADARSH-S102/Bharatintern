@@ -1,23 +1,23 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
-interface Currency {
-  id: number;
-  abbr: string;
-  description: string;
-  decimalPlaces: number;
-  decimalChar: string;
-  thousandSeparator: string;
-}
-
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
 })
 export class HomeComponent implements OnInit {
+
   currencyForm: FormGroup;
-  currencies: Currency[] = [];
+  currencies: {
+    id: number;
+    abbr: string;
+    description: string;
+    decimalPlaces: number;
+    decimalChar: string;
+    thousandSeparator: string;
+  }[] = [];
+
   showModal = false;
   isEdit = false;
   editId: number | null = null;
@@ -34,18 +34,18 @@ export class HomeComponent implements OnInit {
     });
   }
 
-  openModal(edit: boolean = false, currency?: Currency): void {
+  openModal(edit: boolean = false, currency?: any): void {
     this.showModal = true;
     this.isEdit = edit;
 
     if (edit && currency) {
       this.editId = currency.id;
       this.currencyForm.setValue({
-        abbr: currency.abbr,
-        description: currency.description,
-        decimalPlaces: currency.decimalPlaces,
-        decimalChar: currency.decimalChar,
-        thousandSeparator: currency.thousandSeparator
+        abbr: currency.abbr || '',
+        description: currency.description || '',
+        decimalPlaces: currency.decimalPlaces || 2,
+        decimalChar: currency.decimalChar || '.',
+        thousandSeparator: currency.thousandSeparator || ','
       });
     } else {
       this.editId = null;
@@ -75,7 +75,7 @@ export class HomeComponent implements OnInit {
         this.currencies[index] = { id: this.editId, ...formValue };
       }
     } else {
-      const newId = this.currencies.length ? Math.max(...this.currencies.map(c => c.id)) + 1 : 1;
+      const newId = this.currencies.length > 0 ? Math.max(...this.currencies.map(c => c.id)) + 1 : 1;
       this.currencies.push({ id: newId, ...formValue });
     }
 
