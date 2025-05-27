@@ -1,3 +1,108 @@
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+
+interface Currency {
+  id: number;
+  abbr: string;
+  description: string;
+  decimalPlaces: number;
+  decimalChar: string;
+  thousandSeparator: string;
+}
+
+@Component({
+  selector: 'app-home',
+  templateUrl: './home.component.html',
+  styleUrls: ['./home.component.css']
+})
+export class HomeComponent implements OnInit {
+  currencyForm: FormGroup;
+  currencies: Currency[] = [];
+  showModal = false;
+  isEdit = false;
+  editId: number | null = null;
+
+  constructor(private fb: FormBuilder) {}
+
+  ngOnInit(): void {
+    this.currencyForm = this.fb.group({
+      abbr: ['', Validators.required],
+      description: ['', Validators.required],
+      decimalPlaces: [2, [Validators.required, Validators.min(0)]],
+      decimalChar: ['.', Validators.required],
+      thousandSeparator: [',', Validators.required]
+    });
+  }
+
+  openModal(edit: boolean = false, currency?: Currency): void {
+    this.showModal = true;
+    this.isEdit = edit;
+
+    if (edit && currency) {
+      this.editId = currency.id;
+      this.currencyForm.setValue({
+        abbr: currency.abbr,
+        description: currency.description,
+        decimalPlaces: currency.decimalPlaces,
+        decimalChar: currency.decimalChar,
+        thousandSeparator: currency.thousandSeparator
+      });
+    } else {
+      this.editId = null;
+      this.currencyForm.reset({
+        abbr: '',
+        description: '',
+        decimalPlaces: 2,
+        decimalChar: '.',
+        thousandSeparator: ','
+      });
+    }
+  }
+
+  closeModal(): void {
+    this.showModal = false;
+    this.currencyForm.reset();
+  }
+
+  saveCurrency(): void {
+    if (this.currencyForm.invalid) return;
+
+    const formValue = this.currencyForm.value;
+
+    if (this.isEdit && this.editId !== null) {
+      const index = this.currencies.findIndex(c => c.id === this.editId);
+      if (index > -1) {
+        this.currencies[index] = { id: this.editId, ...formValue };
+      }
+    } else {
+      const newId = this.currencies.length ? Math.max(...this.currencies.map(c => c.id)) + 1 : 1;
+      this.currencies.push({ id: newId, ...formValue });
+    }
+
+    this.closeModal();
+  }
+
+  deleteCurrency(id: number): void {
+    this.currencies = this.currencies.filter(c => c.id !== id);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <div class="toolbar">
   <button type="button" (click)="openModal()">+ Add Currency</button>
 </div>
