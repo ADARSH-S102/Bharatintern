@@ -1,76 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Currency Table</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-    }
+Thanks for the clarification! Since you're using Angular and the "+" button doesn't open the modal, the issue likely lies in one of the following:
 
-    .toolbar {
-      text-align: right;
-      margin-bottom: 10px;
-    }
+1. The modal component is not connected or used correctly.
 
-    .toolbar button {
-      font-size: 18px;
-      padding: 6px 12px;
-    }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
+2. Angular doesn’t recognize the button click event.
 
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: center;
-    }
 
-    th {
-      background-color: #f9f9f9;
-    }
+3. The logic to open the modal is missing or misconfigured.
 
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
 
-    .modal.show {
-      display: flex;
-    }
 
-    .modal-content {
-      background: #fff;
-      padding: 20px;
-      border-radius: 6px;
-      width: 300px;
-    }
 
-    .modal-content input {
-      width: 100%;
-      margin-bottom: 10px;
-      padding: 8px;
-    }
+---
 
-    .modal-footer {
-      text-align: right;
-    }
-  </style>
-</head>
-<body>
+Let’s Fix It in Angular
+
+Assuming you want to show a modal to add currency details:
+
+1. Component Template (currencies.component.html)
 
 <div class="toolbar">
-  <button onclick="openModal()">+</button>
+  <button (click)="openModal()">+</button>
 </div>
 
 <table>
@@ -83,72 +33,131 @@
       <th>Thousand Separator</th>
     </tr>
   </thead>
-  <tbody id="currencyBody"></tbody>
+  <tbody>
+    <tr *ngFor="let currency of currencies">
+      <td>{{ currency.abbr }}</td>
+      <td>{{ currency.desc }}</td>
+      <td>{{ currency.decimalPlaces }}</td>
+      <td>{{ currency.decimalChar }}</td>
+      <td>{{ currency.thousandSeparator }}</td>
+    </tr>
+  </tbody>
 </table>
 
 <!-- Modal -->
-<div class="modal" id="currencyModal">
-  <div class="modal-content">
+<div *ngIf="showModal" class="modal-overlay">
+  <div class="modal">
     <h3>Add Currency</h3>
-    <input id="abbr" placeholder="Abbreviation">
-    <input id="desc" placeholder="Description">
-    <input id="decimalPlaces" type="number" placeholder="Decimal Places">
-    <input id="decimalChar" placeholder="Decimal Char (e.g. .)">
-    <input id="thousandSeparator" placeholder="Thousand Separator">
-    <div class="modal-footer">
-      <button onclick="closeModal()">Cancel</button>
-      <button onclick="saveCurrency()">Save</button>
-    </div>
+    <input [(ngModel)]="newCurrency.abbr" placeholder="Abbreviation" />
+    <input [(ngModel)]="newCurrency.desc" placeholder="Description" />
+    <input type="number" [(ngModel)]="newCurrency.decimalPlaces" placeholder="Decimal Places" />
+    <input [(ngModel)]="newCurrency.decimalChar" placeholder="Decimal Char" />
+    <input [(ngModel)]="newCurrency.thousandSeparator" placeholder="Thousand Separator" />
+    <button (click)="saveCurrency()">Save</button>
+    <button (click)="closeModal()">Cancel</button>
   </div>
 </div>
 
-<script>
-  const currencies = [];
+2. Component Class (currencies.component.ts)
 
-  function openModal() {
-    document.getElementById("currencyModal").classList.add("show");
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-currencies',
+  templateUrl: './currencies.component.html',
+  styleUrls: ['./currencies.component.css']
+})
+export class CurrenciesComponent {
+  currencies: any[] = [];
+  showModal = false;
+
+  newCurrency = {
+    abbr: '',
+    desc: '',
+    decimalPlaces: 0,
+    decimalChar: '',
+    thousandSeparator: ''
+  };
+
+  openModal() {
+    this.showModal = true;
   }
 
-  function closeModal() {
-    document.getElementById("currencyModal").classList.remove("show");
-    document.querySelectorAll('#currencyModal input').forEach(i => i.value = '');
+  closeModal() {
+    this.showModal = false;
+    this.resetForm();
   }
 
-  function saveCurrency() {
-    const abbreviation = document.getElementById("abbr").value.trim();
-    const description = document.getElementById("desc").value.trim();
-    const decimalPlaces = document.getElementById("decimalPlaces").value;
-    const decimalChar = document.getElementById("decimalChar").value.trim();
-    const thousandSeparator = document.getElementById("thousandSeparator").value.trim();
-
-    if (!abbreviation || !description) {
-      alert("Abbreviation and Description are required.");
+  saveCurrency() {
+    if (!this.newCurrency.abbr || !this.newCurrency.desc) {
+      alert('Abbreviation and Description are required!');
       return;
     }
-
-    currencies.push({ abbreviation, description, decimalPlaces, decimalChar, thousandSeparator });
-    renderTable();
-    closeModal();
+    this.currencies.push({ ...this.newCurrency });
+    this.closeModal();
   }
 
-  function renderTable() {
-    const tbody = document.getElementById("currencyBody");
-    tbody.innerHTML = '';
-    currencies.forEach(c => {
-      const row = `<tr>
-        <td>${c.abbreviation}</td>
-        <td>${c.description}</td>
-        <td>${c.decimalPlaces}</td>
-        <td>${c.decimalChar}</td>
-        <td>${c.thousandSeparator}</td>
-      </tr>`;
-      tbody.innerHTML += row;
-    });
+  resetForm() {
+    this.newCurrency = {
+      abbr: '',
+      desc: '',
+      decimalPlaces: 0,
+      decimalChar: '',
+      thousandSeparator: ''
+    };
   }
-</script>
+}
 
-</body>
-</html>
+3. Style (currencies.component.css)
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  padding: 20px;
+  border-radius: 5px;
+  width: 300px;
+}
+
+4. Don’t Forget to Import FormsModule
+
+In app.module.ts:
+
+import { FormsModule } from '@angular/forms';
+
+@NgModule({
+  declarations: [CurrenciesComponent],
+  imports: [BrowserModule, FormsModule],
+})
+export class AppModule {}
+
+
+---
+
+After This:
+
+Clicking "+" opens a modal popup.
+
+You can enter data and click Save.
+
+The table updates.
+
+Modal closes.
+
+
+Let me know if you're using Angular Material or a different modal system—I can adjust the code accordingly.
+
+
+    
 
 
 
