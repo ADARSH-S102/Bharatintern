@@ -1,3 +1,160 @@
+Thanks for the clarification. If you're still seeing an error like:
+
+Property 'currencyForm' does not exist on type 'HomeComponent'
+
+That means Angular isn't recognizing the FormBuilder logic correctly. This typically happens if:
+
+1. ReactiveFormsModule is not imported in your module.
+
+
+2. The code isn’t saved or built correctly.
+
+
+3. There's a missing FormsModule or ReactiveFormsModule in app.module.ts.
+
+
+
+
+---
+
+✅ Step-by-Step Fix:
+
+1. Make sure ReactiveFormsModule is imported in app.module.ts:
+
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { ReactiveFormsModule } from '@angular/forms'; // required!
+
+import { AppComponent } from './app.component';
+import { HomeComponent } from './home/home.component';
+
+@NgModule({
+  declarations: [AppComponent, HomeComponent],
+  imports: [
+    BrowserModule,
+    ReactiveFormsModule // make sure this is added
+  ],
+  providers: [],
+  bootstrap: [AppComponent]
+})
+export class AppModule {}
+
+
+---
+
+2. Full working home.component.ts:
+
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+
+@Component({
+  selector: 'app-home',
+  templateUrl: './home.component.html',
+  styleUrls: ['./home.component.css']
+})
+export class HomeComponent implements OnInit {
+  currencyForm!: FormGroup;  // NOTICE the use of ! to tell TypeScript it's assigned later
+
+  currencies: any[] = [];
+  showModal = false;
+  isEdit = false;
+  editId: number | null = null;
+
+  constructor(private fb: FormBuilder) {}
+
+  ngOnInit(): void {
+    this.currencyForm = this.fb.group({
+      abbr: ['', Validators.required],
+      description: ['', Validators.required],
+      decimalPlaces: [2, [Validators.required, Validators.min(0)]],
+      decimalChar: ['.', Validators.required],
+      thousandSeparator: [',', Validators.required]
+    });
+  }
+
+  openModal(edit: boolean = false, currency?: any): void {
+    this.showModal = true;
+    this.isEdit = edit;
+
+    if (edit && currency) {
+      this.editId = currency.id;
+      this.currencyForm.setValue({
+        abbr: currency.abbr,
+        description: currency.description,
+        decimalPlaces: currency.decimalPlaces,
+        decimalChar: currency.decimalChar,
+        thousandSeparator: currency.thousandSeparator
+      });
+    } else {
+      this.editId = null;
+      this.currencyForm.reset({
+        abbr: '',
+        description: '',
+        decimalPlaces: 2,
+        decimalChar: '.',
+        thousandSeparator: ','
+      });
+    }
+  }
+
+  closeModal(): void {
+    this.showModal = false;
+    this.currencyForm.reset();
+  }
+
+  saveCurrency(): void {
+    if (this.currencyForm.invalid) return;
+
+    const formValue = this.currencyForm.value;
+
+    if (this.isEdit && this.editId !== null) {
+      const index = this.currencies.findIndex(c => c.id === this.editId);
+      if (index > -1) {
+        this.currencies[index] = { id: this.editId, ...formValue };
+      }
+    } else {
+      const newId = this.currencies.length > 0 ? Math.max(...this.currencies.map(c => c.id)) + 1 : 1;
+      this.currencies.push({ id: newId, ...formValue });
+    }
+
+    this.closeModal();
+  }
+
+  deleteCurrency(id: number): void {
+    this.currencies = this.currencies.filter(c => c.id !== id);
+  }
+}
+
+
+---
+
+Let me know if you want me to:
+
+Share the latest home.component.html again.
+
+Add styling or validation messages.
+
+Connect this to a backend API.
+
+
+I'll help until it runs 100% clean.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
