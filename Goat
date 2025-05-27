@@ -1,12 +1,27 @@
-INSERT INTO currencies (abbr, description, decimal_places, decimal_char, thousand_separator) VALUES 
-('EUR', 'Euro', 2, ',', '.'),
-('JPY', 'Japanese Yen', 0, '.', ','),
-('GBP', 'British Pound Sterling', 2, '.', ','),
-('CNY', 'Chinese Yuan Renminbi', 2, '.', ','),
-('AUD', 'Australian Dollar', 2, '.', ','),
-('CAD', 'Canadian Dollar', 2, '.', ','),
-('CHF', 'Swiss Franc', 2, '.', '\''),
-('SEK', 'Swedish Krona', 2, ',', '.');
+INSERT INTO currencies (abbr, description, decimal_places, decimal_char, thousand_separator) 
+VALUES ('EUR', 'Euro', 2, ',', '.');
+
+INSERT INTO currencies (abbr, description, decimal_places, decimal_char, thousand_separator) 
+VALUES ('JPY', 'Japanese Yen', 0, '.', ',');
+
+INSERT INTO currencies (abbr, description, decimal_places, decimal_char, thousand_separator) 
+VALUES ('GBP', 'British Pound Sterling', 2, '.', ',');
+
+INSERT INTO currencies (abbr, description, decimal_places, decimal_char, thousand_separator) 
+VALUES ('CNY', 'Chinese Yuan Renminbi', 2, '.', ',');
+
+INSERT INTO currencies (abbr, description, decimal_places, decimal_char, thousand_separator) 
+VALUES ('AUD', 'Australian Dollar', 2, '.', ',');
+
+INSERT INTO currencies (abbr, description, decimal_places, decimal_char, thousand_separator) 
+VALUES ('CAD', 'Canadian Dollar', 2, '.', ',');
+
+INSERT INTO currencies (abbr, description, decimal_places, decimal_char, thousand_separator) 
+VALUES ('CHF', 'Swiss Franc', 2, '.', ''');
+
+INSERT INTO currencies (abbr, description, decimal_places, decimal_char, thousand_separator) 
+VALUES ('SEK', 'Swedish Krona', 2, ',', '.');
+
 
 
 
