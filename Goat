@@ -1,3 +1,49 @@
+Here’s the SQL code to create a currencies table that matches your Angular UI fields:
+
+
+---
+
+SQL: Create currencies Table
+
+CREATE TABLE currencies (
+    id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    abbr VARCHAR(10) NOT NULL,
+    description VARCHAR(100) NOT NULL,
+    decimal_places INT NOT NULL,
+    decimal_char CHAR(1) NOT NULL,
+    thousand_separator CHAR(1) NOT NULL
+);
+
+
+---
+
+Sample Insert Statements (optional for testing)
+
+INSERT INTO currencies (abbr, description, decimal_places, decimal_char, thousand_separator)
+VALUES 
+('USD', 'United States Dollar', 2, '.', ','),
+('EUR', 'Euro', 2, ',', '.'),
+('JPY', 'Japanese Yen', 0, '.', ',');
+
+
+---
+
+Let me know which database you're using (e.g., PostgreSQL, MySQL, Oracle, etc.) if you need a version tailored to it or if you want backend API code to connect this table.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Thanks for the clarification. If you're still seeing an error like:
 
 Property 'currencyForm' does not exist on type 'HomeComponent'
