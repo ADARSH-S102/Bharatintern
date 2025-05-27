@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Currencies with Modal</title>
   <style>
     body {
@@ -16,6 +16,7 @@
 
     .toolbar button {
       margin-left: 10px;
+      padding: 6px 12px;
     }
 
     table {
@@ -26,6 +27,7 @@
     th, td {
       border: 1px solid #ccc;
       padding: 8px;
+      text-align: center;
     }
 
     th {
@@ -52,10 +54,16 @@
     .modal {
       display: none;
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       background-color: rgba(0,0,0,0.5);
+      z-index: 9999;
       justify-content: center;
       align-items: center;
+    }
+
+    .modal.show {
+      display: flex;
     }
 
     .modal-content {
@@ -65,16 +73,22 @@
       width: 400px;
     }
 
+    .modal-content h3 {
+      margin-top: 0;
+    }
+
     .modal-content input {
       width: 100%;
-      padding: 6px;
+      padding: 8px;
       margin: 6px 0;
+      box-sizing: border-box;
     }
 
     .modal-footer {
       display: flex;
       justify-content: flex-end;
       gap: 10px;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -99,11 +113,11 @@
     </tr>
   </thead>
   <tbody id="currencyBody">
-    <!-- Rows injected dynamically -->
+    <!-- Rows will be inserted here -->
   </tbody>
 </table>
 
-<!-- Modal -->
+<!-- Modal Popup -->
 <div class="modal" id="currencyModal">
   <div class="modal-content">
     <h3>Add New Currency</h3>
@@ -123,11 +137,11 @@
   let currencies = [];
 
   function openModal() {
-    document.getElementById('currencyModal').style.display = 'flex';
+    document.getElementById('currencyModal').classList.add('show');
   }
 
   function closeModal() {
-    document.getElementById('currencyModal').style.display = 'none';
+    document.getElementById('currencyModal').classList.remove('show');
     document.querySelectorAll('.modal-content input').forEach(input => input.value = '');
   }
 
@@ -135,8 +149,13 @@
     const abbreviation = document.getElementById('abbr').value.trim();
     const description = document.getElementById('desc').value.trim();
     const decimalPlaces = parseInt(document.getElementById('decimalPlaces').value);
-    const decimalChar = document.getElementById('decimalChar').value;
-    const thousandSeparator = document.getElementById('thousandSeparator').value;
+    const decimalChar = document.getElementById('decimalChar').value.trim();
+    const thousandSeparator = document.getElementById('thousandSeparator').value.trim();
+
+    if (!abbreviation || !description) {
+      alert("Abbreviation and Description are required.");
+      return;
+    }
 
     const newCurrency = {
       id: Date.now(),
@@ -148,12 +167,6 @@
       selected: false,
       status: 'warning'
     };
-
-    // Validation
-    if (!abbreviation || !description) {
-      alert("Abbreviation and Description are required.");
-      return;
-    }
 
     currencies.push(newCurrency);
     validate(currencies.length - 1);
@@ -206,6 +219,9 @@
 
 </body>
 </html>
+
+
+  
 
 
 
