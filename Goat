@@ -1,421 +1,71 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Currencies with Popup Modal</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #fafafa;
-      color: #333;
-    }
-    .toolbar {
-      display: flex;
-      justify-content: flex-end;
-      margin-bottom: 12px;
-    }
-    .toolbar button {
-      margin-left: 10px;
-      padding: 8px 14px;
-      font-size: 20px;
-      font-weight: bold;
-      border: none;
-      background-color: #007bff;
-      color: white;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      user-select: none;
-    }
-    .toolbar button:hover {
-      background-color: #0056b3;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      box-shadow: 0 2px 6px rgba(0,0,0,.1);
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 10px 12px;
-      text-align: left;
-    }
-    th {
-      background-color: #f5f5f5;
-      font-weight: 600;
-    }
-    .status-icon {
-      font-weight: bold;
-      font-size: 18px;
-    }
-    .valid {
-      color: green;
-    }
-    .warning {
-      color: orange;
-    }
-    .error {
-      color: red;
-    }
-    /* Modal styling */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 2000;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      background-color: rgba(255, 255, 0, 0.8);  /* bright yellow overlay for demo */
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
-    }
-    .modal.show {
-      display: flex;
-    }
-    .modal-content {
-      background-color: white;
-      border-radius: 10px;
-      max-width: 400px;
-      width: 90%;
-      padding: 30px 30px 20px 30px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      position: relative;
-      user-select: text;
-    }
-    .modal-content h2 {
-      margin-top: 0;
-      margin-bottom: 20px;
-      font-weight: 700;
-      color: #222;
-      text-align: center;
-    }
-    .modal-content label {
-      display: block;
-      margin-top: 10px;
-      margin-bottom: 6px;
-      font-weight: 600;
-      font-size: 14px;
-      color: #555;
-    }
-    .modal-content input[type="text"],
-    .modal-content input[type="number"] {
-      width: 100%;
-      padding: 10px 12px;
-      font-size: 15px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      box-sizing: border-box;
-      transition: border-color 0.3s ease;
-    }
-    .modal-content input[type="text"]:focus,
-    .modal-content input[type="number"]:focus {
-      border-color: #007bff;
-      outline: none;
-    }
-    .modal-content button {
-      margin-top: 20px;
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 12px 0;
-      font-size: 18px;
-      cursor: pointer;
-      font-weight: 700;
-      width: 100%;
-      transition: background-color 0.3s ease;
-      user-select: none;
-    }
-    .modal-content button:hover {
-      background-color: #218838;
-    }
-    .close-btn {
-      position: absolute;
-      top: 14px;
-      right: 18px;
-      font-size: 32px;
-      font-weight: bold;
-      color: #999;
-      cursor: pointer;
-      transition: color 0.3s ease;
-      user-select: none;
-    }
-    .close-btn:hover {
-      color: #555;
-    }
-  </style>
-</head>
-<body>
+Great! Let's start with #1: The Angular codebase for the Currency Module — including the full UI structure with table, modal form, validations, and service integration.
 
-  <div class="toolbar">
-    <button id="addBtn" aria-label="Add Currency">+</button>
-    <button onclick="refreshTable()" aria-label="Refresh Table">⟳</button>
-    <button onclick="deleteSelected()" aria-label="Delete Selected">🗑</button>
-  </div>
-
-  <table id="currencyTable" aria-label="Currency Table">
-    <thead>
-      <tr>
-        <th>Select</th>
-        <th>Status</th>
-        <th>Abbreviation</th>
-        <th>Description</th>
-        <th>Decimal Places</th>
-        <th>Decimal Char</th>
-        <th>Thousand Separator</th>
-      </tr>
-    </thead>
-    <tbody id="currencyBody">
-      <!-- Rows added here -->
-    </tbody>
-  </table>
-
-  <!-- Modal -->
-  <div id="currencyModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1">
-    <div class="modal-content">
-      <span class="close-btn" id="modalCloseBtn" aria-label="Close Modal">&times;</span>
-      <h2 id="modalTitle">Add New Currency</h2>
-      <label for="abbreviationInput">Abbreviation</label>
-      <input type="text" id="abbreviationInput" autocomplete="off" placeholder="e.g. USD" />
-      <label for="descriptionInput">Description</label>
-      <input type="text" id="descriptionInput" autocomplete="off" placeholder="e.g. US Dollar" />
-      <label for="decimalPlacesInput">Decimal Places</label>
-      <input type="number" id="decimalPlacesInput" value="2" min="0" max="6" />
-      <label for="decimalCharInput">Decimal Character</label>
-      <input type="text" id="decimalCharInput" maxlength="1" value="." />
-      <label for="thousandSeparatorInput">Thousand Separator</label>
-      <input type="text" id="thousandSeparatorInput" maxlength="1" value="," />
-      <button id="addCurrencyConfirmedBtn">Add Currency</button>
-    </div>
-  </div>
-
-<script>
-  let currencies = [];
-
-  function openModal() {
-    console.log('Opening modal...');
-    const modal = document.getElementById('currencyModal');
-    modal.classList.add('show');
-    document.getElementById('abbreviationInput').focus();
-  }
-
-  function closeModal() {
-    console.log('Closing modal...');
-    const modal = document.getElementById('currencyModal');
-    modal.classList.remove('show');
-    clearModalInputs();
-  }
-
-  function clearModalInputs() {
-    document.getElementById('abbreviationInput').value = '';
-    document.getElementById('descriptionInput').value = '';
-    document.getElementById('decimalPlacesInput').value = 2;
-    document.getElementById('decimalCharInput').value = '.';
-    document.getElementById('thousandSeparatorInput').value = ',';
-  }
-
-  function addCurrencyFromModal() {
-    const abbreviation = document.getElementById('abbreviationInput').value.trim();
-    const description = document.getElementById('descriptionInput').value.trim();
-    const decimalPlacesRaw = document.getElementById('decimalPlacesInput').value;
-    const decimalPlaces = decimalPlacesRaw === '' ? 2 : parseInt(decimalPlacesRaw, 10);
-    const decimalChar = document.getElementById('decimalCharInput').value.trim();
-    const thousandSeparator = document.getElementById('thousandSeparatorInput').value.trim();
-
-    if (!abbreviation) {
-      alert('Abbreviation is required.');
-      document.getElementById('abbreviationInput').focus();
-      return;
-    }
-    if (!description) {
-      alert('Description is required.');
-      document.getElementById('descriptionInput').focus();
-      return;
-    }
-    if (decimalPlaces < 0 || decimalPlaces > 6 || isNaN(decimalPlaces)) {
-      alert('Decimal places must be a number between 0 and 6.');
-      document.getElementById('decimalPlacesInput').focus();
-      return;
-    }
-    if (!['.', ','].includes(decimalChar)) {
-      alert('Decimal character must be "." or ",".');
-      document.getElementById('decimalCharInput').focus();
-      return;
-    }
-
-    const newCurrency = {
-      id: Date.now(),
-      abbreviation,
-      description,
-      decimalPlaces,
-      decimalChar,
-      thousandSeparator,
-      selected: false,
-      status: 'valid'
-    };
-
-    currencies.push(newCurrency);
-    renderTable();
-    closeModal();
-  }
-
-  function deleteSelected() {
-    currencies = currencies.filter(c => !c.selected);
-    renderTable();
-  }
-
-  function refreshTable() {
-    renderTable();
-  }
-
-  function updateCurrency(index, field, value) {
-    if (field === 'decimalPlaces') {
-      let parsed = parseInt(value, 10);
-      if (isNaN(parsed)) parsed = 0;
-      currencies[index][field] = parsed;
-    } else {
-      currencies[index][field] = value;
-    }
-    validate(index);
-  }
-
-  function toggleSelection(index) {
-    currencies[index].selected = !currencies[index].selected;
-  }
-
-  function validate(index) {
-    const c = currencies[index];
-    if (!c.abbreviation.trim() || !c.description.trim()) {
-      c.status = 'error';
-    } else if (c.decimalPlaces < 0 || c.decimalPlaces > 6 || !['.', ','].includes(c.decimalChar)) {
-      c.status = 'warning';
-    } else {
-      c.status = 'valid';
-    }
-    renderTable();
-  }
-
-  function renderTable() {
-    const tbody = document.getElementById('currencyBody');
-    tbody.innerHTML = '';
-    currencies.forEach((c, i) => {
-      const row = document.createElement('tr');
-      row.innerHTML = \`
-        <td><input type="checkbox" \${c.selected ? 'checked' : ''} onchange="toggleSelection(\${i})" aria-label="Select currency \${c.abbreviation}"></td>
-        <td><span class="status-icon \${c.status}" aria-label="Status: \${c.status}">\${c.status === 'valid' ? '✓' : c.status === 'warning' ? '!' : '×'}</span></td>
-        <td><input type="text" value="\${c.abbreviation}" oninput="updateCurrency(\${i}, 'abbreviation', this.value)" aria-label="Edit abbreviation"></td>
-        <td><input type="text" value="\${c.description}" oninput="updateCurrency(\${i}, 'description', this.value)" aria-label="Edit description"></td>
-        <td><input type="number" value="\${c.decimalPlaces}" min="0" max="6" oninput="updateCurrency(\${i}, 'decimalPlaces', this.value)" aria-label="Edit decimal places"></td>
-        <td><input type="text" maxlength="1" value="\${c.decimalChar}" oninput="updateCurrency(\${i}, 'decimalChar', this.value)" aria-label="Edit decimal character"></td>
-        <td><input type="text" value="\${c.thousandSeparator}" oninput="updateCurrency(\${i}, 'thousandSeparator', this.value)" aria-label="Edit thousand separator"></td>
-      \`;
-      tbody.appendChild(row);
-    });
-  }
-
-  window.onload = () => {
-    // Start with an empty list
-    currencies = [];
-    renderTable();
-
-    document.getElementById('addBtn').addEventListener('click', openModal);
-    document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
-    document.getElementById('addCurrencyConfirmedBtn').addEventListener('click', addCurrencyFromModal);
-
-    window.addEventListener('click', event => {
-      const modal = document.getElementById('currencyModal');
-      if (event.target === modal) {
-        closeModal();
-      }
-    });
-
-    window.addEventListener('keydown', event => {
-      if (event.key === 'Escape') {
-        const modal = document.getElementById('currencyModal');
-        if (modal.classList.contains('show')) {
-          closeModal();
-        }
-      }
-    });
-  };
-</script>
-
-</body>
-</html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import { Injectable } from '@angular/core';
-import { Currency } from './currency.model';
-
-@Injectable({
-  providedIn: 'root'
-})
-export class CurrencyService {
-  private currencies: Currency[] = [
-    {
-      id: 1,
-      abbreviation: 'USD',
-      description: 'US Dollar',
-      decimalPlaces: 2,
-      decimalChar: '.',
-      thousandSeparator: ',',
-      status: 'valid'
-    }
-  ];
-
-  getCurrencies(): Currency[] {
-    return [...this.currencies];
-  }
-
-  addCurrency(): Currency {
-    const newCurrency: Currency = {
-      id: Date.now(),
-      abbreviation: '',
-      description: '',
-      decimalPlaces: 2,
-      decimalChar: '.',
-      thousandSeparator: ',',
-      status: 'warning'
-    };
-    this.currencies.push(newCurrency);
-    return newCurrency;
-  }
-
-  deleteCurrencies(ids: number[]) {
-    this.currencies = this.currencies.filter(c => !ids.includes(c.id));
-  }
-
-  refreshCurrencies(): Currency[] {
-    return this.getCurrencies();
-  }
-}
-```
 
 ---
 
-## 3. **Component TS** (`currencies.component.ts`)
+Angular Currency Module (Step-by-Step)
 
-```ts
+1. Generate Component and Service
+
+ng generate component currencies
+ng generate service currency
+
+
+---
+
+2. currencies.component.html (UI Template)
+
+<div class="toolbar">
+  <button (click)="openModal()">+ Add Currency</button>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Abbreviation</th>
+      <th>Description</th>
+      <th>Decimal Places</th>
+      <th>Decimal Char</th>
+      <th>Thousand Separator</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let currency of currencies">
+      <td>{{ currency.abbr }}</td>
+      <td>{{ currency.description }}</td>
+      <td>{{ currency.decimalPlaces }}</td>
+      <td>{{ currency.decimalChar }}</td>
+      <td>{{ currency.thousandSeparator }}</td>
+      <td>
+        <button (click)="editCurrency(currency)">Edit</button>
+        <button (click)="deleteCurrency(currency.id)">Delete</button>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Modal -->
+<div *ngIf="showModal" class="modal">
+  <form (ngSubmit)="saveCurrency()" #currencyForm="ngForm">
+    <input name="abbr" [(ngModel)]="form.abbr" placeholder="Abbreviation" required />
+    <input name="description" [(ngModel)]="form.description" placeholder="Description" required />
+    <input name="decimalPlaces" [(ngModel)]="form.decimalPlaces" type="number" placeholder="Decimal Places" required />
+    <input name="decimalChar" [(ngModel)]="form.decimalChar" placeholder="Decimal Char" required maxlength="1" />
+    <input name="thousandSeparator" [(ngModel)]="form.thousandSeparator" placeholder="Thousand Separator" required maxlength="1" />
+    
+    <button type="submit" [disabled]="!currencyForm.form.valid">Save</button>
+    <button type="button" (click)="closeModal()">Cancel</button>
+  </form>
+</div>
+
+
+---
+
+3. currencies.component.ts (Logic)
+
 import { Component, OnInit } from '@angular/core';
-import { Currency } from './currency.model';
-import { CurrencyService } from './currency.service';
+import { CurrencyService } from '../currency.service';
 
 @Component({
   selector: 'app-currencies',
@@ -423,145 +73,127 @@ import { CurrencyService } from './currency.service';
   styleUrls: ['./currencies.component.css']
 })
 export class CurrenciesComponent implements OnInit {
-  currencies: Currency[] = [];
-  displayedColumns: string[] = ['select', 'status', 'abbreviation', 'description', 'decimalPlaces', 'decimalChar', 'thousandSeparator'];
-  selectedIds: Set<number> = new Set();
+  currencies: any[] = [];
+  showModal = false;
+  form: any = {};
 
   constructor(private currencyService: CurrencyService) {}
 
-  ngOnInit(): void {
-    this.currencies = this.currencyService.getCurrencies();
+  ngOnInit() {
+    this.getCurrencies();
   }
 
-  addCurrency(): void {
-    const newCurrency = this.currencyService.addCurrency();
-    this.currencies = this.currencyService.getCurrencies();
+  getCurrencies() {
+    this.currencyService.getAll().subscribe(data => this.currencies = data);
   }
 
-  deleteSelected(): void {
-    this.currencyService.deleteCurrencies(Array.from(this.selectedIds));
-    this.selectedIds.clear();
-    this.currencies = this.currencyService.getCurrencies();
+  openModal() {
+    this.form = {};
+    this.showModal = true;
   }
 
-  refresh(): void {
-    this.currencies = this.currencyService.refreshCurrencies();
+  closeModal() {
+    this.showModal = false;
   }
 
-  toggleSelection(id: number): void {
-    this.selectedIds.has(id) ? this.selectedIds.delete(id) : this.selectedIds.add(id);
-  }
-
-  validate(currency: Currency): void {
-    const { abbreviation, description, decimalPlaces, decimalChar } = currency;
-    if (!abbreviation || !description) {
-      currency.status = 'error';
-    } else if (decimalPlaces < 0 || decimalPlaces > 6 || !['.', ','].includes(decimalChar)) {
-      currency.status = 'warning';
+  saveCurrency() {
+    if (this.form.id) {
+      this.currencyService.update(this.form.id, this.form).subscribe(() => {
+        this.getCurrencies();
+        this.closeModal();
+      });
     } else {
-      currency.status = 'valid';
+      this.currencyService.create(this.form).subscribe(() => {
+        this.getCurrencies();
+        this.closeModal();
+      });
     }
   }
+
+  editCurrency(currency: any) {
+    this.form = { ...currency };
+    this.showModal = true;
+  }
+
+  deleteCurrency(id: number) {
+    this.currencyService.delete(id).subscribe(() => this.getCurrencies());
+  }
 }
-```
+
 
 ---
 
-## 4. **Component HTML** (`currencies.component.html`)
+4. currency.service.ts (API Service)
 
-```html
-<mat-card>
-  <mat-toolbar>
-    <button mat-icon-button (click)="addCurrency()"><mat-icon>add</mat-icon></button>
-    <button mat-icon-button (click)="refresh()"><mat-icon>refresh</mat-icon></button>
-    <button mat-icon-button (click)="deleteSelected()" [disabled]="selectedIds.size === 0"><mat-icon>delete</mat-icon></button>
-  </mat-toolbar>
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
 
-  <table mat-table [dataSource]="currencies" class="mat-elevation-z8">
+@Injectable({
+  providedIn: 'root'
+})
+export class CurrencyService {
+  private baseUrl = 'http://localhost:8080/api/currencies';
 
-    <ng-container matColumnDef="select">
-      <th mat-header-cell *matHeaderCellDef></th>
-      <td mat-cell *matCellDef="let c">
-        <mat-checkbox (change)="toggleSelection(c.id)" [checked]="selectedIds.has(c.id)"></mat-checkbox>
-      </td>
-    </ng-container>
+  constructor(private http: HttpClient) {}
 
-    <ng-container matColumnDef="status">
-      <th mat-header-cell *matHeaderCellDef></th>
-      <td mat-cell *matCellDef="let c">
-        <mat-icon *ngIf="c.status === 'valid'" color="primary">check_circle</mat-icon>
-        <mat-icon *ngIf="c.status === 'warning'" color="accent">warning</mat-icon>
-        <mat-icon *ngIf="c.status === 'error'" color="warn">error</mat-icon>
-      </td>
-    </ng-container>
+  getAll() {
+    return this.http.get<any[]>(this.baseUrl);
+  }
 
-    <ng-container matColumnDef="abbreviation">
-      <th mat-header-cell *matHeaderCellDef>Abbreviation</th>
-      <td mat-cell *matCellDef="let c">
-        <input matInput [(ngModel)]="c.abbreviation" (ngModelChange)="validate(c)">
-      </td>
-    </ng-container>
+  create(currency: any) {
+    return this.http.post(this.baseUrl, currency);
+  }
 
-    <ng-container matColumnDef="description">
-      <th mat-header-cell *matHeaderCellDef>Description</th>
-      <td mat-cell *matCellDef="let c">
-        <input matInput [(ngModel)]="c.description" (ngModelChange)="validate(c)">
-      </td>
-    </ng-container>
+  update(id: number, currency: any) {
+    return this.http.put(`${this.baseUrl}/${id}`, currency);
+  }
 
-    <ng-container matColumnDef="decimalPlaces">
-      <th mat-header-cell *matHeaderCellDef>No. of Decimal Places</th>
-      <td mat-cell *matCellDef="let c">
-        <input type="number" matInput [(ngModel)]="c.decimalPlaces" (ngModelChange)="validate(c)" min="0" max="6">
-      </td>
-    </ng-container>
+  delete(id: number) {
+    return this.http.delete(`${this.baseUrl}/${id}`);
+  }
+}
 
-    <ng-container matColumnDef="decimalChar">
-      <th mat-header-cell *matHeaderCellDef>Decimal Char</th>
-      <td mat-cell *matCellDef="let c">
-        <input matInput [(ngModel)]="c.decimalChar" (ngModelChange)="validate(c)" maxlength="1">
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="thousandSeparator">
-      <th mat-header-cell *matHeaderCellDef>Thousand Separator</th>
-      <td mat-cell *matCellDef="let c">
-        <input matInput [(ngModel)]="c.thousandSeparator">
-      </td>
-    </ng-container>
-
-    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-  </table>
-</mat-card>
-```
 
 ---
 
-## 5. **Component CSS** (`currencies.component.css`)
+5. Import FormsModule and HttpClientModule
 
-```css
-mat-card {
-  margin: 20px;
-}
+In app.module.ts:
 
-mat-toolbar {
-  background: #f5f5f5;
-  margin-bottom: 10px;
-}
+import { FormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
 
-table {
-  width: 100%;
-}
-```
+@NgModule({
+  imports: [FormsModule, HttpClientModule]
+})
+export class AppModule {}
+
 
 ---
 
-Let me know if you want:
+6. Basic CSS (currencies.component.css)
 
-* Modal/dialog for adding/editing?
-* Backend API integration?
-* Unit tests or export to Excel?
+.modal {
+  background: white;
+  padding: 20px;
+  border: 1px solid #ccc;
+  position: fixed;
+  top: 20%;
+  left: 30%;
+  width: 40%;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 1000;
+}
 
-I can help with all of it.
-       
+
+---
+
+Next:
+
+Want me to provide the Spring Boot backend to connect this to?
+
+I can also provide test cases and documentation templates next.
+
+
+Let me know!
+
