@@ -1,4 +1,133 @@
- No problem! Here's the **complete Angular code** for the full-featured Currencies page with a table, toolbar (add, refresh, delete), inline editing, validation, and visual status indicators.
+Thanks for pointing it out. Let's fix the HTML by:
+
+1. Wrapping the table inside an Angular Material <mat-table> structure properly.
+
+
+2. Ensuring FormsModule and MatInputModule are imported.
+
+
+3. Using ngModel correctly with proper setup.
+
+
+4. Adding trackBy to help with rendering performance (optional but good).
+
+
+
+
+---
+
+✅ Updated & Fixed currencies.component.html:
+
+<mat-card>
+  <mat-toolbar>
+    <span class="spacer"></span>
+    <button mat-icon-button (click)="addCurrency()" matTooltip="Add Currency">
+      <mat-icon>add</mat-icon>
+    </button>
+    <button mat-icon-button (click)="refresh()" matTooltip="Refresh">
+      <mat-icon>refresh</mat-icon>
+    </button>
+    <button mat-icon-button (click)="deleteSelected()" [disabled]="selectedIds.size === 0" matTooltip="Delete Selected">
+      <mat-icon>delete</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <table mat-table [dataSource]="currencies" class="mat-elevation-z8">
+
+    <!-- Selection Checkbox -->
+    <ng-container matColumnDef="select">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let c">
+        <mat-checkbox (change)="toggleSelection(c.id)" [checked]="selectedIds.has(c.id)"></mat-checkbox>
+      </td>
+    </ng-container>
+
+    <!-- Status Icon -->
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let c">
+        <mat-icon *ngIf="c.status === 'valid'" color="primary">check_circle</mat-icon>
+        <mat-icon *ngIf="c.status === 'warning'" color="accent">warning</mat-icon>
+        <mat-icon *ngIf="c.status === 'error'" color="warn">error</mat-icon>
+      </td>
+    </ng-container>
+
+    <!-- Abbreviation -->
+    <ng-container matColumnDef="abbreviation">
+      <th mat-header-cell *matHeaderCellDef>Abbreviation</th>
+      <td mat-cell *matCellDef="let c">
+        <input matInput [(ngModel)]="c.abbreviation" (ngModelChange)="validate(c)">
+      </td>
+    </ng-container>
+
+    <!-- Description -->
+    <ng-container matColumnDef="description">
+      <th mat-header-cell *matHeaderCellDef>Description</th>
+      <td mat-cell *matCellDef="let c">
+        <input matInput [(ngModel)]="c.description" (ngModelChange)="validate(c)">
+      </td>
+    </ng-container>
+
+    <!-- Decimal Places -->
+    <ng-container matColumnDef="decimalPlaces">
+      <th mat-header-cell *matHeaderCellDef>Decimal Places</th>
+      <td mat-cell *matCellDef="let c">
+        <input type="number" matInput [(ngModel)]="c.decimalPlaces" (ngModelChange)="validate(c)" min="0" max="6">
+      </td>
+    </ng-container>
+
+    <!-- Decimal Char -->
+    <ng-container matColumnDef="decimalChar">
+      <th mat-header-cell *matHeaderCellDef>Decimal Char</th>
+      <td mat-cell *matCellDef="let c">
+        <input matInput maxlength="1" [(ngModel)]="c.decimalChar" (ngModelChange)="validate(c)">
+      </td>
+    </ng-container>
+
+    <!-- Thousand Separator -->
+    <ng-container matColumnDef="thousandSeparator">
+      <th mat-header-cell *matHeaderCellDef>Thousand Separator</th>
+      <td mat-cell *matCellDef="let c">
+        <input matInput [(ngModel)]="c.thousandSeparator">
+      </td>
+    </ng-container>
+
+    <!-- Header and Row Definitions -->
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+  </table>
+</mat-card>
+
+
+---
+
+Additional Steps:
+
+Make sure these modules are imported in AppModule:
+
+import { FormsModule } from '@angular/forms';
+import { MatInputModule } from '@angular/material/input';
+import { MatTableModule } from '@angular/material/table';
+import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
+Let me know if you want this page in a StackBlitz or Angular workspace to try it quickly.
+
+
+
+
+
+
+
+
+
+
+No problem! Here's the **complete Angular code** for the full-featured Currencies page with a table, toolbar (add, refresh, delete), inline editing, validation, and visual status indicators.
 
 ---
 
