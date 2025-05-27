@@ -1,1179 +1,227 @@
-import pandas as pd
-import gradio as gr
-
-# Global variables
-algo_df = pd.DataFrame()
-star_df_original = pd.DataFrame()
-algo_exclusion_rules = []
-star_exclusion_rules = []
-star_update_rules = []
-
-def load_files(algo_file, star_file):
-    global algo_df, star_df_original
-    try:
-        algo_df = pd.read_csv(algo_file.name)
-        star_df_original = pd.read_csv(star_file.name)
-        return "Files loaded successfully.", algo_df.head(), star_df_original.head()
-    except Exception as e:
-        return f"Error loading files: {str(e)}", None, None
-
-def add_exclusion_rule(source, column, condition, value):
-    rule = {"column": column, "condition": condition, "value": value}
-    if source == "ALGO":
-        algo_exclusion_rules.append(rule)
-    else:
-        star_exclusion_rules.append(rule)
-    return f"Added exclusion rule for {source}: {rule}"
-
-def apply_exclusion_rules(df, rules):
-    if df.empty or not rules:
-        return pd.DataFrame(), df
-    mask = pd.Series([True] * len(df))
-    for rule in rules:
-        if rule["condition"] == "=":
-            mask &= df[rule["column"]] == rule["value"]
-        else:
-            mask &= df[rule["column"]] != rule["value"]
-    excluded = df[mask]
-    non_excluded = df[~mask]
-    return excluded, non_excluded
-
-def add_star_update_rule(column, condition, value, direction):
-    rule = {"column": column, "condition": condition, "value": value, "direction": direction}
-    star_update_rules.append(rule)
-    return f"Added STAR update rule: {rule}"
-
-def apply_star_update_rules(df):
-    df = df.copy()
-    if "KEY" not in df.columns:
-        return df  # Avoid error if KEY doesn't exist
-    for rule in star_update_rules:
-        cond = (df[rule["column"]] == rule["value"]) if rule["condition"] == "=" else (df[rule["column"]] != rule["value"])
-        df.loc[cond, "KEY"] = df.loc[cond, "KEY"].astype(str) + "_" + rule["direction"]
-    return df
-
-def reconcile():
-    if algo_df.empty or star_df_original.empty:
-        return "Please upload files first.", None, None, None
-
-    algo_excluded, algo_non_excluded = apply_exclusion_rules(algo_df, algo_exclusion_rules)
-    star_excluded, star_non_excluded = apply_exclusion_rules(star_df_original, star_exclusion_rules)
-
-    # Apply STAR post direction transformation only after rules
-    star_transformed = apply_star_update_rules(star_non_excluded)
-
-    matched = pd.merge(algo_non_excluded, star_transformed, on="KEY", how="inner", suffixes=('_ALGO', '_STAR'))
-
-    status = f"Reconciliation done.\nExcluded ALGO: {len(algo_excluded)}\nExcluded STAR: {len(star_excluded)}\nMatched Records: {len(matched)}"
-    return status, algo_excluded, star_excluded, matched
-
-# UI
-with gr.Blocks() as app:
-    gr.Markdown("## Reconciliation App")
-
-    with gr.Tab("1. Load CSV Files"):
-        algo_file = gr.File(label="Upload ALGO CSV")
-        star_file = gr.File(label="Upload STAR CSV")
-        load_btn = gr.Button("Load Files")
-        load_status = gr.Textbox(label="Status")
-        algo_preview = gr.Dataframe()
-        star_preview = gr.Dataframe()
-        load_btn.click(load_files, [algo_file, star_file], [load_status, algo_preview, star_preview])
-
-    with gr.Tab("2. Add Exclusion Rules"):
-        source_input = gr.Dropdown(["ALGO", "STAR"], label="Data Source")
-        column_input = gr.Textbox(label="Column")
-        condition_input = gr.Radio(["=", "!="], label="Condition")
-        value_input = gr.Textbox(label="Value")
-        excl_btn = gr.Button("Add Rule")
-        excl_output = gr.Textbox(label="Rule Status")
-        excl_btn.click(add_exclusion_rule, [source_input, column_input, condition_input, value_input], excl_output)
-
-    with gr.Tab("3. Add STAR Post Direction Rules"):
-        update_column = gr.Textbox(label="Column")
-        update_condition = gr.Radio(["=", "!="], label="Condition")
-        update_value = gr.Textbox(label="Value")
-        post_dir = gr.Textbox(label="Post Direction to Append")
-        update_btn = gr.Button("Add Update Rule")
-        update_status = gr.Textbox(label="Update Rule Status")
-        update_btn.click(add_star_update_rule, [update_column, update_condition, update_value, post_dir], update_status)
-
-    with gr.Tab("4. Run Reconciliation"):
-        rec_btn = gr.Button("Reconcile Now")
-        rec_status = gr.Textbox(label="Reconciliation Summary")
-        excluded_algo = gr.Dataframe(label="Excluded ALGO Records")
-        excluded_star = gr.Dataframe(label="Excluded STAR Records")
-        matched_output = gr.Dataframe(label="Matched Records")
-        rec_btn.click(reconcile, [], [rec_status, excluded_algo, excluded_star, matched_output])
-
-app.launch()
-        
-
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-`reconciliation_app.py`
-```py
-import pandas as pd
-import gradio as gr
-from collections import defaultdict
-
-# --- Helper functions ---
-
-def apply_update_rules(df, update_rules):
-    df = df.copy()
-    for rule in update_rules:
-        mode = rule.get("mode", "replace")  # "replace" or "concat"
-        if mode == "replace":
-            col = rule.get("target_col")
-            find_val = rule.get("find")
-            replace_val = rule.get("replace")
-            if col and find_val is not None and replace_val is not None and col in df.columns:
-                df[col] = df[col].astype(str).str.replace(find_val, replace_val, regex=False)
-        elif mode == "concat":
-            target_col = rule.get("target_col")
-            source_col1 = rule.get("source_col1")
-            source_col2 = rule.get("source_col2")
-            sep = rule.get("separator", "")  # Separator between two columns
-            if target_col and source_col1 and source_col2:
-                if source_col1 in df.columns and source_col2 in df.columns:
-                    df[target_col] = df[source_col1].astype(str) + sep + df[source_col2].astype(str)
-    return df
-
-def extract_algo_keys(df):
-    return df['Agreement_name'].astype(str).apply(lambda x: x.replace(" ", "").strip()).tolist()
-
-def extract_star_keys(df):
-    return df.apply(
-        lambda row: (str(row.get('CRDS Party Code', '')).strip().replace(" ", "") +
-                     "3" +
-                     str(row.get('Post Direction', '')).strip().replace(" ", "")),
-        axis=1
-    ).tolist()
-
-# --- Loaders ---
-
-def load_algo_file(file):
-    try:
-        df = pd.read_csv(file).astype(str)
-        return df, gr.update(choices=list(df.columns))
-    except Exception as e:
-        return pd.DataFrame(), gr.update(choices=[])
-
-def load_star_file(file):
-    try:
-        df = pd.read_csv(file).astype(str)
-        return df, gr.update(choices=list(df.columns))
-    except Exception as e:
-        return pd.DataFrame(), gr.update(choices=[])
-
-def update_column_dropdown(file_type, algo_df, star_df):
-    if file_type == "ALGO":
-        return gr.update(choices=list(algo_df.columns))
-    elif file_type == "STAR":
-        return gr.update(choices=list(star_df.columns))
-    return gr.update(choices=[])
-
-# --- Reconciliation Logic ---
-
-def reconcile_with_exclusion(
-    algo_df, star_df, file_type, column, operator, value,
-    algo_update_rules, star_update_rules
-):
-    algo_df = apply_update_rules(algo_df, algo_update_rules)
-    star_df = apply_update_rules(star_df, star_update_rules)
-
-    df_algo = algo_df.copy()
-    df_star = star_df.copy()
-    excluded_df = pd.DataFrame()
-
-    values = [v.strip() for v in value.split(',') if v.strip()]
-
-    if file_type == "ALGO" and column in df_algo.columns:
-        if operator == "=":
-            excluded_df = df_algo[df_algo[column].isin(values)]
-            df_algo = df_algo[~df_algo[column].isin(values)]
-        else:
-            excluded_df = df_algo[~df_algo[column].isin(values)]
-            df_algo = df_algo[df_algo[column].isin(values)]
-
-    elif file_type == "STAR" and column in df_star.columns:
-        if operator == "=":
-            excluded_df = df_star[df_star[column].isin(values)]
-            df_star = df_star[~df_star[column].isin(values)]
-        else:
-            excluded_df = df_star[~df_star[column].isin(values)]
-            df_star = df_star[df_star[column].isin(values)]
-
-    # Key extraction
-    algo_keys = extract_algo_keys(df_algo)
-    star_keys = extract_star_keys(df_star)
-
-    matched = []
-    unmatched = []
-
-    star_key_map = defaultdict(list)
-    for idx, key in enumerate(star_keys):
-        star_key_map[key].append(idx)
-
-    matched_star_indices = set()
-    matched_algo_indices = set()
-    star_key_used_count = defaultdict(int)
-
-    for i, algo_key in enumerate(algo_keys):
-        matching_star_idxs = star_key_map.get(algo_key, [])
-        if len(matching_star_idxs) == 1 and matching_star_idxs[0] not in matched_star_indices:
-            matched.append({
-                "ALGO Key": algo_key,
-                "STAR Key": star_keys[matching_star_idxs[0]],
-                "Status": "Match"
-            })
-            matched_star_indices.add(matching_star_idxs[0])
-            matched_algo_indices.add(i)
-            star_key_used_count[star_keys[matching_star_idxs[0]]] += 1
-        elif len(matching_star_idxs) > 1:
-            unmatched.append({
-                "ALGO Key": algo_key,
-                "STAR Key": "<Multiple STAR Match>",
-                "Status": "Mismatch - Multiple STAR Keys"
-            })
-            for idx in matching_star_idxs:
-                unmatched.append({
-                    "ALGO Key": "<No Match>",
-                    "STAR Key": star_keys[idx],
-                    "Status": "Mismatch - STAR Key in Multiple Match"
-                })
-            matched_algo_indices.add(i)
-            for idx in matching_star_idxs:
-                star_key_used_count[star_keys[idx]] += 1
-        else:
-            unmatched.append({
-                "ALGO Key": algo_key,
-                "STAR Key": "<No Match>",
-                "Status": "Mismatch - No STAR Match"
-            })
-
-    for idx, star_key in enumerate(star_keys):
-        if idx not in matched_star_indices and star_key_used_count[star_key] == 0:
-            unmatched.append({
-                "ALGO Key": "<No Match>",
-                "STAR Key": star_key,
-                "Status": "Mismatch - No ALGO Match"
-            })
-
-    matched_df = pd.DataFrame(matched)
-    unmatched_df = pd.DataFrame(unmatched)
-
-    summary = (
-        f"Matched Records: {len(matched_df)}\n"
-        f"Unmatched Records: {len(unmatched_df)}\n"
-        f"Excluded Records: {len(excluded_df)}"
-    )
-
-    return excluded_df, matched_df, unmatched_df, summary
-
-# --- Gradio UI ---
-
-with gr.Blocks() as demo:
-    gr.Markdown("## Reconciliation App with Replace & Concat Update Rules")
-
-    algo_df_state = gr.State(pd.DataFrame())
-    star_df_state = gr.State(pd.DataFrame())
-
-    with gr.Row():
-        algo_file = gr.File(label="Upload ALGO CSV")
-        star_file = gr.File(label="Upload STAR CSV")
-
-    with gr.Row():
-        file_selector = gr.Dropdown(["ALGO", "STAR"], label="File for Exclusion")
-        column_selector = gr.Dropdown(label="Column")
-        operator_input = gr.Dropdown(["=", "!="], label="Operator")
-        value_input = gr.Textbox(label="Value(s) comma-separated")
-
-    gr.Markdown("### ALGO File Update Rules")
-
-    with gr.Row():
-        algo_update_mode1 = gr.Dropdown(["replace", "concat"], label="Update Mode 1", value="replace")
-        algo_target_col1 = gr.Dropdown(label="Target Column 1")
-        # Replace mode inputs
-        algo_find1 = gr.Textbox(label="Find 1")
-        algo_replace1 = gr.Textbox(label="Replace with 1")
-        # Concat mode inputs
-        algo_source_col1_1 = gr.Dropdown(label="Source Column 1 (concat)")
-        algo_source_col1_2 = gr.Dropdown(label="Source Column 2 (concat)")
-        algo_concat_sep1 = gr.Textbox(label="Separator (concat)", value="")
-
-    with gr.Row():
-        algo_update_mode2 = gr.Dropdown(["replace", "concat"], label="Update Mode 2", value="replace")
-        algo_target_col2 = gr.Dropdown(label="Target Column 2")
-        # Replace mode inputs
-        algo_find2 = gr.Textbox(label="Find 2")
-        algo_replace2 = gr.Textbox(label="Replace with 2")
-        # Concat mode inputs
-        algo_source_col2_1 = gr.Dropdown(label="Source Column 1 (concat)")
-        algo_source_col2_2 = gr.Dropdown(label="Source Column 2 (concat)")
-        algo_concat_sep2 = gr.Textbox(label="Separator (concat)", value="")
-
-    gr.Markdown("### STAR File Update Rules")
-
-    with gr.Row():
-        star_update_mode1 = gr.Dropdown(["replace", "concat"], label="Update Mode 1", value="replace")
-        star_target_col1 = gr.Dropdown(label="Target Column 1")
-        # Replace mode inputs
-        star_find1 = gr.Textbox(label="Find 1")
-        star_replace1 = gr.Textbox(label="Replace with 1")
-        # Concat mode inputs
-        star_source_col1_1 = gr.Dropdown(label="Source Column 1 (concat)")
-        star_source_col1_2 = gr.Dropdown(label="Source Column 2 (concat)")
-        star_concat_sep1 = gr.Textbox(label="Separator (concat)", value="")
-
-    with gr.Row():
-        star_update_mode2 = gr.Dropdown(["replace", "concat"], label="Update Mode 2", value="replace")
-        star_target_col2 = gr.Dropdown(label="Target Column 2")
-        # Replace mode inputs
-        star_find2 = gr.Textbox(label="Find 2")
-        star_replace2 = gr.Textbox(label="Replace with 2")
-        # Concat mode inputs
-        star_source_col2_1 = gr.Dropdown(label="Source Column 1 (concat)")
-        star_source_col2_2 = gr.Dropdown(label="Source Column 2 (concat)")
-        star_concat_sep2 = gr.Textbox(label="Separator (concat)", value="")
-
-    run_btn = gr.Button("Run Reconciliation")
-
-    excluded_out = gr.Dataframe(label="Excluded Records")
-    matched_out = gr.Dataframe(label="Matched Records")
-    unmatched_out = gr.Dataframe(label="Unmatched Records")
-    summary_out = gr.Textbox(label="Summary")
-
-    # Load files and update related dropdowns
-    def load_algo_and_update_cols(file):
-        df, update = load_algo_file(file)
-        # Return df state and update all relevant dropdowns for the columns
-        return (
-            df,
-            update,
-            update,
-            update,
-            update,
-            update,
-            update,
-        )
-
-    def load_star_and_update_cols(file):
-        df, update = load_star_file(file)
-        return (
-            df,
-            update,
-            update,
-            update,
-            update,
-            update,
-            update,
-        )
-
-    algo_file.change(
-        fn=load_algo_and_update_cols,
-        inputs=algo_file,
-        outputs=[
-            algo_df_state,
-            algo_target_col1, algo_source_col1_1, algo_source_col1_2,
-            algo_target_col2, algo_source_col2_1, algo_source_col2_2,
-        ],
-    )
-
-    star_file.change(
-        fn=load_star_and_update_cols,
-        inputs=star_file,
-        outputs=[
-            star_df_state,
-            star_target_col1, star_source_col1_1, star_source_col1_2,
-            star_target_col2, star_source_col2_1, star_source_col2_2,
-        ],
-    )
-
-    # Update the exclusion column dropdown depending on which file is selected
-    file_selector.change(update_column_dropdown,
-                         inputs=[file_selector, algo_df_state, star_df_state],
-                         outputs=column_selector)
-
-    # Show/hide replace/concat inputs depending on update mode selection
-    def toggle_algo_mode_1(mode):
-        if mode == "replace":
-            return gr.update(visible=True), gr.update(visible=True), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)
-        else:
-            return gr.update(visible=False), gr.update(visible=False), gr.update(visible=True), gr.update(visible=True), gr.update(visible=True)
-
-    def toggle_algo_mode_2(mode):
-        if mode == "replace":
-            return gr.update(visible=True), gr.update(visible=True), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)
-        else:
-            return gr.update(visible=False), gr.update(visible=False), gr.update(visible=True), gr.update(visible=True), gr.update(visible=True)
-
-    def toggle_star_mode_1(mode):
-        if mode == "replace":
-            return gr.update(visible=True), gr.update(visible=True), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)
-        else:
-            return gr.update(visible=False), gr.update(visible=False), gr.update(visible=True), gr.update(visible=True), gr.update(visible=True)
-
-    def toggle_star_mode_2(mode):
-        if mode == "replace":
-            return gr.update(visible=True), gr.update(visible=True), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)
-        else:
-            return gr.update(visible=False), gr.update(visible=False), gr.update(visible=True), gr.update(visible=True), gr.update(visible=True)
-
-    algo_update_mode1.change(
-        fn=toggle_algo_mode_1,
-        inputs=algo_update_mode1,
-        outputs=[algo_find1, algo_replace1, algo_source_col1_1, algo_source_col1_2, algo_concat_sep1]
-    )
-    algo_update_mode2.change(
-        fn=toggle_algo_mode_2,
-        inputs=algo_update_mode2,
-        outputs=[algo_find2, algo_replace2, algo_source_col2_1, algo_source_col2_2, algo_concat_sep2]
-    )
-    star_update_mode1.change(
-        fn=toggle_star_mode_1,
-        inputs=star_update_mode1,
-        outputs=[star_find1, star_replace1, star_source_col1_1, star_source_col1_2, star_concat_sep1]
-    )
-    star_update_mode2.change(
-        fn=toggle_star_mode_2,
-        inputs=star_update_mode2,
-        outputs=[star_find2, star_replace2, star_source_col2_1, star_source_col2_2, star_concat_sep2]
-    )
-
-    # Initialize visibility on page load to show only replace inputs (default mode)
-    toggle_algo_mode_1("replace")
-    toggle_algo_mode_2("replace")
-    toggle_star_mode_1("replace")
-    toggle_star_mode_2("replace")
-
-    def collect_algo_update_rules(
-        mode1, target1, find1, replace1, source1_1, source1_2, sep1,
-        mode2, target2, find2, replace2, source2_1, source2_2, sep2,
-    ):
-        rules = []
-        # Rule 1
-        if target1:
-            if mode1 == "replace":
-                rules.append({
-                    "mode": "replace",
-                    "target_col": target1,
-                    "find": find1,
-                    "replace": replace1,
-                })
-            elif mode1 == "concat":
-                if source1_1 and source1_2:
-                    rules.append({
-                        "mode": "concat",
-                        "target_col": target1,
-                        "source_col1": source1_1,
-                        "source_col2": source1_2,
-                        "separator": sep1 or "",
-                    })
-        # Rule 2
-        if target2:
-            if mode2 == "replace":
-                rules.append({
-                    "mode": "replace",
-                    "target_col": target2,
-                    "find": find2,
-                    "replace": replace2,
-                })
-            elif mode2 == "concat":
-                if source2_1 and source2_2:
-                    rules.append({
-                        "mode": "concat",
-                        "target_col": target2,
-                        "source_col1": source2_1,
-                        "source_col2": source2_2,
-                        "separator": sep2 or "",
-                    })
-        return rules
-
-    def collect_star_update_rules(
-        mode1, target1, find1, replace1, source1_1, source1_2, sep1,
-        mode2, target2, find2, replace2, source2_1, source2_2, sep2,
-    ):
-        rules = []
-        # Rule 1
-        if target1:
-            if mode1 == "replace":
-                rules.append({
-                    "mode": "replace",
-                    "target_col": target1,
-                    "find": find1,
-                    "replace": replace1,
-                })
-            elif mode1 == "concat":
-                if source1_1 and source1_2:
-                    rules.append({
-                        "mode": "concat",
-                        "target_col": target1,
-                        "source_col1": source1_1,
-                        "source_col2": source1_2,
-                        "separator": sep1 or "",
-                    })
-        # Rule 2
-        if target2:
-            if mode2 == "replace":
-                rules.append({
-                    "mode": "replace",
-                    "target_col": target2,
-                    "find": find2,
-                    "replace": replace2,
-                })
-            elif mode2 == "concat":
-                if source2_1 and source2_2:
-                    rules.append({
-                        "mode": "concat",
-                        "target_col": target2,
-                        "source_col1": source2_1,
-                        "source_col2": source2_2,
-                        "separator": sep2 or "",
-                    })
-        return rules
-
-    def run_reconciliation(
-        algo_df, star_df, file_type, column, operator, value,
-        algo_update_mode1, algo_target_col1, algo_find1, algo_replace1, algo_source_col1_1, algo_source_col1_2, algo_concat_sep1,
-        algo_update_mode2, algo_target_col2, algo_find2, algo_replace2, algo_source_col2_1, algo_source_col2_2, algo_concat_sep2,
-        star_update_mode1, star_target_col1, star_find1, star_replace1, star_source_col1_1, star_source_col1_2, star_concat_sep1,
-        star_update_mode2, star_target_col2, star_find2, star_replace2, star_source_col2_1, star_source_col2_2, star_concat_sep2,
-    ):
-        algo_rules = collect_algo_update_rules(
-            algo_update_mode1, algo_target_col1, algo_find1, algo_replace1, algo_source_col1_1, algo_source_col1_2, algo_concat_sep1,
-            algo_update_mode2, algo_target_col2, algo_find2, algo_replace2, algo_source_col2_1, algo_source_col2_2, algo_concat_sep2,
-        )
-        star_rules = collect_star_update_rules(
-            star_update_mode1, star_target_col1, star_find1, star_replace1, star_source_col1_1, star_source_col1_2, star_concat_sep1,
-            star_update_mode2, star_target_col2, star_find2, star_replace2, star_source_col2_1, star_source_col2_2, star_concat_sep2,
-        )
-        return reconcile_with_exclusion(
-            algo_df, star_df, file_type, column, operator, value,
-            algo_rules, star_rules
-        )
-
-    run_btn.click(
-        run_reconciliation,
-        inputs=[
-            algo_df_state, star_df_state,
-            file_selector, column_selector, operator_input, value_input,
-            algo_update_mode1, algo_target_col1, algo_find1, algo_replace1, algo_source_col1_1, algo_source_col1_2, algo_concat_sep1,
-            algo_update_mode2, algo_target_col2, algo_find2, algo_replace2, algo_source_col2_1, algo_source_col2_2, algo_concat_sep2,
-            star_update_mode1, star_target_col1, star_find1, star_replace1, star_source_col1_1, star_source_col1_2, star_concat_sep1,
-            star_update_mode2, star_target_col2, star_find2, star_replace2, star_source_col2_1, star_source_col2_2, star_concat_sep2,
-        ],
-        outputs=[excluded_out, matched_out, unmatched_out, summary_out]
-    )
-
-demo.launch()
-
+ No problem! Here's the **complete Angular code** for the full-featured Currencies page with a table, toolbar (add, refresh, delete), inline editing, validation, and visual status indicators.
+
+---
+
+## 1. **Model** (`currency.model.ts`)
+
+```ts
+export interface Currency {
+  id: number;
+  abbreviation: string;
+  description: string;
+  decimalPlaces: number;
+  decimalChar: string;
+  thousandSeparator?: string;
+  status?: 'valid' | 'warning' | 'error';
+}
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import pandas as pd
-import gradio as gr
-from collections import defaultdict
-
-# Helper: Apply update rule
-def apply_update_rule(df, column, find_val, replace_val):
-    if column and find_val and column in df.columns:
-        df[column] = df[column].astype(str).str.replace(find_val, replace_val, regex=False)
-    return df
-
-# Key extraction
-def extract_algo_keys(df):
-    return df['Agreement_name'].astype(str).apply(lambda x: x.replace(" ", "").strip()).tolist()
-
-def extract_star_keys(df):
-    return df.apply(
-        lambda row: (str(row.get('CRDS Party Code', '')).strip().replace(" ", "") +
-                     "3" +
-                     str(row.get('Post Direction', '')).strip().replace(" ", "")),
-        axis=1
-    ).tolist()
-
-# Loaders
-def load_algo_file(file):
-    try:
-        df = pd.read_csv(file).astype(str)
-        return df, gr.update(choices=list(df.columns)), gr.update(choices=list(df.columns))
-    except:
-        return pd.DataFrame(), gr.update(choices=[]), gr.update(choices=[])
-
-def load_star_file(file):
-    try:
-        df = pd.read_csv(file).astype(str)
-        return df, gr.update(choices=list(df.columns)), gr.update(choices=list(df.columns))
-    except:
-        return pd.DataFrame(), gr.update(choices=[]), gr.update(choices=[])
-
-# Dropdown updater
-def update_column_dropdown(file_type, algo_df, star_df):
-    if file_type == "ALGO":
-        return gr.update(choices=list(algo_df.columns))
-    elif file_type == "STAR":
-        return gr.update(choices=list(star_df.columns))
-    return gr.update(choices=[])
-
-# Reconciliation logic
-def reconcile_with_updates_and_exclusion(
-    algo_df, star_df, file_type, column, operator, value,
-    update_col_algo, find_algo, replace_algo,
-    update_col_star, find_star, replace_star
-):
-    df_algo = apply_update_rule(algo_df.copy(), update_col_algo, find_algo, replace_algo)
-    df_star = apply_update_rule(star_df.copy(), update_col_star, find_star, replace_star)
-
-    excluded_df = pd.DataFrame()
-    values = [v.strip() for v in value.split(',') if v.strip()]
-
-    if file_type == "ALGO" and column in df_algo.columns:
-        if operator == "=":
-            excluded_df = df_algo[df_algo[column].isin(values)]
-            df_algo = df_algo[~df_algo[column].isin(values)]
-        else:
-            excluded_df = df_algo[~df_algo[column].isin(values)]
-            df_algo = df_algo[df_algo[column].isin(values)]
-    elif file_type == "STAR" and column in df_star.columns:
-        if operator == "=":
-            excluded_df = df_star[df_star[column].isin(values)]
-            df_star = df_star[~df_star[column].isin(values)]
-        else:
-            excluded_df = df_star[~df_star[column].isin(values)]
-            df_star = df_star[df_star[column].isin(values)]
-
-    algo_keys = extract_algo_keys(df_algo)
-    star_keys = extract_star_keys(df_star)
-
-    matched, unmatched = [], []
-    star_key_map = defaultdict(list)
-    matched_star_indices = set()
-    star_key_used_count = defaultdict(int)
-
-    for idx, key in enumerate(star_keys):
-        star_key_map[key].append(idx)
-
-    for i, algo_key in enumerate(algo_keys):
-        match_idxs = star_key_map.get(algo_key, [])
-        if len(match_idxs) == 1 and match_idxs[0] not in matched_star_indices:
-            matched.append({
-                "ALGO Key": algo_key,
-                "STAR Key": star_keys[match_idxs[0]],
-                "Status": "Match"
-            })
-            matched_star_indices.add(match_idxs[0])
-            star_key_used_count[star_keys[match_idxs[0]]] += 1
-        elif len(match_idxs) > 1:
-            unmatched.append({
-                "ALGO Key": algo_key,
-                "STAR Key": "<Multiple STAR Match>",
-                "Status": "Mismatch - Multiple STAR Keys"
-            })
-            for idx in match_idxs:
-                unmatched.append({
-                    "ALGO Key": "<No Match>",
-                    "STAR Key": star_keys[idx],
-                    "Status": "Mismatch - STAR Key in Multiple Match"
-                })
-                star_key_used_count[star_keys[idx]] += 1
-        else:
-            unmatched.append({
-                "ALGO Key": algo_key,
-                "STAR Key": "<No Match>",
-                "Status": "Mismatch - No STAR Match"
-            })
-
-    for idx, star_key in enumerate(star_keys):
-        if idx not in matched_star_indices and star_key_used_count[star_key] == 0:
-            unmatched.append({
-                "ALGO Key": "<No Match>",
-                "STAR Key": star_key,
-                "Status": "Mismatch - No ALGO Match"
-            })
-
-    matched_df = pd.DataFrame(matched)
-    unmatched_df = pd.DataFrame(unmatched)
-    summary = (
-        f"Matched Records: {len(matched_df)}\n"
-        f"Unmatched Records: {len(unmatched_df)}\n"
-        f"Excluded Records: {len(excluded_df)}"
-    )
-    return excluded_df, matched_df, unmatched_df, summary
-
-# Gradio UI
-with gr.Blocks() as demo:
-    gr.Markdown("## Reconciliation App with Update & Exclusion Rules")
-
-    algo_df_state = gr.State(pd.DataFrame())
-    star_df_state = gr.State(pd.DataFrame())
-
-    with gr.Row():
-        algo_file = gr.File(label="Upload ALGO CSV")
-        star_file = gr.File(label="Upload STAR CSV")
-
-    with gr.Row():
-        file_selector = gr.Dropdown(["ALGO", "STAR"], label="File to Apply Exclusion")
-        column_selector = gr.Dropdown(label="Exclusion Column")
-        operator_input = gr.Dropdown(["=", "!="], label="Operator")
-        value_input = gr.Textbox(label="Exclusion Values (comma-separated)")
-
-    with gr.Row():
-        update_col_algo = gr.Dropdown(label="ALGO Update Column")
-        find_algo = gr.Textbox(label="ALGO Find")
-        replace_algo = gr.Textbox(label="ALGO Replace")
-
-    with gr.Row():
-        update_col_star = gr.Dropdown(label="STAR Update Column")
-        find_star = gr.Textbox(label="STAR Find")
-        replace_star = gr.Textbox(label="STAR Replace")
-
-    run_btn = gr.Button("Run Reconciliation")
-
-    excluded_out = gr.Dataframe(label="Excluded Records")
-    matched_out = gr.Dataframe(label="Matched Records")
-    unmatched_out = gr.Dataframe(label="Unmatched Records")
-    summary_out = gr.Textbox(label="Summary")
-
-    algo_file.change(fn=load_algo_file, inputs=algo_file, outputs=[algo_df_state, update_col_algo, column_selector])
-    star_file.change(fn=load_star_file, inputs=star_file, outputs=[star_df_state, update_col_star, column_selector])
-    file_selector.change(update_column_dropdown, inputs=[file_selector, algo_df_state, star_df_state], outputs=column_selector)
-
-    run_btn.click(
-        reconcile_with_updates_and_exclusion,
-        inputs=[algo_df_state, star_df_state, file_selector, column_selector, operator_input, value_input,
-                update_col_algo, find_algo, replace_algo,
-                update_col_star, find_star, replace_star],
-        outputs=[excluded_out, matched_out, unmatched_out, summary_out]
-    )
-
-demo.launch()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import pandas as pd
-import gradio as gr
-from collections import defaultdict
-
-# Load CSVs
-def load_csv(file):
-    try:
-        df = pd.read_csv(file).astype(str)
-        return df, gr.update(choices=list(df.columns))
-    except:
-        return pd.DataFrame(), gr.update(choices=[])
-
-# Matching logic
-def reconcile(algo_df, star_df, algo_key_col, star_key_col, file_type, excl_col, operator, value):
-    df_algo = algo_df.copy()
-    df_star = star_df.copy()
-    excluded_df = pd.DataFrame()
-
-    values = [v.strip() for v in value.split(',') if v.strip()]
-
-    # Apply exclusion
-    if file_type == "ALGO" and excl_col in df_algo.columns:
-        if operator == "=":
-            excluded_df = df_algo[df_algo[excl_col].isin(values)]
-            df_algo = df_algo[~df_algo[excl_col].isin(values)]
-        else:
-            excluded_df = df_algo[~df_algo[excl_col].isin(values)]
-            df_algo = df_algo[df_algo[excl_col].isin(values)]
-    elif file_type == "STAR" and excl_col in df_star.columns:
-        if operator == "=":
-            excluded_df = df_star[df_star[excl_col].isin(values)]
-            df_star = df_star[~df_star[excl_col].isin(values)]
-        else:
-            excluded_df = df_star[~df_star[excl_col].isin(values)]
-            df_star = df_star[df_star[excl_col].isin(values)]
-
-    # Key extraction
-    algo_keys = df_algo[algo_key_col].astype(str).str.strip().tolist()
-    star_keys = df_star[star_key_col].astype(str).str.strip().tolist()
-
-    matched, unmatched = [], []
-
-    star_map = defaultdict(list)
-    for i, key in enumerate(star_keys):
-        star_map[key].append(i)
-
-    matched_star = set()
-    matched_algo = set()
-
-    for i, akey in enumerate(algo_keys):
-        if akey in star_map:
-            match_ids = star_map[akey]
-            if len(match_ids) == 1:
-                matched.append({"ALGO Index": i, "STAR Index": match_ids[0], "Match Type": "1-1"})
-            else:
-                for sid in match_ids:
-                    matched.append({"ALGO Index": i, "STAR Index": sid, "Match Type": "1-many"})
-            matched_algo.add(i)
-            matched_star.update(match_ids)
-        else:
-            unmatched.append({"ALGO Index": i, "STAR Index": "", "Status": "No STAR Match"})
-
-    for j, skey in enumerate(star_keys):
-        if j not in matched_star:
-            unmatched.append({"ALGO Index": "", "STAR Index": j, "Status": "No ALGO Match"})
-
-    return excluded_df, pd.DataFrame(matched), pd.DataFrame(unmatched), f"Matched: {len(matched)} | Unmatched: {len(unmatched)} | Excluded: {len(excluded_df)}"
-
-# Gradio UI
-with gr.Blocks() as demo:
-    gr.Markdown("## Reconciliation App with Matching Type Logic")
-
-    algo_df = gr.State(pd.DataFrame())
-    star_df = gr.State(pd.DataFrame())
-
-    with gr.Row():
-        algo_file = gr.File(label="Upload ALGO CSV")
-        star_file = gr.File(label="Upload STAR CSV")
-
-    with gr.Row():
-        algo_key_col = gr.Dropdown(label="ALGO Key Column")
-        star_key_col = gr.Dropdown(label="STAR Key Column")
-
-    with gr.Row():
-        file_type = gr.Dropdown(["ALGO", "STAR"], label="File to apply exclusion on")
-        excl_col = gr.Dropdown(label="Exclusion Column")
-        operator = gr.Dropdown(["=", "!="], label="Operator")
-        value = gr.Textbox(label="Value(s) (comma-separated)")
-
-    run_btn = gr.Button("Run Reconciliation")
-
-    excluded_output = gr.Dataframe(label="Excluded Records")
-    matched_output = gr.Dataframe(label="Matched Records")
-    unmatched_output = gr.Dataframe(label="Unmatched Records")
-    summary_output = gr.Textbox(label="Summary")
-
-    algo_file.change(load_csv, inputs=algo_file, outputs=[algo_df, algo_key_col])
-    star_file.change(load_csv, inputs=star_file, outputs=[star_df, star_key_col])
-    file_type.change(
-        lambda ft, adf, sdf: gr.update(choices=list(adf.columns) if ft == "ALGO" else list(sdf.columns)),
-        inputs=[file_type, algo_df, star_df],
-        outputs=excl_col
-    )
-
-    run_btn.click(reconcile, inputs=[
-        algo_df, star_df, algo_key_col, star_key_col, file_type, excl_col, operator, value
-    ], outputs=[
-        excluded_output, matched_output, unmatched_output, summary_output
-    ])
-
-demo.launch()
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Here is the complete set of Java files in copy code format:
-
+---
+
+## 2. **Service (mock)** (`currency.service.ts`)
+
+```ts
+import { Injectable } from '@angular/core';
+import { Currency } from './currency.model';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class CurrencyService {
+  private currencies: Currency[] = [
+    {
+      id: 1,
+      abbreviation: 'USD',
+      description: 'US Dollar',
+      decimalPlaces: 2,
+      decimalChar: '.',
+      thousandSeparator: ',',
+      status: 'valid'
+    }
+  ];
+
+  getCurrencies(): Currency[] {
+    return [...this.currencies];
+  }
+
+  addCurrency(): Currency {
+    const newCurrency: Currency = {
+      id: Date.now(),
+      abbreviation: '',
+      description: '',
+      decimalPlaces: 2,
+      decimalChar: '.',
+      thousandSeparator: ',',
+      status: 'warning'
+    };
+    this.currencies.push(newCurrency);
+    return newCurrency;
+  }
+
+  deleteCurrencies(ids: number[]) {
+    this.currencies = this.currencies.filter(c => !ids.includes(c.id));
+  }
+
+  refreshCurrencies(): Currency[] {
+    return this.getCurrencies();
+  }
+}
+```
 
 ---
 
-1. ReconciliationController.java
+## 3. **Component TS** (`currencies.component.ts`)
 
-package com.example.demo.controller;
+```ts
+import { Component, OnInit } from '@angular/core';
+import { Currency } from './currency.model';
+import { CurrencyService } from './currency.service';
 
-import com.example.demo.model.ReconciliationResult;
-import com.example.demo.service.ReconciliationService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+@Component({
+  selector: 'app-currencies',
+  templateUrl: './currencies.component.html',
+  styleUrls: ['./currencies.component.css']
+})
+export class CurrenciesComponent implements OnInit {
+  currencies: Currency[] = [];
+  displayedColumns: string[] = ['select', 'status', 'abbreviation', 'description', 'decimalPlaces', 'decimalChar', 'thousandSeparator'];
+  selectedIds: Set<number> = new Set();
 
-@RestController
-@RequestMapping("/reconcile")
-public class ReconciliationController {
+  constructor(private currencyService: CurrencyService) {}
 
-    @Autowired
-    private ReconciliationService reconciliationService;
+  ngOnInit(): void {
+    this.currencies = this.currencyService.getCurrencies();
+  }
 
-    private final String algoPath = "C:\\Users\\59944\\OneDrive\\Desktop\\test\\Initial_Margin_800_28258387.csv";
-    private final String starPath = "C:\\Users\\59944\\OneDrive\\Desktop\\test\\STARALGONEW_3428_20250387_1.csv";
+  addCurrency(): void {
+    const newCurrency = this.currencyService.addCurrency();
+    this.currencies = this.currencyService.getCurrencies();
+  }
 
-    @GetMapping("/exclude")
-    public ReconciliationResult exclude() {
-        return reconciliationService.excludeAndTransform(algoPath, starPath);
+  deleteSelected(): void {
+    this.currencyService.deleteCurrencies(Array.from(this.selectedIds));
+    this.selectedIds.clear();
+    this.currencies = this.currencyService.getCurrencies();
+  }
+
+  refresh(): void {
+    this.currencies = this.currencyService.refreshCurrencies();
+  }
+
+  toggleSelection(id: number): void {
+    this.selectedIds.has(id) ? this.selectedIds.delete(id) : this.selectedIds.add(id);
+  }
+
+  validate(currency: Currency): void {
+    const { abbreviation, description, decimalPlaces, decimalChar } = currency;
+    if (!abbreviation || !description) {
+      currency.status = 'error';
+    } else if (decimalPlaces < 0 || decimalPlaces > 6 || !['.', ','].includes(decimalChar)) {
+      currency.status = 'warning';
+    } else {
+      currency.status = 'valid';
     }
+  }
+}
+```
 
-    @GetMapping("/nonexcluded")
-    public ReconciliationResult getNonExcluded() {
-        return reconciliationService.getNonExcluded();
-    }
+---
 
-    @GetMapping("/match/{type}")
-    public ReconciliationResult match(@PathVariable String type) {
-        return reconciliationService.match(type);
-    }
+## 4. **Component HTML** (`currencies.component.html`)
+
+```html
+<mat-card>
+  <mat-toolbar>
+    <button mat-icon-button (click)="addCurrency()"><mat-icon>add</mat-icon></button>
+    <button mat-icon-button (click)="refresh()"><mat-icon>refresh</mat-icon></button>
+    <button mat-icon-button (click)="deleteSelected()" [disabled]="selectedIds.size === 0"><mat-icon>delete</mat-icon></button>
+  </mat-toolbar>
+
+  <table mat-table [dataSource]="currencies" class="mat-elevation-z8">
+
+    <ng-container matColumnDef="select">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let c">
+        <mat-checkbox (change)="toggleSelection(c.id)" [checked]="selectedIds.has(c.id)"></mat-checkbox>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let c">
+        <mat-icon *ngIf="c.status === 'valid'" color="primary">check_circle</mat-icon>
+        <mat-icon *ngIf="c.status === 'warning'" color="accent">warning</mat-icon>
+        <mat-icon *ngIf="c.status === 'error'" color="warn">error</mat-icon>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="abbreviation">
+      <th mat-header-cell *matHeaderCellDef>Abbreviation</th>
+      <td mat-cell *matCellDef="let c">
+        <input matInput [(ngModel)]="c.abbreviation" (ngModelChange)="validate(c)">
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="description">
+      <th mat-header-cell *matHeaderCellDef>Description</th>
+      <td mat-cell *matCellDef="let c">
+        <input matInput [(ngModel)]="c.description" (ngModelChange)="validate(c)">
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="decimalPlaces">
+      <th mat-header-cell *matHeaderCellDef>No. of Decimal Places</th>
+      <td mat-cell *matCellDef="let c">
+        <input type="number" matInput [(ngModel)]="c.decimalPlaces" (ngModelChange)="validate(c)" min="0" max="6">
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="decimalChar">
+      <th mat-header-cell *matHeaderCellDef>Decimal Char</th>
+      <td mat-cell *matCellDef="let c">
+        <input matInput [(ngModel)]="c.decimalChar" (ngModelChange)="validate(c)" maxlength="1">
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="thousandSeparator">
+      <th mat-header-cell *matHeaderCellDef>Thousand Separator</th>
+      <td mat-cell *matCellDef="let c">
+        <input matInput [(ngModel)]="c.thousandSeparator">
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+  </table>
+</mat-card>
+```
+
+---
+
+## 5. **Component CSS** (`currencies.component.css`)
+
+```css
+mat-card {
+  margin: 20px;
 }
 
-
----
-
-2. ReconciliationService.java
-
-package com.example.demo.service;
-
-import com.example.demo.model.Record;
-import com.example.demo.model.ReconciliationResult;
-import com.example.demo.util.CsvUtil;
-import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-@Service
-public class ReconciliationService {
-
-    private List<Record> algoRecords = new ArrayList<>();
-    private List<Record> starRecords = new ArrayList<>();
-    private List<Record> excludedRecords = new ArrayList<>();
-    private List<Record> nonExcludedAlgo = new ArrayList<>();
-    private List<Record> nonExcludedStar = new ArrayList<>();
-
-    public ReconciliationResult excludeAndTransform(String algoPath, String starPath) {
-        algoRecords = CsvUtil.readCsv(algoPath);
-        starRecords = CsvUtil.readCsv(starPath);
-
-        excludedRecords = algoRecords.stream()
-                .filter(r -> r.getAmount() == 0)
-                .collect(Collectors.toList());
-
-        nonExcludedAlgo = algoRecords.stream()
-                .filter(r -> r.getAmount() != 0)
-                .collect(Collectors.toList());
-
-        nonExcludedStar = starRecords;
-
-        return new ReconciliationResult(new ArrayList<>(), new ArrayList<>(), excludedRecords, nonExcludedAlgo.size(), nonExcludedStar.size());
-    }
-
-    public ReconciliationResult getNonExcluded() {
-        return new ReconciliationResult(nonExcludedAlgo, nonExcludedStar, new ArrayList<>(), nonExcludedAlgo.size(), nonExcludedStar.size());
-    }
-
-    public ReconciliationResult match(String type) {
-        List<Record> matched = new ArrayList<>();
-
-        for (Record algo : nonExcludedAlgo) {
-            for (Record star : nonExcludedStar) {
-                if (algo.getKey().equals(star.getKey()) && algo.getAmount() == star.getAmount()) {
-                    matched.add(algo);
-                    break;
-                }
-            }
-        }
-
-        List<Record> unmatchedAlgo = nonExcludedAlgo.stream()
-                .filter(r -> !matched.contains(r))
-                .collect(Collectors.toList());
-
-        return new ReconciliationResult(matched, unmatchedAlgo, excludedRecords, nonExcludedAlgo.size(), nonExcludedStar.size());
-    }
+mat-toolbar {
+  background: #f5f5f5;
+  margin-bottom: 10px;
 }
 
-
----
-
-3. ReconciliationResult.java
-
-package com.example.demo.model;
-
-import java.util.List;
-
-public class ReconciliationResult {
-
-    private List<Record> matched;
-    private List<Record> unmatched;
-    private List<Record> excluded;
-
-    private int matchedCount;
-    private int unmatchedCount;
-    private int excludedCount;
-    private int nonExcludedAlgoCount;
-    private int nonExcludedStarCount;
-
-    public ReconciliationResult(List<Record> matched, List<Record> unmatched, List<Record> excluded, int nonExcludedAlgoCount, int nonExcludedStarCount) {
-        this.matched = matched;
-        this.unmatched = unmatched;
-        this.excluded = excluded;
-        this.matchedCount = matched.size();
-        this.unmatchedCount = unmatched.size();
-        this.excludedCount = excluded.size();
-        this.nonExcludedAlgoCount = nonExcludedAlgoCount;
-        this.nonExcludedStarCount = nonExcludedStarCount;
-    }
-
-    public List<Record> getMatched() { return matched; }
-    public List<Record> getUnmatched() { return unmatched; }
-    public List<Record> getExcluded() { return excluded; }
-
-    public int getMatchedCount() { return matchedCount; }
-    public int getUnmatchedCount() { return unmatchedCount; }
-    public int getExcludedCount() { return excludedCount; }
-    public int getNonExcludedAlgoCount() { return nonExcludedAlgoCount; }
-    public int getNonExcludedStarCount() { return nonExcludedStarCount; }
+table {
+  width: 100%;
 }
-
-
----
-
-4. Record.java
-
-package com.example.demo.model;
-
-public class Record {
-
-    private String key;
-    private double amount;
-
-    public Record() {}
-
-    public Record(String key, double amount) {
-        this.key = key;
-        this.amount = amount;
-    }
-
-    public String getKey() { return key; }
-    public void setKey(String key) { this.key = key; }
-
-    public double getAmount() { return amount; }
-    public void setAmount(double amount) { this.amount = amount; }
-}
-
+```
 
 ---
 
-5. CsvUtil.java
+Let me know if you want:
 
-package com.example.demo.util;
+* Modal/dialog for adding/editing?
+* Backend API integration?
+* Unit tests or export to Excel?
 
-import com.example.demo.model.Record;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVRecord;
-
-import java.io.FileReader;
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
-
-public class CsvUtil {
-
-    public static List<Record> readCsv(String filePath) {
-        List<Record> records = new ArrayList<>();
-        try {
-            Reader in = new FileReader(filePath);
-            Iterable<CSVRecord> csvRecords = CSVFormat.DEFAULT.withFirstRecordAsHeader().parse(in);
-            for (CSVRecord record : csvRecords) {
-                String key = record.get("Key");
-                double amount = Double.parseDouble(record.get("Amount"));
-                records.add(new Record(key, amount));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return records;
-    }
-}
-
-
----
-
-Test on localhost
-
-After starting the Spring Boot application, use these endpoints in your browser or Postman:
-
-http://localhost:8080/reconcile/exclude – performs exclusion
-
-http://localhost:8080/reconcile/nonexcluded – shows non-excluded ALGO and STAR with counts
-
-http://localhost:8080/reconcile/match/1to1 – shows matched records and counts after exclusion
-
-
-Let me know if you want to add DB integration or more matching rules.
-
-
-                                                        nonExcludedAlgo.size(),
-                
+I can help with all of it.
+       
