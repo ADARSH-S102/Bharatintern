@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Currencies with Modal</title>
+  <meta charset="UTF-8">
+  <title>Currency Table</title>
   <style>
     body {
       font-family: Arial, sans-serif;
+      margin: 20px;
     }
 
     .toolbar {
-      display: flex;
-      justify-content: flex-end;
+      text-align: right;
       margin-bottom: 10px;
     }
 
     .toolbar button {
-      margin-left: 10px;
+      font-size: 18px;
       padding: 6px 12px;
     }
 
@@ -31,35 +31,18 @@
     }
 
     th {
-      background-color: #f0f0f0;
+      background-color: #f9f9f9;
     }
 
-    .status-icon {
-      font-weight: bold;
-    }
-
-    .valid {
-      color: green;
-    }
-
-    .warning {
-      color: orange;
-    }
-
-    .error {
-      color: red;
-    }
-
-    /* Modal styles */
     .modal {
       display: none;
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background-color: rgba(0,0,0,0.5);
-      z-index: 9999;
+      background: rgba(0, 0, 0, 0.5);
       justify-content: center;
       align-items: center;
+      z-index: 1000;
     }
 
     .modal.show {
@@ -67,28 +50,20 @@
     }
 
     .modal-content {
-      background: white;
+      background: #fff;
       padding: 20px;
       border-radius: 6px;
-      width: 400px;
-    }
-
-    .modal-content h3 {
-      margin-top: 0;
+      width: 300px;
     }
 
     .modal-content input {
       width: 100%;
+      margin-bottom: 10px;
       padding: 8px;
-      margin: 6px 0;
-      box-sizing: border-box;
     }
 
     .modal-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 10px;
+      text-align: right;
     }
   </style>
 </head>
@@ -96,15 +71,11 @@
 
 <div class="toolbar">
   <button onclick="openModal()">+</button>
-  <button onclick="refreshTable()">⟳</button>
-  <button onclick="deleteSelected()">🗑</button>
 </div>
 
-<table id="currencyTable">
+<table>
   <thead>
     <tr>
-      <th>Select</th>
-      <th>Status</th>
       <th>Abbreviation</th>
       <th>Description</th>
       <th>Decimal Places</th>
@@ -112,20 +83,18 @@
       <th>Thousand Separator</th>
     </tr>
   </thead>
-  <tbody id="currencyBody">
-    <!-- Rows will be inserted here -->
-  </tbody>
+  <tbody id="currencyBody"></tbody>
 </table>
 
-<!-- Modal Popup -->
+<!-- Modal -->
 <div class="modal" id="currencyModal">
   <div class="modal-content">
-    <h3>Add New Currency</h3>
-    <input id="abbr" placeholder="Abbreviation" />
-    <input id="desc" placeholder="Description" />
-    <input id="decimalPlaces" type="number" placeholder="Decimal Places (e.g. 2)" />
-    <input id="decimalChar" maxlength="1" placeholder="Decimal Char (e.g. . or ,)" />
-    <input id="thousandSeparator" placeholder="Thousand Separator (e.g. , or space)" />
+    <h3>Add Currency</h3>
+    <input id="abbr" placeholder="Abbreviation">
+    <input id="desc" placeholder="Description">
+    <input id="decimalPlaces" type="number" placeholder="Decimal Places">
+    <input id="decimalChar" placeholder="Decimal Char (e.g. .)">
+    <input id="thousandSeparator" placeholder="Thousand Separator">
     <div class="modal-footer">
       <button onclick="closeModal()">Cancel</button>
       <button onclick="saveCurrency()">Save</button>
@@ -134,91 +103,54 @@
 </div>
 
 <script>
-  let currencies = [];
+  const currencies = [];
 
   function openModal() {
-    document.getElementById('currencyModal').classList.add('show');
+    document.getElementById("currencyModal").classList.add("show");
   }
 
   function closeModal() {
-    document.getElementById('currencyModal').classList.remove('show');
-    document.querySelectorAll('.modal-content input').forEach(input => input.value = '');
+    document.getElementById("currencyModal").classList.remove("show");
+    document.querySelectorAll('#currencyModal input').forEach(i => i.value = '');
   }
 
   function saveCurrency() {
-    const abbreviation = document.getElementById('abbr').value.trim();
-    const description = document.getElementById('desc').value.trim();
-    const decimalPlaces = parseInt(document.getElementById('decimalPlaces').value);
-    const decimalChar = document.getElementById('decimalChar').value.trim();
-    const thousandSeparator = document.getElementById('thousandSeparator').value.trim();
+    const abbreviation = document.getElementById("abbr").value.trim();
+    const description = document.getElementById("desc").value.trim();
+    const decimalPlaces = document.getElementById("decimalPlaces").value;
+    const decimalChar = document.getElementById("decimalChar").value.trim();
+    const thousandSeparator = document.getElementById("thousandSeparator").value.trim();
 
     if (!abbreviation || !description) {
       alert("Abbreviation and Description are required.");
       return;
     }
 
-    const newCurrency = {
-      id: Date.now(),
-      abbreviation,
-      description,
-      decimalPlaces,
-      decimalChar,
-      thousandSeparator,
-      selected: false,
-      status: 'warning'
-    };
-
-    currencies.push(newCurrency);
-    validate(currencies.length - 1);
+    currencies.push({ abbreviation, description, decimalPlaces, decimalChar, thousandSeparator });
+    renderTable();
     closeModal();
-    renderTable();
-  }
-
-  function deleteSelected() {
-    currencies = currencies.filter(c => !c.selected);
-    renderTable();
-  }
-
-  function refreshTable() {
-    renderTable();
-  }
-
-  function toggleSelection(index) {
-    currencies[index].selected = !currencies[index].selected;
-  }
-
-  function validate(index) {
-    const c = currencies[index];
-    if (!c.abbreviation || !c.description) {
-      c.status = 'error';
-    } else if (c.decimalPlaces < 0 || c.decimalPlaces > 6 || !['.', ','].includes(c.decimalChar)) {
-      c.status = 'warning';
-    } else {
-      c.status = 'valid';
-    }
   }
 
   function renderTable() {
-    const tbody = document.getElementById('currencyBody');
+    const tbody = document.getElementById("currencyBody");
     tbody.innerHTML = '';
-    currencies.forEach((c, i) => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td><input type="checkbox" ${c.selected ? 'checked' : ''} onclick="toggleSelection(${i})"></td>
-        <td><span class="status-icon ${c.status}">${c.status === 'valid' ? '✓' : c.status === 'warning' ? '!' : '×'}</span></td>
+    currencies.forEach(c => {
+      const row = `<tr>
         <td>${c.abbreviation}</td>
         <td>${c.description}</td>
         <td>${c.decimalPlaces}</td>
         <td>${c.decimalChar}</td>
         <td>${c.thousandSeparator}</td>
-      `;
-      tbody.appendChild(row);
+      </tr>`;
+      tbody.innerHTML += row;
     });
   }
 </script>
 
 </body>
 </html>
+
+
 
 
   
