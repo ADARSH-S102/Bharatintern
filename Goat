@@ -1,3 +1,84 @@
+<div class="toolbar">
+  <button type="button" (click)="openModal()">+ Add Currency</button>
+</div>
+
+<table border="1" cellpadding="8" cellspacing="0">
+  <thead>
+    <tr>
+      <th>Abbreviation</th>
+      <th>Description</th>
+      <th>Decimal Places</th>
+      <th>Decimal Char</th>
+      <th>Thousand Separator</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let currency of currencies">
+      <td>{{ currency.abbr }}</td>
+      <td>{{ currency.description }}</td>
+      <td>{{ currency.decimalPlaces }}</td>
+      <td>{{ currency.decimalChar }}</td>
+      <td>{{ currency.thousandSeparator }}</td>
+      <td>
+        <button type="button" (click)="openModal(true, currency)">Edit</button>
+        <button type="button" (click)="deleteCurrency(currency.id)">Delete</button>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Modal for Add/Edit -->
+<div *ngIf="showModal" class="modal">
+  <form [formGroup]="currencyForm" (ngSubmit)="saveCurrency()">
+    <h3>{{ isEdit ? 'Edit Currency' : 'Add Currency' }}</h3>
+
+    <div>
+      <label>Abbreviation:</label>
+      <input type="text" formControlName="abbr" />
+    </div>
+
+    <div>
+      <label>Description:</label>
+      <input type="text" formControlName="description" />
+    </div>
+
+    <div>
+      <label>Decimal Places:</label>
+      <input type="number" formControlName="decimalPlaces" />
+    </div>
+
+    <div>
+      <label>Decimal Char:</label>
+      <input type="text" formControlName="decimalChar" maxlength="1" />
+    </div>
+
+    <div>
+      <label>Thousand Separator:</label>
+      <input type="text" formControlName="thousandSeparator" maxlength="1" />
+    </div>
+
+    <div style="margin-top: 10px;">
+      <button type="submit" [disabled]="currencyForm.invalid">Save</button>
+      <button type="button" (click)="closeModal()">Cancel</button>
+    </div>
+  </form>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Sure! Below is the full Angular code without using ngModel, ngIf, or other template-driven (ng-prefixed) syntax. Instead, this uses Reactive Forms and explicit *ngIf control via component logic.
 
 
