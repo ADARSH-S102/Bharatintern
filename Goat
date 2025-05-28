@@ -1,3 +1,110 @@
+Here are the complete app.module.ts and home.component.ts files, with ReactiveFormsModule correctly configured and the component ready to load and submit currency data.
+
+
+---
+
+✅ app.module.ts
+
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
+
+import { AppComponent } from './app.component';
+import { HomeComponent } from './home/home.component';
+
+@NgModule({
+  declarations: [
+    AppComponent,
+    HomeComponent
+  ],
+  imports: [
+    BrowserModule,
+    ReactiveFormsModule,  // Required for formGroup, formControl, etc.
+    FormsModule,
+    HttpClientModule      // Required for API calls
+  ],
+  providers: [],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+
+
+---
+
+✅ home.component.ts
+
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { CurrencyService } from '../services/currency.service';
+
+@Component({
+  selector: 'app-home',
+  templateUrl: './home.component.html'
+})
+export class HomeComponent implements OnInit {
+  currencyForm: FormGroup;
+  currencies: any[] = [];
+  showForm: boolean = false;
+
+  constructor(private fb: FormBuilder, private currencyService: CurrencyService) {}
+
+  ngOnInit(): void {
+    this.currencyForm = this.fb.group({
+      abbr: ['', Validators.required],
+      description: ['', Validators.required],
+      decimalPlaces: [0, [Validators.required, Validators.min(0), Validators.max(10)]],
+      decimalChar: ['', Validators.required],
+      thousandSeparator: ['', Validators.required]
+    });
+
+    this.loadCurrencies();
+  }
+
+  loadCurrencies(): void {
+    this.currencyService.getCurrencies().subscribe(data => {
+      this.currencies = data;
+    });
+  }
+
+  onSubmit(): void {
+    if (this.currencyForm.valid) {
+      this.currencyService.addCurrency(this.currencyForm.value).subscribe(() => {
+        this.loadCurrencies();
+        this.currencyForm.reset();
+        this.showForm = false;
+      });
+    }
+  }
+
+  openForm(): void {
+    this.showForm = true;
+  }
+
+  closeForm(): void {
+    this.showForm = false;
+  }
+}
+
+
+---
+
+Let me know if you'd like me to send the HTML (home.component.html) with form popup logic matching the showForm variable.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 To display all the currencies from your Oracle `currencies` table in the Angular UI, follow this **3-step full-stack integration** approach:
 
 ---
