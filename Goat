@@ -1,3 +1,67 @@
+<div class="container">
+  <h2>Currencies</h2>
+
+  <button (click)="toggleForm()">+ Add Currency</button>
+
+  <!-- Currency Form -->
+  <div *ngIf="showForm">
+    <form [formGroup]="currencyForm" (ngSubmit)="addCurrency()">
+      <div>
+        <label>Abbreviation:</label>
+        <input formControlName="abbr" />
+      </div>
+      <div>
+        <label>Description:</label>
+        <input formControlName="description" />
+      </div>
+      <div>
+        <label>Decimal Places:</label>
+        <input type="number" formControlName="decimalPlaces" />
+      </div>
+      <div>
+        <label>Decimal Character:</label>
+        <input formControlName="decimalCharacter" />
+      </div>
+      <div>
+        <label>Thousand Separator:</label>
+        <input formControlName="thousandSeparator" />
+      </div>
+      <button type="submit">Save</button>
+    </form>
+  </div>
+
+  <!-- Table -->
+  <table>
+    <thead>
+      <tr>
+        <th>Abbreviation</th>
+        <th>Description</th>
+        <th>Decimal Places</th>
+        <th>Decimal Character</th>
+        <th>Thousand Separator</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let currency of currencies">
+        <td>{{ currency.abbr }}</td>
+        <td>{{ currency.description }}</td>
+        <td>{{ currency.decimalPlaces }}</td>
+        <td>{{ currency.decimalCharacter }}</td>
+        <td>{{ currency.thousandSeparator }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+
+
+
+
+
+
+
+
 Here’s the rest of the Angular code based on your folder structure:
 
 
