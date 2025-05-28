@@ -1,13 +1,132 @@
-addCurrency(): void {
-  if (this.currencyForm.valid) {
-    const newCurrency = this.currencyForm.value;
-    this.homeService.addCurrency(newCurrency).subscribe(() => {
-      this.getCurrencies(); // Refresh list
-      this.currencyForm.reset(); // Clear form
-      this.showForm = false; // Hide form
+Here’s the full corrected and working version of the Angular component and HTML with all the changes made so far:
+
+---
+
+### ✅ `home.component.ts`
+
+```ts
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { HomeService } from './home.service';
+import { Currency } from './home.model';
+
+@Component({
+  selector: 'app-home',
+  templateUrl: './home.component.html'
+})
+export class HomeComponent implements OnInit {
+  currencies: Currency[] = [];
+  currencyForm: FormGroup;
+  showForm = false;
+
+  constructor(private fb: FormBuilder, private homeService: HomeService) {}
+
+  ngOnInit(): void {
+    this.currencyForm = this.fb.group({
+      abbr: ['', Validators.required],
+      description: ['', Validators.required],
+      decimalPlaces: [0, Validators.required],
+      decimalCharacter: ['', Validators.required],
+      thousandSeparator: ['', Validators.required]
+    });
+
+    this.getCurrencies();
+  }
+
+  getCurrencies(): void {
+    this.homeService.getCurrencies().subscribe(data => {
+      this.currencies = data;
     });
   }
+
+  toggleForm(): void {
+    this.showForm = !this.showForm;
+    this.currencyForm.reset(); // Optional: reset form when toggling
+  }
+
+  addCurrency(): void {
+    if (this.currencyForm.valid) {
+      const newCurrency: Currency = this.currencyForm.value;
+      this.homeService.addCurrency(newCurrency).subscribe(() => {
+        this.getCurrencies();
+        this.currencyForm.reset();
+        this.showForm = false;
+      });
+    }
+  }
 }
+```
+
+---
+
+### ✅ `home.component.html`
+
+```html
+<div class="container">
+  <h2>Currencies</h2>
+
+  <button (click)="toggleForm()">+ Add Currency</button>
+
+  <!-- Currency Form -->
+  <div *ngIf="showForm">
+    <form [formGroup]="currencyForm" (ngSubmit)="addCurrency()">
+      <div>
+        <label>Abbreviation:</label>
+        <input formControlName="abbr" />
+      </div>
+      <div>
+        <label>Description:</label>
+        <input formControlName="description" />
+      </div>
+      <div>
+        <label>Decimal Places:</label>
+        <input type="number" formControlName="decimalPlaces" />
+      </div>
+      <div>
+        <label>Decimal Character:</label>
+        <input formControlName="decimalCharacter" />
+      </div>
+      <div>
+        <label>Thousand Separator:</label>
+        <input formControlName="thousandSeparator" />
+      </div>
+      <button type="submit">Save</button>
+    </form>
+  </div>
+
+  <!-- Table -->
+  <table border="1">
+    <thead>
+      <tr>
+        <th>Abbreviation</th>
+        <th>Description</th>
+        <th>Decimal Places</th>
+        <th>Decimal Character</th>
+        <th>Thousand Separator</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let currency of currencies">
+        <td>{{ currency.abbr }}</td>
+        <td>{{ currency.description }}</td>
+        <td>{{ currency.decimalPlaces }}</td>
+        <td>{{ currency.decimalCharacter }}</td>
+        <td>{{ currency.thousandSeparator }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+```
+
+---
+
+Let me know if you want:
+
+* The matching `home.service.ts`
+* The `Currency` model (`home.model.ts`)
+* Or help wiring it into the backend
+
+Would you like me to package this into a working Angular module setup as well?
 
 
 
