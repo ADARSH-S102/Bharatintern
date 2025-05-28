@@ -1,17 +1,21 @@
-Here's the complete working Angular setup for your Currency UI module, including the changes made to ensure currencyForm works without errors:
+Thanks for sharing your folder structure. Based on your Angular layout (src/app/components/home/), here’s what you should do to fix your import and component errors:
 
 
 ---
 
-✅ 1. app.module.ts
+✅ app.module.ts
 
+Make sure you import the HomeComponent and necessary Angular modules correctly:
+
+// src/app/app.module.ts
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 
 import { AppComponent } from './app.component';
-import { HomeComponent } from './home/home.component';
+import { HomeComponent } from './components/home/home.component';
+import { HomeService } from './components/home/home.service';
 
 @NgModule({
   declarations: [
@@ -20,11 +24,11 @@ import { HomeComponent } from './home/home.component';
   ],
   imports: [
     BrowserModule,
-    ReactiveFormsModule,
     FormsModule,
+    ReactiveFormsModule,
     HttpClientModule
   ],
-  providers: [],
+  providers: [HomeService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
@@ -32,155 +36,65 @@ export class AppModule { }
 
 ---
 
-✅ 2. currency.service.ts (inside src/app/services/)
+✅ home.component.ts
 
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+This version ensures currencyForm is properly initialized:
 
-@Injectable({
-  providedIn: 'root'
-})
-export class CurrencyService {
-  private apiUrl = 'http://localhost:8080/api/currencies'; // Replace with your backend URL
-
-  constructor(private http: HttpClient) {}
-
-  getCurrencies(): Observable<any[]> {
-    return this.http.get<any[]>(this.apiUrl);
-  }
-
-  addCurrency(currency: any): Observable<any> {
-    return this.http.post<any>(this.apiUrl, currency);
-  }
-}
-
-
----
-
-✅ 3. home.component.ts
-
+// src/app/components/home/home.component.ts
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { CurrencyService } from '../services/currency.service';
+import { HomeService } from './home.service';
+import { Currency } from './home.model';
 
 @Component({
   selector: 'app-home',
-  templateUrl: './home.component.html'
+  templateUrl: './home.component.html',
+  styleUrls: ['./home.component.css']
 })
 export class HomeComponent implements OnInit {
   currencyForm: FormGroup;
-  currencies: any[] = [];
-  showForm: boolean = false;
+  currencies: Currency[] = [];
+  showForm = false;
 
-  constructor(
-    private fb: FormBuilder,
-    private currencyService: CurrencyService
-  ) {}
-
-  ngOnInit(): void {
+  constructor(private fb: FormBuilder, private homeService: HomeService) {
     this.currencyForm = this.fb.group({
       abbr: ['', Validators.required],
       description: ['', Validators.required],
-      decimalPlaces: [0, [Validators.required, Validators.min(0), Validators.max(10)]],
-      decimalChar: ['', Validators.required],
-      thousandSeparator: ['', Validators.required]
+      decimalPlaces: [2, [Validators.required, Validators.min(0)]],
+      decimalChar: ['.', Validators.required],
+      thousandSeparator: [',', Validators.required]
     });
-
-    this.loadCurrencies();
   }
 
-  loadCurrencies(): void {
-    this.currencyService.getCurrencies().subscribe(data => {
+  ngOnInit() {
+    this.getCurrencies();
+  }
+
+  getCurrencies() {
+    this.homeService.getCurrencies().subscribe((data: Currency[]) => {
       this.currencies = data;
     });
   }
 
-  onSubmit(): void {
+  toggleForm() {
+    this.showForm = !this.showForm;
+  }
+
+  saveCurrency() {
     if (this.currencyForm.valid) {
-      this.currencyService.addCurrency(this.currencyForm.value).subscribe(() => {
-        this.loadCurrencies();
+      const newCurrency = this.currencyForm.value;
+      this.homeService.addCurrency(newCurrency).subscribe(() => {
+        this.getCurrencies();
         this.currencyForm.reset();
         this.showForm = false;
       });
     }
   }
-
-  openForm(): void {
-    this.showForm = true;
-  }
-
-  closeForm(): void {
-    this.showForm = false;
-  }
 }
 
 
 ---
 
-✅ 4. home.component.html
+Would you also like me to resend the home.component.html and home.service.ts based on this structure and logic?
 
-<div class="container">
-  <h2>Currencies</h2>
-  <button (click)="openForm()">+ Add Currency</button>
-
-  <table border="1" cellpadding="5" cellspacing="0">
-    <tr>
-      <th>Abbreviation</th>
-      <th>Description</th>
-      <th>Decimal Places</th>
-      <th>Decimal Character</th>
-      <th>Thousand Separator</th>
-    </tr>
-    <tr *ngFor="let currency of currencies">
-      <td>{{ currency.abbr }}</td>
-      <td>{{ currency.description }}</td>
-      <td>{{ currency.decimalPlaces }}</td>
-      <td>{{ currency.decimalChar }}</td>
-      <td>{{ currency.thousandSeparator }}</td>
-    </tr>
-  </table>
-
-  <div *ngIf="showForm" style="margin-top: 20px;">
-    <h3>Add Currency</h3>
-    <form [formGroup]="currencyForm" (ngSubmit)="onSubmit()">
-      <label>
-        Abbreviation:
-        <input type="text" formControlName="abbr">
-      </label><br><br>
-      <label>
-        Description:
-        <input type="text" formControlName="description">
-      </label><br><br>
-      <label>
-        Decimal Places:
-        <input type="number" formControlName="decimalPlaces">
-      </label><br><br>
-      <label>
-        Decimal Character:
-        <input type="text" formControlName="decimalChar">
-      </label><br><br>
-      <label>
-        Thousand Separator:
-        <input type="text" formControlName="thousandSeparator">
-      </label><br><br>
-
-      <button type="submit">Save</button>
-      <button type="button" (click)="closeForm()">Cancel</button>
-    </form>
-  </div>
-</div>
-
-
----
-
-✅ Final Notes
-
-Ensure ReactiveFormsModule is imported in your module.
-
-Make sure your backend API at http://localhost:8080/api/currencies is up and running.
-
-This code avoids ng prefixes and uses standard Angular binding.
-
-
-Let me know if you need help with the backend API in Spring Boot or Node.js.
+  
