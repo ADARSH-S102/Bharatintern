@@ -1,3 +1,128 @@
+Here’s the rest of the Angular code based on your folder structure:
+
+
+---
+
+✅ home.component.html
+
+This HTML displays the currency list and provides a form popup when you click the + symbol.
+
+<!-- src/app/components/home/home.component.html -->
+
+<div class="container">
+  <h2>Currencies</h2>
+  
+  <button (click)="toggleForm()">+</button>
+
+  <!-- Currency Form -->
+  <div *ngIf="showForm" class="form-popup">
+    <form [formGroup]="currencyForm" (ngSubmit)="saveCurrency()">
+      <label>
+        Abbreviation:
+        <input type="text" formControlName="abbr" />
+      </label><br />
+      
+      <label>
+        Description:
+        <input type="text" formControlName="description" />
+      </label><br />
+      
+      <label>
+        Decimal Places:
+        <input type="number" formControlName="decimalPlaces" />
+      </label><br />
+      
+      <label>
+        Decimal Character:
+        <input type="text" formControlName="decimalChar" />
+      </label><br />
+      
+      <label>
+        Thousand Separator:
+        <input type="text" formControlName="thousandSeparator" />
+      </label><br />
+
+      <button type="submit">Save</button>
+    </form>
+  </div>
+
+  <!-- Currency Table -->
+  <table border="1">
+    <thead>
+      <tr>
+        <th>Abbr</th>
+        <th>Description</th>
+        <th>Decimal Places</th>
+        <th>Decimal Char</th>
+        <th>Thousand Separator</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let currency of currencies">
+        <td>{{ currency.abbr }}</td>
+        <td>{{ currency.description }}</td>
+        <td>{{ currency.decimalPlaces }}</td>
+        <td>{{ currency.decimalChar }}</td>
+        <td>{{ currency.thousandSeparator }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+---
+
+✅ home.service.ts
+
+Handles HTTP requests to your backend.
+
+// src/app/components/home/home.service.ts
+
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { Currency } from './home.model';
+
+@Injectable()
+export class HomeService {
+  private baseUrl = 'http://localhost:8080/api/currencies'; // adjust if different
+
+  constructor(private http: HttpClient) {}
+
+  getCurrencies(): Observable<Currency[]> {
+    return this.http.get<Currency[]>(this.baseUrl);
+  }
+
+  addCurrency(currency: Currency): Observable<any> {
+    return this.http.post(this.baseUrl, currency);
+  }
+}
+
+
+---
+
+✅ home.model.ts
+
+Define your data model:
+
+// src/app/components/home/home.model.ts
+
+export interface Currency {
+  abbr: string;
+  description: string;
+  decimalPlaces: number;
+  decimalChar: string;
+  thousandSeparator: string;
+}
+
+Let me know if you also want the Spring Boot backend controller + entity + repository to match this!
+
+
+
+
+
+
+
 Thanks for sharing your folder structure. Based on your Angular layout (src/app/components/home/), here’s what you should do to fix your import and component errors:
 
 
