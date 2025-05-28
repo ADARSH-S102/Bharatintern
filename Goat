@@ -1,3 +1,21 @@
+addCurrency(): void {
+  if (this.currencyForm.valid) {
+    const newCurrency = this.currencyForm.value;
+    this.homeService.addCurrency(newCurrency).subscribe(() => {
+      this.getCurrencies(); // Refresh list
+      this.currencyForm.reset(); // Clear form
+      this.showForm = false; // Hide form
+    });
+  }
+}
+
+
+
+
+
+
+
+
 <div class="container">
   <h2>Currencies</h2>
 
