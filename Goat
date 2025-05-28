@@ -1,3 +1,150 @@
+Here’s the complete Spring Boot backend code for connecting to a SQL Server and managing the currencies table:
+
+
+---
+
+📄 Currency.java – Entity Class
+
+package com.example.currency.model;
+
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "currencies")
+public class Currency {
+
+    @Id
+    private String abbr;
+
+    private String description;
+
+    @Column(name = "decimal_places")
+    private int decimalPlaces;
+
+    @Column(name = "decimal_character")
+    private String decimalCharacter;
+
+    @Column(name = "thousand_separator")
+    private String thousandSeparator;
+
+    // Getters and Setters
+    public String getAbbr() { return abbr; }
+    public void setAbbr(String abbr) { this.abbr = abbr; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public int getDecimalPlaces() { return decimalPlaces; }
+    public void setDecimalPlaces(int decimalPlaces) { this.decimalPlaces = decimalPlaces; }
+
+    public String getDecimalCharacter() { return decimalCharacter; }
+    public void setDecimalCharacter(String decimalCharacter) { this.decimalCharacter = decimalCharacter; }
+
+    public String getThousandSeparator() { return thousandSeparator; }
+    public void setThousandSeparator(String thousandSeparator) { this.thousandSeparator = thousandSeparator; }
+}
+
+
+---
+
+📄 CurrencyRepository.java
+
+package com.example.currency.repository;
+
+import com.example.currency.model.Currency;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface CurrencyRepository extends JpaRepository<Currency, String> {
+}
+
+
+---
+
+📄 CurrencyController.java
+
+package com.example.currency.controller;
+
+import com.example.currency.model.Currency;
+import com.example.currency.repository.CurrencyRepository;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@CrossOrigin(origins = "*")
+@RestController
+@RequestMapping("/api/currencies")
+public class CurrencyController {
+
+    private final CurrencyRepository repository;
+
+    public CurrencyController(CurrencyRepository repository) {
+        this.repository = repository;
+    }
+
+    @GetMapping
+    public List<Currency> getAll() {
+        return repository.findAll();
+    }
+
+    @PostMapping
+    public Currency add(@RequestBody Currency currency) {
+        return repository.save(currency);
+    }
+}
+
+
+---
+
+📄 application.properties
+
+spring.datasource.url=jdbc:sqlserver://<HOST>:<PORT>;databaseName=<DB_NAME>
+spring.datasource.username=<YOUR_DB_USER>
+spring.datasource.password=<YOUR_DB_PASSWORD>
+spring.datasource.driver-class-name=com.microsoft.sqlserver.jdbc.SQLServerDriver
+
+spring.jpa.hibernate.ddl-auto=none
+spring.jpa.show-sql=true
+spring.jpa.database-platform=org.hibernate.dialect.SQLServerDialect
+
+Replace:
+
+<HOST> with your SQL Server hostname (e.g., localhost)
+
+<PORT> with your SQL Server port (default is 1433)
+
+<DB_NAME>, <YOUR_DB_USER>, <YOUR_DB_PASSWORD> accordingly
+
+
+
+---
+
+📄 Add SQL Server Driver in pom.xml
+
+<dependency>
+    <groupId>com.microsoft.sqlserver</groupId>
+    <artifactId>mssql-jdbc</artifactId>
+    <version>11.2.1.jre17</version>
+</dependency>
+
+
+---
+
+Let me know when you're ready to connect this API to your Angular UI to display currency values.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Thanks! Here's how to configure Spring Boot with Oracle DB, using your currencies table.
 
 
