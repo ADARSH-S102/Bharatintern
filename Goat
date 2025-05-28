@@ -1,3 +1,178 @@
+Thanks! Here's how to configure Spring Boot with Oracle DB, using your currencies table.
+
+
+---
+
+✅ Spring Boot + Oracle Setup for currencies Table
+
+
+---
+
+✅ 1. Currency.java Entity (for table currencies)
+
+package com.example.currency.model;
+
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "currencies")
+public class Currency {
+
+    @Id
+    private String abbr;
+
+    private String description;
+
+    @Column(name = "decimal_places")
+    private int decimalPlaces;
+
+    @Column(name = "decimal_character")
+    private String decimalCharacter;
+
+    @Column(name = "thousand_separator")
+    private String thousandSeparator;
+
+    // Getters and setters
+    public String getAbbr() { return abbr; }
+    public void setAbbr(String abbr) { this.abbr = abbr; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public int getDecimalPlaces() { return decimalPlaces; }
+    public void setDecimalPlaces(int decimalPlaces) { this.decimalPlaces = decimalPlaces; }
+
+    public String getDecimalCharacter() { return decimalCharacter; }
+    public void setDecimalCharacter(String decimalCharacter) { this.decimalCharacter = decimalCharacter; }
+
+    public String getThousandSeparator() { return thousandSeparator; }
+    public void setThousandSeparator(String thousandSeparator) { this.thousandSeparator = thousandSeparator; }
+}
+
+
+---
+
+✅ 2. CurrencyRepository.java
+
+package com.example.currency.repository;
+
+import com.example.currency.model.Currency;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface CurrencyRepository extends JpaRepository<Currency, String> {
+}
+
+
+---
+
+✅ 3. CurrencyController.java
+
+package com.example.currency.controller;
+
+import com.example.currency.model.Currency;
+import com.example.currency.repository.CurrencyRepository;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@CrossOrigin(origins = "*")
+@RestController
+@RequestMapping("/api/currencies")
+public class CurrencyController {
+
+    private final CurrencyRepository repository;
+
+    public CurrencyController(CurrencyRepository repository) {
+        this.repository = repository;
+    }
+
+    @GetMapping
+    public List<Currency> getAllCurrencies() {
+        return repository.findAll();
+    }
+
+    @PostMapping
+    public Currency addCurrency(@RequestBody Currency currency) {
+        return repository.save(currency);
+    }
+}
+
+
+---
+
+✅ 4. application.properties (Oracle version)
+
+spring.datasource.url=jdbc:oracle:thin:@<HOST>:<PORT>:<SID>  # Example: jdbc:oracle:thin:@localhost:1521:xe
+spring.datasource.username=your_oracle_user
+spring.datasource.password=your_oracle_password
+spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+
+spring.jpa.database-platform=org.hibernate.dialect.Oracle12cDialect
+spring.jpa.show-sql=true
+spring.jpa.hibernate.ddl-auto=none  # Keep "none" to avoid modifying Oracle schema
+
+> ✅ Make sure Oracle JDBC driver is in your classpath.
+If you use Maven, you may need to manually install the Oracle driver into your local Maven repo, since it's not public.
+
+
+
+
+---
+
+✅ 5. pom.xml - Add Oracle JDBC and Spring Boot dependencies
+
+<dependencies>
+    <!-- Spring Boot Starter Web -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!-- Spring Boot JPA -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+
+    <!-- Oracle JDBC (you must install it manually) -->
+    <dependency>
+        <groupId>com.oracle.database.jdbc</groupId>
+        <artifactId>ojdbc8</artifactId>
+        <version>19.3.0.0</version>
+    </dependency>
+</dependencies>
+
+> You may need to install ojdbc8.jar manually using:
+
+
+
+mvn install:install-file -Dfile=/path/to/ojdbc8.jar -DgroupId=com.oracle.database.jdbc -DartifactId=ojdbc8 -Dversion=19.3.0.0 -Dpackaging=jar
+
+
+---
+
+Once you run the app, test with:
+
+GET  http://localhost:8080/api/currencies
+
+To fetch all currency rows.
+
+Would you like a downloadable Spring Boot project starter with this Oracle setup?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Here’s the full corrected and working version of the Angular component and HTML with all the changes made so far:
 
 ---
