@@ -1,3 +1,24 @@
+package com.example.currency;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class CurrencyApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(CurrencyApplication.class, args);
+    }
+}
+
+
+
+
+
+
+
+
+
 Here’s the complete Spring Boot backend code for connecting to a SQL Server and managing the currencies table:
 
 
