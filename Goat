@@ -1,3 +1,109 @@
+Here is the updated home.component.ts in copy code format:
+
+// home.component.ts
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { CurrencyService } from '../services/home.service';
+import { Currency } from '../models/currency.model';
+
+@Component({
+  selector: 'app-home',
+  templateUrl: './home.component.html',
+  styleUrls: ['./home.component.css']
+})
+export class HomeComponent implements OnInit {
+  currencies: Currency[] = [];
+  currencyForm: FormGroup;
+  showForm: boolean = false;
+  selectedCurrency: Currency | null = null;
+
+  constructor(private fb: FormBuilder, private currencyService: CurrencyService) {
+    this.currencyForm = this.fb.group({
+      id: [null],
+      abbreviation: ['', Validators.required],
+      description: ['', Validators.required],
+      decimalPlaces: [0, [Validators.required, Validators.min(0)]],
+      decimalCharacter: ['', Validators.required],
+      thousandSeparator: ['', Validators.required]
+    });
+  }
+
+  ngOnInit(): void {
+    this.loadCurrencies();
+  }
+
+  loadCurrencies(): void {
+    this.currencyService.getCurrencies().subscribe((data: Currency[]) => {
+      this.currencies = data;
+    });
+  }
+
+  onAdd(): void {
+    this.currencyForm.reset();
+    this.selectedCurrency = null;
+    this.showForm = true;
+  }
+
+  onEdit(): void {
+    if (this.selectedCurrency) {
+      this.currencyForm.patchValue(this.selectedCurrency);
+      this.showForm = true;
+    }
+  }
+
+  onDelete(): void {
+    if (this.selectedCurrency) {
+      this.currencyService.deleteCurrency(this.selectedCurrency.id).subscribe(() => {
+        this.loadCurrencies();
+        this.selectedCurrency = null;
+      });
+    }
+  }
+
+  onSubmit(): void {
+    if (this.currencyForm.invalid) return;
+
+    const currency = this.currencyForm.value;
+    if (currency.id) {
+      this.currencyService.updateCurrency(currency).subscribe(() => {
+        this.loadCurrencies();
+        this.showForm = false;
+      });
+    } else {
+      this.currencyService.addCurrency(currency).subscribe(() => {
+        this.loadCurrencies();
+        this.showForm = false;
+      });
+    }
+  }
+
+  onSelect(currency: Currency): void {
+    this.selectedCurrency = currency;
+  }
+
+  cancelForm(): void {
+    this.currencyForm.reset();
+    this.selectedCurrency = null;
+    this.showForm = false;
+  }
+}
+
+Would you like me to send the HTML code next?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+_________
 <!-- home.component.html -->
 <div class="container">
   <h2>Currencies</h2>
