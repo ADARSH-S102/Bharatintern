@@ -1,3 +1,266 @@
+Here's the full set of Angular frontend and Spring Boot backend code, fully fixed to support display, add, update, and delete operations for the currencies table from SQL Server, including select box, delete, and update buttons.
+
+
+---
+
+✅ Angular Frontend
+
+1. currency.model.ts
+
+export class Currency {
+  abbr: string = '';
+  description: string = '';
+  decimalPlaces: number = 0;
+  decimalCharacter: string = '.';
+  thousandSeparator: string = ',';
+}
+
+
+---
+
+2. currency.service.ts
+
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Currency } from './currency.model';
+import { Observable } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class CurrencyService {
+  private apiUrl = 'http://localhost:8080/api/currencies';
+
+  constructor(private http: HttpClient) {}
+
+  getCurrencies(): Observable<Currency[]> {
+    return this.http.get<Currency[]>(this.apiUrl);
+  }
+
+  addCurrency(currency: Currency): Observable<Currency> {
+    return this.http.post<Currency>(this.apiUrl, currency);
+  }
+
+  deleteCurrency(abbr: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${abbr}`);
+  }
+
+  updateCurrency(abbr: string, currency: Currency): Observable<Currency> {
+    return this.http.put<Currency>(`${this.apiUrl}/${abbr}`, currency);
+  }
+}
+
+
+---
+
+3. home.component.ts
+
+import { Component, OnInit } from '@angular/core';
+import { Currency } from '../currency.model';
+import { CurrencyService } from '../currency.service';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+
+@Component({
+  selector: 'app-home',
+  templateUrl: './home.component.html'
+})
+export class HomeComponent implements OnInit {
+  currencies: Currency[] = [];
+  selectedCurrency?: Currency;
+  currencyForm!: FormGroup;
+
+  constructor(
+    private currencyService: CurrencyService,
+    private fb: FormBuilder
+  ) {}
+
+  ngOnInit(): void {
+    this.loadCurrencies();
+    this.currencyForm = this.fb.group({
+      abbr: ['', Validators.required],
+      description: ['', Validators.required],
+      decimalPlaces: [0, Validators.required],
+      decimalCharacter: ['.', Validators.required],
+      thousandSeparator: [',', Validators.required]
+    });
+  }
+
+  loadCurrencies() {
+    this.currencyService.getCurrencies().subscribe(data => this.currencies = data);
+  }
+
+  onSubmit() {
+    if (this.currencyForm.valid) {
+      const currency = this.currencyForm.value;
+      if (this.selectedCurrency) {
+        this.currencyService.updateCurrency(this.selectedCurrency.abbr, currency).subscribe(() => {
+          this.selectedCurrency = undefined;
+          this.loadCurrencies();
+          this.currencyForm.reset();
+        });
+      } else {
+        this.currencyService.addCurrency(currency).subscribe(() => {
+          this.loadCurrencies();
+          this.currencyForm.reset();
+        });
+      }
+    }
+  }
+
+  onDelete(abbr: string) {
+    this.currencyService.deleteCurrency(abbr).subscribe(() => this.loadCurrencies());
+  }
+
+  onEdit(currency: Currency) {
+    this.selectedCurrency = currency;
+    this.currencyForm.patchValue(currency);
+  }
+}
+
+
+---
+
+4. home.component.html
+
+<h2>Currencies</h2>
+
+<form [formGroup]="currencyForm" (ngSubmit)="onSubmit()">
+  <label>Abbreviation: <input formControlName="abbr"></label><br>
+  <label>Description: <input formControlName="description"></label><br>
+  <label>Decimal Places: <input type="number" formControlName="decimalPlaces"></label><br>
+  <label>Decimal Character: <input formControlName="decimalCharacter"></label><br>
+  <label>Thousand Separator: <input formControlName="thousandSeparator"></label><br>
+  <button type="submit">{{ selectedCurrency ? 'Update' : 'Add' }}</button>
+</form>
+
+<table>
+  <thead>
+    <tr>
+      <th>Select</th>
+      <th>Abbr</th>
+      <th>Description</th>
+      <th>Decimal Places</th>
+      <th>Decimal Char</th>
+      <th>Thousand Sep</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let currency of currencies">
+      <td><input type="radio" (click)="onEdit(currency)"></td>
+      <td>{{ currency.abbr }}</td>
+      <td>{{ currency.description }}</td>
+      <td>{{ currency.decimalPlaces }}</td>
+      <td>{{ currency.decimalCharacter }}</td>
+      <td>{{ currency.thousandSeparator }}</td>
+      <td>
+        <button (click)="onDelete(currency.abbr)">Delete</button>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+
+---
+
+✅ Spring Boot Backend
+
+1. Currency.java (Entity)
+
+@Entity
+@Table(name = "currencies")
+public class Currency {
+    @Id
+    private String abbr;
+
+    private String description;
+    private int decimalPlaces;
+    private String decimalCharacter;
+    private String thousandSeparator;
+
+    // Getters and Setters
+}
+
+
+---
+
+2. CurrencyRepository.java
+
+@Repository
+public interface CurrencyRepository extends JpaRepository<Currency, String> {
+}
+
+
+---
+
+3. CurrencyController.java
+
+@RestController
+@RequestMapping("/api/currencies")
+@CrossOrigin(origins = "http://localhost:4200")
+public class CurrencyController {
+
+    @Autowired
+    private CurrencyRepository currencyRepository;
+
+    @GetMapping
+    public List<Currency> getAll() {
+        return currencyRepository.findAll();
+    }
+
+    @PostMapping
+    public Currency create(@RequestBody Currency currency) {
+        return currencyRepository.save(currency);
+    }
+
+    @DeleteMapping("/{abbr}")
+    public void delete(@PathVariable String abbr) {
+        currencyRepository.deleteById(abbr);
+    }
+
+    @PutMapping("/{abbr}")
+    public Currency update(@PathVariable String abbr, @RequestBody Currency updated) {
+        Currency existing = currencyRepository.findById(abbr).orElseThrow();
+        existing.setDescription(updated.getDescription());
+        existing.setDecimalPlaces(updated.getDecimalPlaces());
+        existing.setDecimalCharacter(updated.getDecimalCharacter());
+        existing.setThousandSeparator(updated.getThousandSeparator());
+        return currencyRepository.save(existing);
+    }
+}
+
+
+---
+
+4. CurrencyApplication.java
+
+@SpringBootApplication
+public class CurrencyApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(CurrencyApplication.class, args);
+    }
+}
+
+
+---
+
+Let me know if you'd like the SQL insert statements or the database connection setup for Spring Boot (application.properties).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+_________$$$$______________
 Here’s the complete Spring Boot backend to support your Angular UI with full CRUD operations on the currencies table in SQL Server.
 
 
