@@ -1,3 +1,39 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { Currency } from '../models/home.model';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class CurrencyService {
+  private apiUrl = 'http://localhost:8080/api/currencies';
+
+  constructor(private http: HttpClient) {}
+
+  getCurrencies(): Observable<Currency[]> {
+    return this.http.get<Currency[]>(this.apiUrl);
+  }
+
+  addCurrency(currency: Currency): Observable<any> {
+    return this.http.post(this.apiUrl, currency);
+  }
+
+  updateCurrency(currency: Currency): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${currency.id}`, currency);
+  }
+
+  deleteCurrency(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${id}`);
+  }
+}
+
+
+
+
+
+
+
 export interface Currency {
   id: number;
   abbreviation: string;
