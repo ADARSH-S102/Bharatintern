@@ -1,3 +1,100 @@
+// home.component.ts
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { HomeService } from './home.service';
+import { Currency } from './currency.model';
+
+@Component({
+  selector: 'app-home',
+  templateUrl: './home.component.html',
+  styleUrls: ['./home.component.css']
+})
+export class HomeComponent implements OnInit {
+  currencyForm: FormGroup;
+  currencies: Currency[] = [];
+  selectedCurrency: Currency | null = null;
+  formVisible = false;
+  isUpdateMode = false;
+
+  constructor(private fb: FormBuilder, private homeService: HomeService) {
+    this.currencyForm = this.fb.group({
+      abbreviation: ['', Validators.required],
+      description: ['', Validators.required],
+      decimalPlaces: ['', [Validators.required, Validators.pattern("^[0-9]+$")]],
+      decimalCharacter: ['', Validators.required],
+      thousandSeparator: ['', Validators.required]
+    });
+  }
+
+  ngOnInit(): void {
+    this.getCurrencies();
+  }
+
+  getCurrencies(): void {
+    this.homeService.getCurrencies().subscribe(data => {
+      this.currencies = data;
+    });
+  }
+
+  showAddForm(): void {
+    this.formVisible = true;
+    this.isUpdateMode = false;
+    this.currencyForm.reset();
+  }
+
+  showUpdateForm(): void {
+    if (this.selectedCurrency) {
+      this.formVisible = true;
+      this.isUpdateMode = true;
+      this.currencyForm.patchValue(this.selectedCurrency);
+    }
+  }
+
+  onSubmit(): void {
+    if (this.currencyForm.valid) {
+      const currency = this.currencyForm.value;
+      if (this.isUpdateMode && this.selectedCurrency) {
+        currency.id = this.selectedCurrency.id;
+        this.homeService.updateCurrency(currency).subscribe(() => {
+          this.getCurrencies();
+          this.cancelForm();
+        });
+      } else {
+        this.homeService.addCurrency(currency).subscribe(() => {
+          this.getCurrencies();
+          this.cancelForm();
+        });
+      }
+    }
+  }
+
+  onDelete(): void {
+    if (this.selectedCurrency) {
+      this.homeService.deleteCurrency(this.selectedCurrency.id).subscribe(() => {
+        this.getCurrencies();
+        this.selectedCurrency = null;
+      });
+    }
+  }
+
+  onSelect(currency: Currency): void {
+    this.selectedCurrency = currency;
+  }
+
+  cancelForm(): void {
+    this.formVisible = false;
+    this.currencyForm.reset();
+  }
+}
+
+
+Here's the corrected home.component.ts code in proper format with full functionality and prior issues resolved. Let me know when you're ready for the matching HTML and service/model files.
+
+
+
+
+
+_______________________________
 <!-- home.component.html -->
 <div class="container mt-4">
   <h2 class="mb-3">Currency Management</h2>
