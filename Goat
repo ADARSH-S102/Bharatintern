@@ -1,3 +1,199 @@
+Here is the full Spring Boot backend code to fetch, add, update, and delete records from a table named currencies in a SQL Server database.
+
+
+---
+
+1. Entity Class: Currency.java
+
+package com.example.currencyapp.model;
+
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "currencies")
+public class Currency {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "abbreviation", nullable = false)
+    private String abbreviation;
+
+    @Column(name = "description", nullable = false)
+    private String description;
+
+    @Column(name = "decimal_places")
+    private int decimalPlaces;
+
+    @Column(name = "decimal_character")
+    private String decimalCharacter;
+
+    @Column(name = "thousand_separator")
+    private String thousandSeparator;
+
+    // Getters and Setters
+    // ...
+}
+
+
+---
+
+2. Repository Interface: CurrencyRepository.java
+
+package com.example.currencyapp.repository;
+
+import com.example.currencyapp.model.Currency;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface CurrencyRepository extends JpaRepository<Currency, Long> {
+}
+
+
+---
+
+3. Service Class: CurrencyService.java
+
+package com.example.currencyapp.service;
+
+import com.example.currencyapp.model.Currency;
+import com.example.currencyapp.repository.CurrencyRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class CurrencyService {
+
+    @Autowired
+    private CurrencyRepository currencyRepository;
+
+    public List<Currency> getAllCurrencies() {
+        return currencyRepository.findAll();
+    }
+
+    public Currency addCurrency(Currency currency) {
+        return currencyRepository.save(currency);
+    }
+
+    public Currency updateCurrency(Currency currency) {
+        return currencyRepository.save(currency);
+    }
+
+    public void deleteCurrency(Long id) {
+        currencyRepository.deleteById(id);
+    }
+}
+
+
+---
+
+4. Controller Class: CurrencyController.java
+
+package com.example.currencyapp.controller;
+
+import com.example.currencyapp.model.Currency;
+import com.example.currencyapp.service.CurrencyService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@CrossOrigin(origins = "*")
+@RestController
+@RequestMapping("/api/currencies")
+public class CurrencyController {
+
+    @Autowired
+    private CurrencyService currencyService;
+
+    @GetMapping
+    public List<Currency> getCurrencies() {
+        return currencyService.getAllCurrencies();
+    }
+
+    @PostMapping
+    public Currency addCurrency(@RequestBody Currency currency) {
+        return currencyService.addCurrency(currency);
+    }
+
+    @PutMapping
+    public Currency updateCurrency(@RequestBody Currency currency) {
+        return currencyService.updateCurrency(currency);
+    }
+
+    @DeleteMapping("/{id}")
+    public void deleteCurrency(@PathVariable Long id) {
+        currencyService.deleteCurrency(id);
+    }
+}
+
+
+---
+
+5. Main Application: CurrencyApplication.java
+
+package com.example.currencyapp;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class CurrencyApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(CurrencyApplication.class, args);
+    }
+}
+
+
+---
+
+6. application.properties for SQL Server
+
+spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=your_database_name
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+spring.datasource.driver-class-name=com.microsoft.sqlserver.jdbc.SQLServerDriver
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.SQLServerDialect
+
+
+---
+
+Let me know if you want:
+
+SQL script for the currencies table,
+
+Postman collection for testing,
+
+Or the Angular frontend integration.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Let's troubleshoot your Angular issue step by step to make sure the UI displays currency data correctly with radio buttons and a form that only shows when "Add Currency" or "Update" is clicked. Since you've had repeated errors with formGroup, ngSubmit, and templateUrl, here's a clean and working version of the Angular components:
 
 
