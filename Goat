@@ -1,3 +1,133 @@
+If the value is not getting saved upon clicking the Save button, the issue is likely due to one or more of the following:
+
+
+---
+
+✅ Step-by-Step Checklist to Diagnose the Issue:
+
+✅ 1. Ensure Form Submission is Triggered
+
+In your Angular HTML:
+
+<form [formGroup]="currencyForm" (ngSubmit)="onSubmit()">
+
+In your home.component.ts:
+
+onSubmit() {
+  if (this.currencyForm.valid) {
+    this.homeService.addCurrency(this.currencyForm.value).subscribe(() => {
+      this.getCurrencies();  // Refresh the list
+      this.currencyForm.reset();
+      this.showForm = false; // Hide form after save
+    });
+  }
+}
+
+✅ 2. Verify Angular Service Method
+
+Your Angular home.service.ts must have this:
+
+addCurrency(currency: Currency): Observable<any> {
+  return this.http.post(`${this.apiUrl}`, currency);
+}
+
+Make sure:
+
+The apiUrl is correctly defined.
+
+Your backend is running on the right port (http://localhost:8080/api/currencies or similar).
+
+CORS is enabled.
+
+
+
+---
+
+✅ 3. Check Backend API
+
+Your Spring Boot controller method should look like:
+
+@PostMapping("/api/currencies")
+public Currency addCurrency(@RequestBody Currency currency) {
+    return currencyRepository.save(currency);
+}
+
+Make sure:
+
+Your entity (Currency.java) matches the structure of the JSON sent from Angular.
+
+There are no constraints (e.g., @NotNull) failing silently.
+
+You have added appropriate CORS config in the controller or globally.
+
+
+
+---
+
+✅ 4. Check Network Tab in Browser DevTools
+
+Open Developer Tools (F12) → Network tab.
+
+Click Save and check:
+
+Is the request sent?
+
+What’s the status code?
+
+Any error message in the response?
+
+
+
+
+---
+
+✅ 5. Check Console Logs
+
+Check browser console for JS errors.
+
+Check Spring Boot console for backend errors (stack trace, constraint violation, etc.).
+
+
+
+---
+
+✅ Quick Fix Tip:
+
+If you’re still stuck, try logging this in Angular before sending:
+
+console.log(this.currencyForm.value);
+
+And in Spring Boot:
+
+System.out.println(currency);
+
+This will confirm whether data is:
+
+1. Captured correctly in UI.
+
+
+2. Reaches the backend.
+
+
+
+
+---
+
+Would you like me to walk through your exact code and highlight the change needed in your files (component.ts, service.ts, controller.java, etc.)? If yes, please confirm the structure or paste the relevant files.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Here's the complete and fully detailed Spring Boot backend for the currencies table, including all getters and setters in the Currency entity.
 
 
