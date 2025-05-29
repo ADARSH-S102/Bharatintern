@@ -1,3 +1,154 @@
+Here’s the complete Spring Boot backend to support your Angular UI with full CRUD operations on the currencies table in SQL Server.
+
+
+---
+
+✅ 1. Currency.java (Entity)
+
+package com.example.currencyapp.model;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "currencies")
+public class Currency {
+    @Id
+    private String abbr;
+    private String description;
+    private int decimalPlaces;
+    private String decimalCharacter;
+    private String thousandSeparator;
+
+    // Getters and setters
+    public String getAbbr() { return abbr; }
+    public void setAbbr(String abbr) { this.abbr = abbr; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public int getDecimalPlaces() { return decimalPlaces; }
+    public void setDecimalPlaces(int decimalPlaces) { this.decimalPlaces = decimalPlaces; }
+
+    public String getDecimalCharacter() { return decimalCharacter; }
+    public void setDecimalCharacter(String decimalCharacter) { this.decimalCharacter = decimalCharacter; }
+
+    public String getThousandSeparator() { return thousandSeparator; }
+    public void setThousandSeparator(String thousandSeparator) { this.thousandSeparator = thousandSeparator; }
+}
+
+
+---
+
+✅ 2. CurrencyRepository.java
+
+package com.example.currencyapp.repository;
+
+import com.example.currencyapp.model.Currency;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface CurrencyRepository extends JpaRepository<Currency, String> {
+}
+
+
+---
+
+✅ 3. CurrencyController.java
+
+package com.example.currencyapp.controller;
+
+import com.example.currencyapp.model.Currency;
+import com.example.currencyapp.repository.CurrencyRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/currencies")
+@CrossOrigin(origins = "http://localhost:4200")
+public class CurrencyController {
+
+    @Autowired
+    private CurrencyRepository repository;
+
+    @GetMapping
+    public List<Currency> getAllCurrencies() {
+        return repository.findAll();
+    }
+
+    @PutMapping("/{abbr}")
+    public Currency updateCurrency(@PathVariable String abbr, @RequestBody Currency currency) {
+        if (!repository.existsById(abbr)) {
+            throw new RuntimeException("Currency not found");
+        }
+        return repository.save(currency);
+    }
+
+    @DeleteMapping("/{abbr}")
+    public void deleteCurrency(@PathVariable String abbr) {
+        repository.deleteById(abbr);
+    }
+}
+
+
+---
+
+✅ 4. CurrencyApplication.java
+
+package com.example.currencyapp;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class CurrencyApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(CurrencyApplication.class, args);
+    }
+}
+
+
+---
+
+✅ 5. application.properties
+
+spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=YourDatabaseName
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+spring.datasource.driver-class-name=com.microsoft.sqlserver.jdbc.SQLServerDriver
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+Make sure to add this dependency to your pom.xml:
+
+<dependency>
+    <groupId>com.microsoft.sqlserver</groupId>
+    <artifactId>mssql-jdbc</artifactId>
+    <version>12.4.2.jre11</version> <!-- Or your JDK version -->
+</dependency>
+
+
+---
+
+Let me know if you want to:
+
+Add new currencies via POST (with a /add endpoint),
+
+Include validation (e.g., @NotNull or @Size),
+
+Or create a test data loader on startup.
+
+
+I can help with those too.
+
+
+
+
+
+..
+_________________________________________________________________________________
 Here’s the complete updated code with the update/delete functionality added without deleting any original logic.
 
 
