@@ -1,3 +1,109 @@
+<!-- home.component.html -->
+<div class="container">
+  <h2>Currencies</h2>
+
+  <div class="actions">
+    <button (click)="showAddForm()">Add Currency</button>
+    <button [disabled]="!selectedCurrency" (click)="showUpdateForm()">Update</button>
+    <button [disabled]="!selectedCurrency" (click)="onDelete()">Delete</button>
+  </div>
+
+  <table class="currency-table">
+    <thead>
+      <tr>
+        <th>Select</th>
+        <th>Abbreviation</th>
+        <th>Description</th>
+        <th>Decimal Places</th>
+        <th>Decimal Character</th>
+        <th>Thousand Separator</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let currency of currencies">
+        <td><input type="radio" name="selectedCurrency" (change)="onSelect(currency)"></td>
+        <td>{{ currency.abbreviation }}</td>
+        <td>{{ currency.description }}</td>
+        <td>{{ currency.decimalPlaces }}</td>
+        <td>{{ currency.decimalCharacter }}</td>
+        <td>{{ currency.thousandSeparator }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="formVisible" class="currency-form">
+    <form [formGroup]="currencyForm" (ngSubmit)="onSubmit()">
+      <label>
+        Abbreviation:
+        <input type="text" formControlName="abbreviation">
+      </label>
+      <div *ngIf="currencyForm.get('abbreviation')?.invalid && currencyForm.get('abbreviation')?.touched">
+        Abbreviation is required.
+      </div>
+
+      <label>
+        Description:
+        <input type="text" formControlName="description">
+      </label>
+      <div *ngIf="currencyForm.get('description')?.invalid && currencyForm.get('description')?.touched">
+        Description is required.
+      </div>
+
+      <label>
+        Decimal Places:
+        <input type="number" formControlName="decimalPlaces">
+      </label>
+      <div *ngIf="currencyForm.get('decimalPlaces')?.invalid && currencyForm.get('decimalPlaces')?.touched">
+        Enter a valid number of decimal places.
+      </div>
+
+      <label>
+        Decimal Character:
+        <input type="text" formControlName="decimalCharacter">
+      </label>
+      <div *ngIf="currencyForm.get('decimalCharacter')?.invalid && currencyForm.get('decimalCharacter')?.touched">
+        Decimal character is required.
+      </div>
+
+      <label>
+        Thousand Separator:
+        <input type="text" formControlName="thousandSeparator">
+      </label>
+      <div *ngIf="currencyForm.get('thousandSeparator')?.invalid && currencyForm.get('thousandSeparator')?.touched">
+        Thousand separator is required.
+      </div>
+
+      <button type="submit" [disabled]="currencyForm.invalid">Save</button>
+      <button type="button" (click)="cancelForm()">Cancel</button>
+    </form>
+  </div>
+</div>
+
+
+✅ Updated the HTML (home.component.html) with:
+
+A clean table layout with radio selection.
+
+“Add”, “Update”, and “Delete” buttons.
+
+A form that appears only when needed.
+
+Validation messages for all fields.
+
+Fixed cancelForm button error.
+
+
+Let me know if you want me to resend the home.component.ts and home.service.ts to match this!
+
+
+
+
+
+
+
+
+
+
 // home.component.ts
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
