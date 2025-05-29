@@ -1,3 +1,139 @@
+Here are the fully fixed versions of both home.service.ts and home.component.ts, ready to work with Angular and your Spring Boot backend.
+
+
+---
+
+✅ home.service.ts
+
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { Currency } from './currency.model'; // Adjust path if needed
+
+@Injectable({
+  providedIn: 'root'
+})
+export class HomeService {
+  private apiUrl = 'http://localhost:8080/api/currencies'; // Your backend API
+
+  constructor(private http: HttpClient) {}
+
+  getCurrencies(): Observable<Currency[]> {
+    return this.http.get<Currency[]>(this.apiUrl);
+  }
+
+  addCurrency(currency: Currency): Observable<Currency> {
+    return this.http.post<Currency>(this.apiUrl, currency);
+  }
+
+  updateCurrency(abbr: string, currency: Currency): Observable<Currency> {
+    return this.http.put<Currency>(`${this.apiUrl}/${abbr}`, currency);
+  }
+
+  deleteCurrency(abbr: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${abbr}`);
+  }
+}
+
+
+---
+
+✅ home.component.ts
+
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Currency } from './currency.model';
+import { HomeService } from './home.service';
+
+@Component({
+  selector: 'app-home',
+  templateUrl: './home.component.html'
+})
+export class HomeComponent implements OnInit {
+  currencyForm: FormGroup;
+  currencies: Currency[] = [];
+  selectedCurrency?: Currency;
+
+  constructor(
+    private fb: FormBuilder,
+    private currencyService: HomeService
+  ) {
+    this.currencyForm = this.fb.group({
+      abbr: ['', Validators.required],
+      description: ['', Validators.required],
+      decimalPlaces: [2, Validators.required],
+      decimalChar: ['.', Validators.required],
+      thousandSeparator: [',', Validators.required]
+    });
+  }
+
+  ngOnInit(): void {
+    this.loadCurrencies();
+  }
+
+  loadCurrencies(): void {
+    this.currencyService.getCurrencies().subscribe((data: Currency[]) => {
+      this.currencies = data;
+    });
+  }
+
+  addCurrency(): void {
+    const currency: Currency = this.currencyForm.value;
+    if (this.selectedCurrency) {
+      this.currencyService.updateCurrency(this.selectedCurrency.abbr, currency).subscribe((updated: Currency) => {
+        this.selectedCurrency = undefined;
+        this.loadCurrencies();
+        this.currencyForm.reset();
+      });
+    } else {
+      this.currencyService.addCurrency(currency).subscribe((newCurrency: Currency) => {
+        this.loadCurrencies();
+        this.currencyForm.reset();
+      });
+    }
+  }
+
+  editCurrency(currency: Currency): void {
+    this.selectedCurrency = currency;
+    this.currencyForm.patchValue(currency);
+  }
+
+  deleteCurrency(abbr: string): void {
+    this.currencyService.deleteCurrency(abbr).subscribe(() => {
+      this.loadCurrencies();
+    });
+  }
+}
+
+
+---
+
+Let me know if you also want:
+
+Updated currency.model.ts
+
+Complete working HTML (home.component.html)
+
+Backend Spring Boot controller/service/repository (for SQL Server)
+
+
+I'm happy to send those too!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+____________
 Here's the full set of Angular frontend and Spring Boot backend code, fully fixed to support display, add, update, and delete operations for the currencies table from SQL Server, including select box, delete, and update buttons.
 
 
