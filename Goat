@@ -1,6 +1,11 @@
 Here's the full set of Angular frontend and Spring Boot backend code, fully fixed to support display, add, update, and delete operations for the currencies table from SQL Server, including select box, delete, and update buttons.
 
 
+this.currencyService.getCurrencies().subscribe((data: Currency[]) => {
+  this.currencies = data;
+});
+
+
 ---
 
 ✅ Angular Frontend
