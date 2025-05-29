@@ -1,3 +1,211 @@
+Here’s the complete updated code with the update/delete functionality added without deleting any original logic.
+
+
+---
+
+✅ home.component.ts
+
+import { Component, OnInit } from '@angular/core';
+import { CurrencyService, Currency } from '../services/currency.service';
+
+@Component({
+  selector: 'app-home',
+  templateUrl: './home.component.html',
+})
+export class HomeComponent implements OnInit {
+  currencies: Currency[] = [];
+  selectedCurrency: Currency | null = null;
+
+  constructor(private currencyService: CurrencyService) {}
+
+  ngOnInit(): void {
+    this.getCurrencies();
+  }
+
+  getCurrencies() {
+    this.currencyService.getCurrencies().subscribe((data) => {
+      this.currencies = data;
+    });
+  }
+
+  selectCurrency(currency: Currency) {
+    this.selectedCurrency = { ...currency }; // clone to avoid binding issues
+  }
+
+  onDelete() {
+    if (this.selectedCurrency) {
+      this.currencyService.deleteCurrency(this.selectedCurrency.abbr).subscribe(() => {
+        this.getCurrencies();
+        this.selectedCurrency = null;
+      });
+    }
+  }
+
+  onUpdate() {
+    if (!this.selectedCurrency) {
+      alert('Select a row to update.');
+    }
+    // The update form is shown automatically by *ngIf
+  }
+
+  submitUpdate() {
+    if (this.selectedCurrency) {
+      this.currencyService.updateCurrency(this.selectedCurrency).subscribe(() => {
+        this.getCurrencies();
+        this.selectedCurrency = null;
+      });
+    }
+  }
+}
+
+
+---
+
+✅ home.component.html
+
+<table>
+  <thead>
+    <tr>
+      <th>Select</th>
+      <th>Abbreviation</th>
+      <th>Description</th>
+      <th>Decimal Places</th>
+      <th>Decimal Character</th>
+      <th>Thousand Separator</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let currency of currencies">
+      <td>
+        <input
+          type="radio"
+          name="selectedCurrency"
+          (click)="selectCurrency(currency)"
+        />
+      </td>
+      <td>{{ currency.abbr }}</td>
+      <td>{{ currency.description }}</td>
+      <td>{{ currency.decimalPlaces }}</td>
+      <td>{{ currency.decimalCharacter }}</td>
+      <td>{{ currency.thousandSeparator }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<button (click)="onUpdate()">Update</button>
+<button (click)="onDelete()">Delete</button>
+
+<!-- Update Form -->
+<form *ngIf="selectedCurrency" (submit)="submitUpdate()">
+  <label>
+    Description:
+    <input
+      [(ngModel)]="selectedCurrency.description"
+      name="description"
+      required
+    />
+  </label>
+  <label>
+    Decimal Places:
+    <input
+      [(ngModel)]="selectedCurrency.decimalPlaces"
+      name="decimalPlaces"
+      type="number"
+      required
+    />
+  </label>
+  <label>
+    Decimal Character:
+    <input
+      [(ngModel)]="selectedCurrency.decimalCharacter"
+      name="decimalCharacter"
+      required
+    />
+  </label>
+  <label>
+    Thousand Separator:
+    <input
+      [(ngModel)]="selectedCurrency.thousandSeparator"
+      name="thousandSeparator"
+      required
+    />
+  </label>
+  <button type="submit">Save Changes</button>
+</form>
+
+
+---
+
+✅ currency.service.ts
+
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+export interface Currency {
+  abbr: string;
+  description: string;
+  decimalPlaces: number;
+  decimalCharacter: string;
+  thousandSeparator: string;
+}
+
+@Injectable({
+  providedIn: 'root',
+})
+export class CurrencyService {
+  private apiUrl = 'http://localhost:8080/api/currencies';
+
+  constructor(private http: HttpClient) {}
+
+  getCurrencies(): Observable<Currency[]> {
+    return this.http.get<Currency[]>(this.apiUrl);
+  }
+
+  updateCurrency(currency: Currency): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${currency.abbr}`, currency);
+  }
+
+  deleteCurrency(abbr: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${abbr}`);
+  }
+}
+
+
+---
+
+Let me know if you'd like:
+
+Toast alerts for success/failure.
+
+A modal (popup) form instead of an inline one.
+
+Support for multi-select delete.
+
+
+I'll help with that too!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+__________________________________________
+
 package com.example.currency;
 
 import org.springframework.boot.SpringApplication;
