@@ -1,3 +1,15 @@
+export interface Currency {
+  id: number;
+  abbreviation: string;
+  description: string;
+  decimalPlaces: number;
+  decimalCharacter: string;
+  thousandSeparator: string;
+}
+
+
+
+
 Here is the updated home.component.ts in copy code format:
 
 // home.component.ts
