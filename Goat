@@ -1,3 +1,107 @@
+Got it! I’ll update the code to use decimalCharacter instead of decimalCharacters.
+
+
+---
+
+✅ Updated currency.model.ts
+
+export interface Currency {
+  abbr: string;
+  description: string;
+  decimalPlaces: number;
+  decimalCharacter: string;
+  thousandSeparator: string;
+}
+
+
+---
+
+✅ Updated home.component.ts
+
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Currency } from './currency.model';
+import { HomeService } from './home.service';
+
+@Component({
+  selector: 'app-home',
+  templateUrl: './home.component.html'
+})
+export class HomeComponent implements OnInit {
+  currencyForm: FormGroup;
+  currencies: Currency[] = [];
+  selectedCurrency: Currency | null = null;
+
+  constructor(private fb: FormBuilder, private homeService: HomeService) {
+    this.currencyForm = this.fb.group({
+      abbr: ['', Validators.required],
+      description: ['', Validators.required],
+      decimalPlaces: [2, Validators.required],
+      decimalCharacter: ['.', Validators.required],
+      thousandSeparator: [',', Validators.required]
+    });
+  }
+
+  ngOnInit(): void {
+    this.loadCurrencies();
+  }
+
+  loadCurrencies(): void {
+    this.homeService.getCurrencies().subscribe((data) => {
+      this.currencies = data;
+    });
+  }
+
+  submitForm(): void {
+    const currency: Currency = this.currencyForm.value;
+    if (this.selectedCurrency) {
+      this.homeService.updateCurrency(this.selectedCurrency.abbr, currency).subscribe(() => {
+        this.selectedCurrency = null;
+        this.loadCurrencies();
+        this.currencyForm.reset();
+      });
+    } else {
+      this.homeService.addCurrency(currency).subscribe(() => {
+        this.loadCurrencies();
+        this.currencyForm.reset();
+      });
+    }
+  }
+
+  onEdit(currency: Currency): void {
+    this.selectedCurrency = currency;
+    this.currencyForm.patchValue(currency);
+  }
+
+  onDelete(abbr: string): void {
+    this.homeService.deleteCurrency(abbr).subscribe(() => {
+      this.loadCurrencies();
+    });
+  }
+}
+
+
+---
+
+Now, the field is correctly named decimalCharacter in the Currency model and home.component.ts file.
+
+This should fix your issue. Let me know if you'd like me to update or add anything else!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+____________
 Here are the fully fixed versions of both home.service.ts and home.component.ts, ready to work with Angular and your Spring Boot backend.
 
 
