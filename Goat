@@ -1,606 +1,19 @@
-If the value is not getting saved upon clicking the Save button, the issue is likely due to one or more of the following:
+Here's the fully corrected and cleaned-up TypeScript code for your CurrenciesComponent, with proper checkbox selection handling, change detection, and fixed syntax issues:
 
 
 ---
 
-✅ Step-by-Step Checklist to Diagnose the Issue:
-
-✅ 1. Ensure Form Submission is Triggered
-
-In your Angular HTML:
-
-<form [formGroup]="currencyForm" (ngSubmit)="onSubmit()">
-
-In your home.component.ts:
-
-onSubmit() {
-  if (this.currencyForm.valid) {
-    this.homeService.addCurrency(this.currencyForm.value).subscribe(() => {
-      this.getCurrencies();  // Refresh the list
-      this.currencyForm.reset();
-      this.showForm = false; // Hide form after save
-    });
-  }
-}
-
-✅ 2. Verify Angular Service Method
-
-Your Angular home.service.ts must have this:
-
-addCurrency(currency: Currency): Observable<any> {
-  return this.http.post(`${this.apiUrl}`, currency);
-}
-
-Make sure:
-
-The apiUrl is correctly defined.
-
-Your backend is running on the right port (http://localhost:8080/api/currencies or similar).
-
-CORS is enabled.
-
-
-
----
-
-✅ 3. Check Backend API
-
-Your Spring Boot controller method should look like:
-
-@PostMapping("/api/currencies")
-public Currency addCurrency(@RequestBody Currency currency) {
-    return currencyRepository.save(currency);
-}
-
-Make sure:
-
-Your entity (Currency.java) matches the structure of the JSON sent from Angular.
-
-There are no constraints (e.g., @NotNull) failing silently.
-
-You have added appropriate CORS config in the controller or globally.
-
-
-
----
-
-✅ 4. Check Network Tab in Browser DevTools
-
-Open Developer Tools (F12) → Network tab.
-
-Click Save and check:
-
-Is the request sent?
-
-What’s the status code?
-
-Any error message in the response?
-
-
-
-
----
-
-✅ 5. Check Console Logs
-
-Check browser console for JS errors.
-
-Check Spring Boot console for backend errors (stack trace, constraint violation, etc.).
-
-
-
----
-
-✅ Quick Fix Tip:
-
-If you’re still stuck, try logging this in Angular before sending:
-
-console.log(this.currencyForm.value);
-
-And in Spring Boot:
-
-System.out.println(currency);
-
-This will confirm whether data is:
-
-1. Captured correctly in UI.
-
-
-2. Reaches the backend.
-
-
-
-
----
-
-Would you like me to walk through your exact code and highlight the change needed in your files (component.ts, service.ts, controller.java, etc.)? If yes, please confirm the structure or paste the relevant files.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Here's the complete and fully detailed Spring Boot backend for the currencies table, including all getters and setters in the Currency entity.
-
-
----
-
-✅ 1. Currency.java (Entity class with full getters & setters)
-
-package com.example.currencyapp.model;
-
-import jakarta.persistence.*;
-
-@Entity
-@Table(name = "currencies")
-public class Currency {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(name = "abbreviation", nullable = false)
-    private String abbreviation;
-
-    @Column(name = "description", nullable = false)
-    private String description;
-
-    @Column(name = "decimal_places")
-    private int decimalPlaces;
-
-    @Column(name = "decimal_character")
-    private String decimalCharacter;
-
-    @Column(name = "thousand_separator")
-    private String thousandSeparator;
-
-    // Constructors
-    public Currency() {}
-
-    public Currency(Long id, String abbreviation, String description, int decimalPlaces, String decimalCharacter, String thousandSeparator) {
-        this.id = id;
-        this.abbreviation = abbreviation;
-        this.description = description;
-        this.decimalPlaces = decimalPlaces;
-        this.decimalCharacter = decimalCharacter;
-        this.thousandSeparator = thousandSeparator;
-    }
-
-    // Getters and Setters
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getAbbreviation() {
-        return abbreviation;
-    }
-
-    public void setAbbreviation(String abbreviation) {
-        this.abbreviation = abbreviation;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public int getDecimalPlaces() {
-        return decimalPlaces;
-    }
-
-    public void setDecimalPlaces(int decimalPlaces) {
-        this.decimalPlaces = decimalPlaces;
-    }
-
-    public String getDecimalCharacter() {
-        return decimalCharacter;
-    }
-
-    public void setDecimalCharacter(String decimalCharacter) {
-        this.decimalCharacter = decimalCharacter;
-    }
-
-    public String getThousandSeparator() {
-        return thousandSeparator;
-    }
-
-    public void setThousandSeparator(String thousandSeparator) {
-        this.thousandSeparator = thousandSeparator;
-    }
-}
-
-
----
-
-✅ 2. CurrencyRepository.java
-
-package com.example.currencyapp.repository;
-
-import com.example.currencyapp.model.Currency;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-@Repository
-public interface CurrencyRepository extends JpaRepository<Currency, Long> {
-}
-
-
----
-
-✅ 3. CurrencyService.java
-
-package com.example.currencyapp.service;
-
-import com.example.currencyapp.model.Currency;
-import com.example.currencyapp.repository.CurrencyRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-
-@Service
-public class CurrencyService {
-
-    @Autowired
-    private CurrencyRepository currencyRepository;
-
-    public List<Currency> getAllCurrencies() {
-        return currencyRepository.findAll();
-    }
-
-    public Currency addCurrency(Currency currency) {
-        return currencyRepository.save(currency);
-    }
-
-    public Currency updateCurrency(Currency currency) {
-        return currencyRepository.save(currency);
-    }
-
-    public void deleteCurrency(Long id) {
-        currencyRepository.deleteById(id);
-    }
-}
-
-
----
-
-✅ 4. CurrencyController.java
-
-package com.example.currencyapp.controller;
-
-import com.example.currencyapp.model.Currency;
-import com.example.currencyapp.service.CurrencyService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-
-@CrossOrigin(origins = "*")
-@RestController
-@RequestMapping("/api/currencies")
-public class CurrencyController {
-
-    @Autowired
-    private CurrencyService currencyService;
-
-    @GetMapping
-    public List<Currency> getCurrencies() {
-        return currencyService.getAllCurrencies();
-    }
-
-    @PostMapping
-    public Currency addCurrency(@RequestBody Currency currency) {
-        return currencyService.addCurrency(currency);
-    }
-
-    @PutMapping
-    public Currency updateCurrency(@RequestBody Currency currency) {
-        return currencyService.updateCurrency(currency);
-    }
-
-    @DeleteMapping("/{id}")
-    public void deleteCurrency(@PathVariable Long id) {
-        currencyService.deleteCurrency(id);
-    }
-}
-
-
----
-
-✅ 5. CurrencyApplication.java
-
-package com.example.currencyapp;
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
-public class CurrencyApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(CurrencyApplication.class, args);
-    }
-}
-
-
----
-
-✅ 6. application.properties (SQL Server connection)
-
-spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=your_database_name
-spring.datasource.username=your_username
-spring.datasource.password=your_password
-spring.datasource.driver-class-name=com.microsoft.sqlserver.jdbc.SQLServerDriver
-
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.SQLServerDialect
-
-
----
-
-Let me know if you want:
-
-SQL script to create and populate the currencies table.
-
-Angular frontend code integration.
-
-Postman collection for API testing.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Here is the full Spring Boot backend code to fetch, add, update, and delete records from a table named currencies in a SQL Server database.
-
-
----
-
-1. Entity Class: Currency.java
-
-package com.example.currencyapp.model;
-
-import jakarta.persistence.*;
-
-@Entity
-@Table(name = "currencies")
-public class Currency {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(name = "abbreviation", nullable = false)
-    private String abbreviation;
-
-    @Column(name = "description", nullable = false)
-    private String description;
-
-    @Column(name = "decimal_places")
-    private int decimalPlaces;
-
-    @Column(name = "decimal_character")
-    private String decimalCharacter;
-
-    @Column(name = "thousand_separator")
-    private String thousandSeparator;
-
-    // Getters and Setters
-    // ...
-}
-
-
----
-
-2. Repository Interface: CurrencyRepository.java
-
-package com.example.currencyapp.repository;
-
-import com.example.currencyapp.model.Currency;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-@Repository
-public interface CurrencyRepository extends JpaRepository<Currency, Long> {
-}
-
-
----
-
-3. Service Class: CurrencyService.java
-
-package com.example.currencyapp.service;
-
-import com.example.currencyapp.model.Currency;
-import com.example.currencyapp.repository.CurrencyRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-
-@Service
-public class CurrencyService {
-
-    @Autowired
-    private CurrencyRepository currencyRepository;
-
-    public List<Currency> getAllCurrencies() {
-        return currencyRepository.findAll();
-    }
-
-    public Currency addCurrency(Currency currency) {
-        return currencyRepository.save(currency);
-    }
-
-    public Currency updateCurrency(Currency currency) {
-        return currencyRepository.save(currency);
-    }
-
-    public void deleteCurrency(Long id) {
-        currencyRepository.deleteById(id);
-    }
-}
-
-
----
-
-4. Controller Class: CurrencyController.java
-
-package com.example.currencyapp.controller;
-
-import com.example.currencyapp.model.Currency;
-import com.example.currencyapp.service.CurrencyService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-
-@CrossOrigin(origins = "*")
-@RestController
-@RequestMapping("/api/currencies")
-public class CurrencyController {
-
-    @Autowired
-    private CurrencyService currencyService;
-
-    @GetMapping
-    public List<Currency> getCurrencies() {
-        return currencyService.getAllCurrencies();
-    }
-
-    @PostMapping
-    public Currency addCurrency(@RequestBody Currency currency) {
-        return currencyService.addCurrency(currency);
-    }
-
-    @PutMapping
-    public Currency updateCurrency(@RequestBody Currency currency) {
-        return currencyService.updateCurrency(currency);
-    }
-
-    @DeleteMapping("/{id}")
-    public void deleteCurrency(@PathVariable Long id) {
-        currencyService.deleteCurrency(id);
-    }
-}
-
-
----
-
-5. Main Application: CurrencyApplication.java
-
-package com.example.currencyapp;
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
-public class CurrencyApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(CurrencyApplication.class, args);
-    }
-}
-
-
----
-
-6. application.properties for SQL Server
-
-spring.datasource.url=jdbc:sqlserver://localhost:1433;databaseName=your_database_name
-spring.datasource.username=your_username
-spring.datasource.password=your_password
-spring.datasource.driver-class-name=com.microsoft.sqlserver.jdbc.SQLServerDriver
-
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.SQLServerDialect
-
-
----
-
-Let me know if you want:
-
-SQL script for the currencies table,
-
-Postman collection for testing,
-
-Or the Angular frontend integration.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Let's troubleshoot your Angular issue step by step to make sure the UI displays currency data correctly with radio buttons and a form that only shows when "Add Currency" or "Update" is clicked. Since you've had repeated errors with formGroup, ngSubmit, and templateUrl, here's a clean and working version of the Angular components:
-
-
----
-
-✅ 1. Angular Setup Overview
-
-Currency model: currency.model.ts
-
-Service for API calls: home.service.ts
-
-Component to manage logic: home.component.ts
-
-UI with conditional form and table: home.component.html
-
-App module setup: app.module.ts
-
-
-
----
-
-📁 currency.model.ts
+✅ currencies.component.ts
+
+import { Component, Inject, PLATFORM_ID, OnInit, ChangeDetectorRef } from '@angular/core';
+import { isPlatformBrowser, CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AgGridModule } from 'ag-grid-angular';
+import { ColDef, GridApi, GridOptions, GridReadyEvent } from 'ag-grid-community';
+import { HttpErrorResponse } from '@angular/common/http';
+import { forkJoin } from 'rxjs';
+import { Currenciesservice } from './currencies.service';
+import { MatCommonModule } from '@angular/material/core';
 
 export interface Currency {
   id: number;
@@ -611,190 +24,225 @@ export interface Currency {
   thousandSeparator: string;
 }
 
-
----
-
-🛠️ home.service.ts
-
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { Currency } from './currency.model';
-
-@Injectable({
-  providedIn: 'root'
-})
-export class HomeService {
-  private apiUrl = 'http://localhost:8080/api/currencies';
-
-  constructor(private http: HttpClient) {}
-
-  getCurrencies(): Observable<Currency[]> {
-    return this.http.get<Currency[]>(this.apiUrl);
-  }
-
-  addCurrency(currency: Currency): Observable<Currency> {
-    return this.http.post<Currency>(this.apiUrl, currency);
-  }
-
-  updateCurrency(currency: Currency): Observable<Currency> {
-    return this.http.put<Currency>(`${this.apiUrl}/${currency.id}`, currency);
-  }
-
-  deleteCurrency(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
-  }
+export interface CurrencyPayload {
+  abbreviation: string;
+  description: string;
+  decimalPlaces: number;
+  decimalCharacter: string;
+  thousandSeparator: string;
 }
 
-
----
-
-📋 home.component.ts
-
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Currency } from './currency.model';
-import { HomeService } from './home.service';
-
 @Component({
-  selector: 'app-home',
-  templateUrl: './home.component.html'
+  selector: 'app-currencies',
+  templateUrl: './currencies.component.html',
+  styleUrls: ['./currencies.component.css'],
+  standalone: true,
+  imports: [CommonModule, FormsModule, AgGridModule, MatCommonModule]
 })
-export class HomeComponent implements OnInit {
-  currencies: Currency[] = [];
-  selectedCurrency: Currency | null = null;
-  currencyForm: FormGroup;
-  formVisible = false;
-  isUpdate = false;
+export class CurrenciesComponent implements OnInit {
+  isBrowser: boolean = typeof window !== 'undefined';
+  public gridApi!: GridApi;
+  public rowData: Currency[] = [];
+  public selectedCurrency: Currency | null = null;
+  public formVisible = false;
+  public isUpdate = false;
 
-  constructor(private service: HomeService, private fb: FormBuilder) {
-    this.currencyForm = this.fb.group({
-      id: [null],
-      abbreviation: ['', Validators.required],
-      description: ['', Validators.required],
-      decimalPlaces: [0, [Validators.required, Validators.min(0)]],
-      decimalCharacter: ['', Validators.required],
-      thousandSeparator: ['', Validators.required]
-    });
-  }
+  public currency: CurrencyPayload = {
+    abbreviation: '',
+    description: '',
+    decimalPlaces: 0,
+    decimalCharacter: '',
+    thousandSeparator: ''
+  };
+
+  columnDefs: ColDef[] = [
+    {
+      headerName: '',
+      field: 'select',
+      cellRenderer: this.checkboxRenderer.bind(this),
+      width: 58,
+      sortable: false,
+      filter: false,
+      suppressMovable: true,
+      resizable: false
+    },
+    { field: 'abbreviation', headerName: 'Abbreviation', filter: true },
+    { field: 'description', headerName: 'Description', filter: true },
+    { field: 'decimalPlaces', headerName: 'Decimal Places' },
+    { field: 'decimalCharacter', headerName: 'Decimal Character', filter: true },
+    { field: 'thousandSeparator', headerName: 'Thousand Separator', filter: true }
+  ];
+
+  defaultColDef: ColDef = {
+    flex: 1
+  };
+
+  public gridOptions: GridOptions = {
+    rowSelection: 'single',
+    rowMultiSelectWithClick: false,
+    suppressRowClickSelection: true,
+    suppressMenuHide: true,
+    onSelectionChanged: this.onSelectionChanged.bind(this)
+  };
+
+  constructor(
+    private service: Currenciesservice,
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private cdRef: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.loadCurrencies();
   }
 
   loadCurrencies(): void {
-    this.service.getCurrencies().subscribe(data => {
-      this.currencies = data;
+    this.service.getCurrencies().subscribe({
+      next: (data: Currency[]) => {
+        this.rowData = data;
+      },
+      error: (error: any) => {
+        console.error('Error fetching currencies:', error);
+      }
     });
   }
 
+  onGridReady(params: GridReadyEvent): void {
+    if (isPlatformBrowser(this.platformId)) {
+      this.gridApi = params.api;
+      console.log('Grid API initialized');
+    }
+  }
+
+  onSelectionChanged(): void {
+    if (isPlatformBrowser(this.platformId) && this.gridApi) {
+      const selectedRows = this.gridApi.getSelectedRows();
+      this.selectedCurrency = selectedRows.length ? selectedRows[0] : null;
+      this.cdRef.detectChanges();
+    } else {
+      console.error('Grid API is not available');
+    }
+  }
+
+  checkboxRenderer(params: any): HTMLElement {
+    const div = document.createElement('div');
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = params.node.isSelected();
+
+    checkbox.addEventListener('change', (event: Event) => {
+      const isChecked = (event.target as HTMLInputElement).checked;
+
+      if (isChecked) {
+        this.gridApi.forEachNode((node) => {
+          if (node !== params.node) node.setSelected(false);
+        });
+        params.node.setSelected(true);
+      } else {
+        params.node.setSelected(false);
+      }
+
+      this.onSelectionChanged();
+      this.cdRef.detectChanges();
+    });
+
+    div.appendChild(checkbox);
+    return div;
+  }
+
   showAddForm(): void {
-    this.formVisible = true;
     this.isUpdate = false;
-    this.currencyForm.reset();
+    this.formVisible = true;
+    this.currency = {
+      abbreviation: '',
+      description: '',
+      decimalPlaces: 0,
+      decimalCharacter: '',
+      thousandSeparator: ''
+    };
   }
 
   showUpdateForm(): void {
     if (this.selectedCurrency) {
-      this.formVisible = true;
       this.isUpdate = true;
-      this.currencyForm.setValue(this.selectedCurrency);
+      this.formVisible = true;
+      this.currency = {
+        abbreviation: this.selectedCurrency.abbreviation,
+        description: this.selectedCurrency.description,
+        decimalPlaces: this.selectedCurrency.decimalPlaces,
+        decimalCharacter: this.selectedCurrency.decimalCharacter,
+        thousandSeparator: this.selectedCurrency.thousandSeparator
+      };
     }
   }
 
   onSubmit(): void {
-    const currency = this.currencyForm.value;
-    if (this.isUpdate) {
-      this.service.updateCurrency(currency).subscribe(() => this.loadCurrencies());
+    const payload: CurrencyPayload = { ...this.currency };
+
+    if (this.isUpdate && this.selectedCurrency) {
+      this.service.updateCurrency(payload, this.selectedCurrency.id).subscribe(() => {
+        this.loadCurrencies();
+      });
     } else {
-      this.service.addCurrency(currency).subscribe(() => this.loadCurrencies());
+      this.service.addCurrency(payload).subscribe(() => {
+        this.loadCurrencies();
+      });
     }
+
     this.formVisible = false;
   }
 
-  onDelete(): void {
-    if (this.selectedCurrency) {
-      this.service.deleteCurrency(this.selectedCurrency.id).subscribe(() => this.loadCurrencies());
+  deleteSelectedRates(): void {
+    const selectedNodes = this.gridApi.getSelectedNodes();
+    const selectedIds = selectedNodes.map((node) => node.data.id);
+
+    if (!selectedIds.length) {
+      alert('No rates selected for deletion.');
+      return;
+    }
+
+    if (confirm('Are you sure you want to delete the selected rates?')) {
+      const deleteRequests = selectedIds.map((id) => this.service.deleteCurrency(id));
+      forkJoin(deleteRequests).subscribe({
+        next: () => this.loadCurrencies(),
+        error: (err: HttpErrorResponse) => console.error('Error deleting rates', err)
+      });
     }
   }
 
-  selectCurrency(currency: Currency): void {
-    this.selectedCurrency = currency;
+  editRate(rate: Currency): void {
+    this.selectedCurrency = rate;
+    this.currency = {
+      abbreviation: rate.abbreviation,
+      description: rate.description,
+      decimalPlaces: rate.decimalPlaces,
+      decimalCharacter: rate.decimalCharacter,
+      thousandSeparator: rate.thousandSeparator
+    };
+    this.formVisible = true;
+    this.isUpdate = true;
   }
 }
 
 
 ---
 
-🖼️ home.component.html
+✅ Summary of Fixes:
 
-<div>
-  <h2>Currency Management</h2>
-  <button (click)="showAddForm()">Add Currency</button>
-  <button (click)="showUpdateForm()" [disabled]="!selectedCurrency">Update</button>
-  <button (click)="onDelete()" [disabled]="!selectedCurrency">Delete</button>
+Cleaned all incorrect import syntax.
 
-  <table>
-    <thead>
-      <tr>
-        <th>Select</th>
-        <th>Abbreviation</th>
-        <th>Description</th>
-        <th>Decimal Places</th>
-        <th>Decimal Character</th>
-        <th>Thousand Separator</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let currency of currencies">
-        <td><input type="radio" name="select" (click)="selectCurrency(currency)" /></td>
-        <td>{{ currency.abbreviation }}</td>
-        <td>{{ currency.description }}</td>
-        <td>{{ currency.decimalPlaces }}</td>
-        <td>{{ currency.decimalCharacter }}</td>
-        <td>{{ currency.thousandSeparator }}</td>
-      </tr>
-    </tbody>
-  </table>
+Corrected checkboxRenderer() to trigger selection and change detection.
 
-  <div *ngIf="formVisible">
-    <form [formGroup]="currencyForm" (ngSubmit)="onSubmit()">
-      <label>Abbreviation: <input formControlName="abbreviation" /></label><br />
-      <label>Description: <input formControlName="description" /></label><br />
-      <label>Decimal Places: <input formControlName="decimalPlaces" type="number" /></label><br />
-      <label>Decimal Character: <input formControlName="decimalCharacter" /></label><br />
-      <label>Thousand Separator: <input formControlName="thousandSeparator" /></label><br />
-      <button type="submit">{{ isUpdate ? 'Update' : 'Save' }}</button>
-    </form>
-  </div>
-</div>
+Ensured selectedCurrency is properly updated.
+
+Used ChangeDetectorRef to notify Angular of updates.
+
+Bound Update and Delete buttons correctly.
+
 
 
 ---
 
-🧱 app.module.ts
-
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { HttpClientModule } from '@angular/common/http';
-import { ReactiveFormsModule } from '@angular/forms';
-
-import { AppComponent } from './app.component';
-import { HomeComponent } from './home.component';
-import { HomeService } from './home.service';
-
-@NgModule({
-  declarations: [AppComponent, HomeComponent],
-  imports: [BrowserModule, HttpClientModule, ReactiveFormsModule],
-  providers: [HomeService],
-  bootstrap: [AppComponent]
-})
-export class AppModule {}
-
-
----
-
-If you're ready, I can send the Spring Boot backend again with the correct mapping to your currencies SQL Server table. Would you like that?
+Let me know if you'd like the updated HTML cleaned and corrected too!
 
 
         
