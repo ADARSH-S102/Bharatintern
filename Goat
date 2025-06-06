@@ -1,99 +1,24 @@
-<!-- Action Buttons -->
-<div class="button-group">
-  <button (click)="showAddForm()">Add Currency</button>
-  <button (click)="showUpdateForm()" [disabled]="!selectedCurrency">Update</button>
-  <button (click)="deleteSelectedRates()" [disabled]="!selectedCurrency">Delete</button>
-</div>
-
-<!-- AG Grid Table -->
-<div class="container">
-  <ag-grid-angular
-    *ngIf="isBrowser"
-    style="width: 100vw; height: 80vh;"
-    class="ag-theme-balham"
-    [rowData]="rowData"
-    [columnDefs]="columnDefs"
-    [gridOptions]="gridOptions"
-    [defaultColDef]="defaultColDef"
-    (gridReady)="onGridReady($event)">
-  </ag-grid-angular>
-</div>
-
-<!-- Modal Form -->
-<div *ngIf="formVisible" class="modal">
-  <div class="modal-content">
-    <span class="close" (click)="formVisible = false">&times;</span>
-    <h3>{{ isUpdate ? 'Update Currency' : 'Add Currency' }}</h3>
-
-    <form (ngSubmit)="onSubmit()">
-      <label for="abbreviation">Abbreviation</label>
-      <input
-        type="text"
-        id="abbreviation"
-        [(ngModel)]="currency.abbreviation"
-        name="abbreviation"
-        required />
-
-      <label for="description">Description</label>
-      <input
-        type="text"
-        id="description"
-        [(ngModel)]="currency.description"
-        name="description"
-        required />
-
-      <label for="decimalPlaces">Decimal Places</label>
-      <input
-        type="number"
-        id="decimalPlaces"
-        [(ngModel)]="currency.decimalPlaces"
-        name="decimalPlaces"
-        required />
-
-      <label for="decimalCharacter">Decimal Character</label>
-      <input
-        type="text"
-        id="decimalCharacter"
-        [(ngModel)]="currency.decimalCharacter"
-        name="decimalCharacter"
-        required />
-
-      <label for="thousandSeparator">Thousand Separator</label>
-      <input
-        type="text"
-        id="thousandSeparator"
-        [(ngModel)]="currency.thousandSeparator"
-        name="thousandSeparator"
-        required />
-
-      <div class="form-actions">
-        <button type="submit">{{ isUpdate ? 'Update' : 'Add' }}</button>
-        <button type="button" (click)="formVisible = false">Cancel</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-
-
-
-
-Here's the fully corrected and cleaned-up TypeScript code for your CurrenciesComponent, with proper checkbox selection handling, change detection, and fixed syntax issues:
+Here's the complete and corrected currencies.component.ts and currencies.component.html using a normal checkbox for row selection (no AG Grid selection logic).
 
 
 ---
 
 ✅ currencies.component.ts
 
-import { Component, Inject, PLATFORM_ID, OnInit, ChangeDetectorRef } from '@angular/core';
+import {
+  Component,
+  Inject,
+  OnInit,
+  PLATFORM_ID,
+  ChangeDetectorRef
+} from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ColDef, GridReadyEvent, GridApi } from 'ag-grid-community';
 import { AgGridModule } from 'ag-grid-angular';
-import { ColDef, GridApi, GridOptions, GridReadyEvent } from 'ag-grid-community';
 import { HttpErrorResponse } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
-import { Currenciesservice } from './currencies.service';
-import { MatCommonModule } from '@angular/material/core';
+import { CurrenciesService } from './currencies.service';
 
 export interface Currency {
   id: number;
@@ -117,17 +42,17 @@ export interface CurrencyPayload {
   templateUrl: './currencies.component.html',
   styleUrls: ['./currencies.component.css'],
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule, MatCommonModule]
+  imports: [CommonModule, FormsModule, AgGridModule]
 })
 export class CurrenciesComponent implements OnInit {
-  isBrowser: boolean = typeof window !== 'undefined';
-  public gridApi!: GridApi;
+  isBrowser = typeof window !== 'undefined';
   public rowData: Currency[] = [];
   public selectedCurrency: Currency | null = null;
   public formVisible = false;
   public isUpdate = false;
+  public gridApi!: GridApi;
 
-  public currency: CurrencyPayload = {
+  currency: CurrencyPayload = {
     abbreviation: '',
     description: '',
     decimalPlaces: 0,
@@ -139,12 +64,33 @@ export class CurrenciesComponent implements OnInit {
     {
       headerName: '',
       field: 'select',
-      cellRenderer: this.checkboxRenderer.bind(this),
-      width: 58,
+      cellRenderer: (params) => {
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = this.selectedCurrency?.id === params.data.id;
+
+        checkbox.addEventListener('change', () => {
+          if (checkbox.checked) {
+            this.selectedCurrency = params.data;
+
+            // Uncheck all other checkboxes
+            this.gridApi?.forEachNode((node) => {
+              if (node.data.id !== params.data.id) {
+                const el = node?.gridRowEl?.querySelector('input[type="checkbox"]');
+                if (el) (el as HTMLInputElement).checked = false;
+              }
+            });
+          } else {
+            this.selectedCurrency = null;
+          }
+          this.cdRef.detectChanges();
+        });
+
+        return checkbox;
+      },
+      width: 50,
       sortable: false,
-      filter: false,
-      suppressMovable: true,
-      resizable: false
+      filter: false
     },
     { field: 'abbreviation', headerName: 'Abbreviation', filter: true },
     { field: 'description', headerName: 'Description', filter: true },
@@ -154,19 +100,14 @@ export class CurrenciesComponent implements OnInit {
   ];
 
   defaultColDef: ColDef = {
-    flex: 1
-  };
-
-  public gridOptions: GridOptions = {
-    rowSelection: 'single',
-    rowMultiSelectWithClick: false,
-    suppressRowClickSelection: true,
-    suppressMenuHide: true,
-    onSelectionChanged: this.onSelectionChanged.bind(this)
+    flex: 1,
+    sortable: true,
+    filter: true,
+    resizable: true
   };
 
   constructor(
-    private service: Currenciesservice,
+    private service: CurrenciesService,
     @Inject(PLATFORM_ID) private platformId: Object,
     private cdRef: ChangeDetectorRef
   ) {}
@@ -177,56 +118,16 @@ export class CurrenciesComponent implements OnInit {
 
   loadCurrencies(): void {
     this.service.getCurrencies().subscribe({
-      next: (data: Currency[]) => {
-        this.rowData = data;
-      },
-      error: (error: any) => {
-        console.error('Error fetching currencies:', error);
-      }
+      next: (data: Currency[]) => (this.rowData = data),
+      error: (error: any) => console.error('Error fetching currencies:', error)
     });
   }
 
   onGridReady(params: GridReadyEvent): void {
     if (isPlatformBrowser(this.platformId)) {
       this.gridApi = params.api;
-      console.log('Grid API initialized');
+      this.gridApi.sizeColumnsToFit();
     }
-  }
-
-  onSelectionChanged(): void {
-    if (isPlatformBrowser(this.platformId) && this.gridApi) {
-      const selectedRows = this.gridApi.getSelectedRows();
-      this.selectedCurrency = selectedRows.length ? selectedRows[0] : null;
-      this.cdRef.detectChanges();
-    } else {
-      console.error('Grid API is not available');
-    }
-  }
-
-  checkboxRenderer(params: any): HTMLElement {
-    const div = document.createElement('div');
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.checked = params.node.isSelected();
-
-    checkbox.addEventListener('change', (event: Event) => {
-      const isChecked = (event.target as HTMLInputElement).checked;
-
-      if (isChecked) {
-        this.gridApi.forEachNode((node) => {
-          if (node !== params.node) node.setSelected(false);
-        });
-        params.node.setSelected(true);
-      } else {
-        params.node.setSelected(false);
-      }
-
-      this.onSelectionChanged();
-      this.cdRef.detectChanges();
-    });
-
-    div.appendChild(checkbox);
-    return div;
   }
 
   showAddForm(): void {
@@ -256,73 +157,105 @@ export class CurrenciesComponent implements OnInit {
   }
 
   onSubmit(): void {
-    const payload: CurrencyPayload = { ...this.currency };
+    const payload: CurrencyPayload = {
+      abbreviation: this.currency.abbreviation,
+      description: this.currency.description,
+      decimalPlaces: this.currency.decimalPlaces,
+      decimalCharacter: this.currency.decimalCharacter,
+      thousandSeparator: this.currency.thousandSeparator
+    };
 
     if (this.isUpdate && this.selectedCurrency) {
       this.service.updateCurrency(payload, this.selectedCurrency.id).subscribe(() => {
         this.loadCurrencies();
+        this.formVisible = false;
+        this.selectedCurrency = null;
       });
     } else {
       this.service.addCurrency(payload).subscribe(() => {
         this.loadCurrencies();
+        this.formVisible = false;
       });
     }
-
-    this.formVisible = false;
   }
 
   deleteSelectedRates(): void {
-    const selectedNodes = this.gridApi.getSelectedNodes();
-    const selectedIds = selectedNodes.map((node) => node.data.id);
-
-    if (!selectedIds.length) {
-      alert('No rates selected for deletion.');
-      return;
-    }
-
-    if (confirm('Are you sure you want to delete the selected rates?')) {
-      const deleteRequests = selectedIds.map((id) => this.service.deleteCurrency(id));
-      forkJoin(deleteRequests).subscribe({
-        next: () => this.loadCurrencies(),
-        error: (err: HttpErrorResponse) => console.error('Error deleting rates', err)
+    if (this.selectedCurrency && confirm('Are you sure you want to delete this currency?')) {
+      this.service.deleteCurrency(this.selectedCurrency.id).subscribe(() => {
+        this.loadCurrencies();
+        this.selectedCurrency = null;
       });
     }
-  }
-
-  editRate(rate: Currency): void {
-    this.selectedCurrency = rate;
-    this.currency = {
-      abbreviation: rate.abbreviation,
-      description: rate.description,
-      decimalPlaces: rate.decimalPlaces,
-      decimalCharacter: rate.decimalCharacter,
-      thousandSeparator: rate.thousandSeparator
-    };
-    this.formVisible = true;
-    this.isUpdate = true;
   }
 }
 
 
 ---
 
-✅ Summary of Fixes:
+✅ currencies.component.html
 
-Cleaned all incorrect import syntax.
+<div class="button-group">
+  <button (click)="showAddForm()">Add Currency</button>
+  <button (click)="showUpdateForm()" [disabled]="!selectedCurrency">Update</button>
+  <button (click)="deleteSelectedRates()" [disabled]="!selectedCurrency">Delete</button>
+</div>
 
-Corrected checkboxRenderer() to trigger selection and change detection.
+<div class="container">
+  <ag-grid-angular
+    *ngIf="isBrowser"
+    class="ag-theme-balham"
+    style="width: 100vw; height: 80vh;"
+    [rowData]="rowData"
+    [columnDefs]="columnDefs"
+    [defaultColDef]="defaultColDef"
+    (gridReady)="onGridReady($event)">
+  </ag-grid-angular>
+</div>
 
-Ensured selectedCurrency is properly updated.
+<!-- Modal Form -->
+<div *ngIf="formVisible" class="modal">
+  <div class="modal-content">
+    <span class="close" (click)="formVisible = false">&times;</span>
+    <h3>{{ isUpdate ? 'Update Currency' : 'Add Currency' }}</h3>
 
-Used ChangeDetectorRef to notify Angular of updates.
+    <form (ngSubmit)="onSubmit()">
+      <label for="abbreviation">Abbreviation</label>
+      <input type="text" id="abbreviation" [(ngModel)]="currency.abbreviation" name="abbreviation" required />
 
-Bound Update and Delete buttons correctly.
+      <label for="description">Description</label>
+      <input type="text" id="description" [(ngModel)]="currency.description" name="description" required />
 
+      <label for="decimalPlaces">Decimal Places</label>
+      <input type="number" id="decimalPlaces" [(ngModel)]="currency.decimalPlaces" name="decimalPlaces" required />
+
+      <label for="decimalCharacter">Decimal Character</label>
+      <input type="text" id="decimalCharacter" [(ngModel)]="currency.decimalCharacter" name="decimalCharacter" required />
+
+      <label for="thousandSeparator">Thousand Separator</label>
+      <input type="text" id="thousandSeparator" [(ngModel)]="currency.thousandSeparator" name="thousandSeparator" required />
+
+      <div class="form-actions">
+        <button type="submit">{{ isUpdate ? 'Update' : 'Add' }}</button>
+        <button type="button" (click)="formVisible = false">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 
 ---
 
-Let me know if you'd like the updated HTML cleaned and corrected too!
+Let me know if you’d like:
+
+Multi-selection support with checkboxes.
+
+Styles for the modal (.css file).
+
+Integration with backend API sample.
+
+
+All ready to plug-and-play! ✅
+
 
 
         
