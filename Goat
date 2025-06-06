@@ -1,3 +1,83 @@
+<!-- Action Buttons -->
+<div class="button-group">
+  <button (click)="showAddForm()">Add Currency</button>
+  <button (click)="showUpdateForm()" [disabled]="!selectedCurrency">Update</button>
+  <button (click)="deleteSelectedRates()" [disabled]="!selectedCurrency">Delete</button>
+</div>
+
+<!-- AG Grid Table -->
+<div class="container">
+  <ag-grid-angular
+    *ngIf="isBrowser"
+    style="width: 100vw; height: 80vh;"
+    class="ag-theme-balham"
+    [rowData]="rowData"
+    [columnDefs]="columnDefs"
+    [gridOptions]="gridOptions"
+    [defaultColDef]="defaultColDef"
+    (gridReady)="onGridReady($event)">
+  </ag-grid-angular>
+</div>
+
+<!-- Modal Form -->
+<div *ngIf="formVisible" class="modal">
+  <div class="modal-content">
+    <span class="close" (click)="formVisible = false">&times;</span>
+    <h3>{{ isUpdate ? 'Update Currency' : 'Add Currency' }}</h3>
+
+    <form (ngSubmit)="onSubmit()">
+      <label for="abbreviation">Abbreviation</label>
+      <input
+        type="text"
+        id="abbreviation"
+        [(ngModel)]="currency.abbreviation"
+        name="abbreviation"
+        required />
+
+      <label for="description">Description</label>
+      <input
+        type="text"
+        id="description"
+        [(ngModel)]="currency.description"
+        name="description"
+        required />
+
+      <label for="decimalPlaces">Decimal Places</label>
+      <input
+        type="number"
+        id="decimalPlaces"
+        [(ngModel)]="currency.decimalPlaces"
+        name="decimalPlaces"
+        required />
+
+      <label for="decimalCharacter">Decimal Character</label>
+      <input
+        type="text"
+        id="decimalCharacter"
+        [(ngModel)]="currency.decimalCharacter"
+        name="decimalCharacter"
+        required />
+
+      <label for="thousandSeparator">Thousand Separator</label>
+      <input
+        type="text"
+        id="thousandSeparator"
+        [(ngModel)]="currency.thousandSeparator"
+        name="thousandSeparator"
+        required />
+
+      <div class="form-actions">
+        <button type="submit">{{ isUpdate ? 'Update' : 'Add' }}</button>
+        <button type="button" (click)="formVisible = false">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+
+
 Here's the fully corrected and cleaned-up TypeScript code for your CurrenciesComponent, with proper checkbox selection handling, change detection, and fixed syntax issues:
 
 
