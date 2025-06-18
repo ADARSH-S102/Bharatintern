@@ -1,261 +1,345 @@
-Here's the complete and corrected currencies.component.ts and currencies.component.html using a normal checkbox for row selection (no AG Grid selection logic).
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example</groupId>
+    <artifactId>yaml-ui</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <name>Yaml UI</name>
+    <description>Spring Boot project to parse YAML and render UI using Thymeleaf</description>
+
+    <properties>
+        <java.version>17</java.version>
+        <spring.boot.version>3.2.5</spring.boot.version>
+    </properties>
+
+    <dependencies>
+        <!-- Spring Boot Starter Web -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Thymeleaf templating engine -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+
+        <!-- YAML parsing with SnakeYAML -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>2.2</version>
+        </dependency>
+
+        <!-- Optional: DevTools for hot reload -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Optional: Testing -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Spring Boot Maven Plugin -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring.boot.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
 
 
----
 
-✅ currencies.component.ts
 
-import {
-  Component,
-  Inject,
-  OnInit,
-  PLATFORM_ID,
-  ChangeDetectorRef
-} from '@angular/core';
-import { isPlatformBrowser, CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ColDef, GridReadyEvent, GridApi } from 'ag-grid-community';
-import { AgGridModule } from 'ag-grid-angular';
-import { HttpErrorResponse } from '@angular/common/http';
-import { forkJoin } from 'rxjs';
-import { CurrenciesService } from './currencies.service';
 
-export interface Currency {
-  id: number;
-  abbreviation: string;
-  description: string;
-  decimalPlaces: number;
-  decimalCharacter: string;
-  thousandSeparator: string;
-}
 
-export interface CurrencyPayload {
-  abbreviation: string;
-  description: string;
-  decimalPlaces: number;
-  decimalCharacter: string;
-  thousandSeparator: string;
-}
 
-@Component({
-  selector: 'app-currencies',
-  templateUrl: './currencies.component.html',
-  styleUrls: ['./currencies.component.css'],
-  standalone: true,
-  imports: [CommonModule, FormsModule, AgGridModule]
-})
-export class CurrenciesComponent implements OnInit {
-  isBrowser = typeof window !== 'undefined';
-  public rowData: Currency[] = [];
-  public selectedCurrency: Currency | null = null;
-  public formVisible = false;
-  public isUpdate = false;
-  public gridApi!: GridApi;
 
-  currency: CurrencyPayload = {
-    abbreviation: '',
-    description: '',
-    decimalPlaces: 0,
-    decimalCharacter: '',
-    thousandSeparator: ''
-  };
 
-  columnDefs: ColDef[] = [
-    {
-      headerName: '',
-      field: 'select',
-      cellRenderer: (params) => {
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.checked = this.selectedCurrency?.id === params.data.id;
 
-        checkbox.addEventListener('change', () => {
-          if (checkbox.checked) {
-            this.selectedCurrency = params.data;
+Sure! Below is a complete working example of a **Spring Boot + Thymeleaf** application that:
 
-            // Uncheck all other checkboxes
-            this.gridApi?.forEachNode((node) => {
-              if (node.data.id !== params.data.id) {
-                const el = node?.gridRowEl?.querySelector('input[type="checkbox"]');
-                if (el) (el as HTMLInputElement).checked = false;
-              }
-            });
-          } else {
-            this.selectedCurrency = null;
-          }
-          this.cdRef.detectChanges();
-        });
-
-        return checkbox;
-      },
-      width: 50,
-      sortable: false,
-      filter: false
-    },
-    { field: 'abbreviation', headerName: 'Abbreviation', filter: true },
-    { field: 'description', headerName: 'Description', filter: true },
-    { field: 'decimalPlaces', headerName: 'Decimal Places' },
-    { field: 'decimalCharacter', headerName: 'Decimal Character', filter: true },
-    { field: 'thousandSeparator', headerName: 'Thousand Separator', filter: true }
-  ];
-
-  defaultColDef: ColDef = {
-    flex: 1,
-    sortable: true,
-    filter: true,
-    resizable: true
-  };
-
-  constructor(
-    private service: CurrenciesService,
-    @Inject(PLATFORM_ID) private platformId: Object,
-    private cdRef: ChangeDetectorRef
-  ) {}
-
-  ngOnInit(): void {
-    this.loadCurrencies();
-  }
-
-  loadCurrencies(): void {
-    this.service.getCurrencies().subscribe({
-      next: (data: Currency[]) => (this.rowData = data),
-      error: (error: any) => console.error('Error fetching currencies:', error)
-    });
-  }
-
-  onGridReady(params: GridReadyEvent): void {
-    if (isPlatformBrowser(this.platformId)) {
-      this.gridApi = params.api;
-      this.gridApi.sizeColumnsToFit();
-    }
-  }
-
-  showAddForm(): void {
-    this.isUpdate = false;
-    this.formVisible = true;
-    this.currency = {
-      abbreviation: '',
-      description: '',
-      decimalPlaces: 0,
-      decimalCharacter: '',
-      thousandSeparator: ''
-    };
-  }
-
-  showUpdateForm(): void {
-    if (this.selectedCurrency) {
-      this.isUpdate = true;
-      this.formVisible = true;
-      this.currency = {
-        abbreviation: this.selectedCurrency.abbreviation,
-        description: this.selectedCurrency.description,
-        decimalPlaces: this.selectedCurrency.decimalPlaces,
-        decimalCharacter: this.selectedCurrency.decimalCharacter,
-        thousandSeparator: this.selectedCurrency.thousandSeparator
-      };
-    }
-  }
-
-  onSubmit(): void {
-    const payload: CurrencyPayload = {
-      abbreviation: this.currency.abbreviation,
-      description: this.currency.description,
-      decimalPlaces: this.currency.decimalPlaces,
-      decimalCharacter: this.currency.decimalCharacter,
-      thousandSeparator: this.currency.thousandSeparator
-    };
-
-    if (this.isUpdate && this.selectedCurrency) {
-      this.service.updateCurrency(payload, this.selectedCurrency.id).subscribe(() => {
-        this.loadCurrencies();
-        this.formVisible = false;
-        this.selectedCurrency = null;
-      });
-    } else {
-      this.service.addCurrency(payload).subscribe(() => {
-        this.loadCurrencies();
-        this.formVisible = false;
-      });
-    }
-  }
-
-  deleteSelectedRates(): void {
-    if (this.selectedCurrency && confirm('Are you sure you want to delete this currency?')) {
-      this.service.deleteCurrency(this.selectedCurrency.id).subscribe(() => {
-        this.loadCurrencies();
-        this.selectedCurrency = null;
-      });
-    }
-  }
-}
-
+* Parses a YAML file.
+* Displays each `applicationComponent` as a **tab**.
+* Shows related data under each tab in a **table format**.
 
 ---
 
-✅ currencies.component.html
+### 🧾 Sample `components.yaml` File (placed in `src/main/resources/`)
 
-<div class="button-group">
-  <button (click)="showAddForm()">Add Currency</button>
-  <button (click)="showUpdateForm()" [disabled]="!selectedCurrency">Update</button>
-  <button (click)="deleteSelectedRates()" [disabled]="!selectedCurrency">Delete</button>
-</div>
+```yaml
+components:
+  - applicationComponent: "User Service"
+    details:
+      - name: "Login"
+        type: "REST API"
+        status: "Active"
+      - name: "Register"
+        type: "REST API"
+        status: "Active"
 
-<div class="container">
-  <ag-grid-angular
-    *ngIf="isBrowser"
-    class="ag-theme-balham"
-    style="width: 100vw; height: 80vh;"
-    [rowData]="rowData"
-    [columnDefs]="columnDefs"
-    [defaultColDef]="defaultColDef"
-    (gridReady)="onGridReady($event)">
-  </ag-grid-angular>
-</div>
-
-<!-- Modal Form -->
-<div *ngIf="formVisible" class="modal">
-  <div class="modal-content">
-    <span class="close" (click)="formVisible = false">&times;</span>
-    <h3>{{ isUpdate ? 'Update Currency' : 'Add Currency' }}</h3>
-
-    <form (ngSubmit)="onSubmit()">
-      <label for="abbreviation">Abbreviation</label>
-      <input type="text" id="abbreviation" [(ngModel)]="currency.abbreviation" name="abbreviation" required />
-
-      <label for="description">Description</label>
-      <input type="text" id="description" [(ngModel)]="currency.description" name="description" required />
-
-      <label for="decimalPlaces">Decimal Places</label>
-      <input type="number" id="decimalPlaces" [(ngModel)]="currency.decimalPlaces" name="decimalPlaces" required />
-
-      <label for="decimalCharacter">Decimal Character</label>
-      <input type="text" id="decimalCharacter" [(ngModel)]="currency.decimalCharacter" name="decimalCharacter" required />
-
-      <label for="thousandSeparator">Thousand Separator</label>
-      <input type="text" id="thousandSeparator" [(ngModel)]="currency.thousandSeparator" name="thousandSeparator" required />
-
-      <div class="form-actions">
-        <button type="submit">{{ isUpdate ? 'Update' : 'Add' }}</button>
-        <button type="button" (click)="formVisible = false">Cancel</button>
-      </div>
-    </form>
-  </div>
-</div>
-
+  - applicationComponent: "Payment Service"
+    details:
+      - name: "Initiate Payment"
+        type: "SOAP API"
+        status: "Active"
+      - name: "Refund"
+        type: "SOAP API"
+        status: "Inactive"
+```
 
 ---
 
-Let me know if you’d like:
+### 📁 Project Structure
 
-Multi-selection support with checkboxes.
+```
+src/
+├── main/
+│   ├── java/
+│   │   └── com.example.yamlui/
+│   │       ├── YamlUiApplication.java
+│   │       ├── controller/YamlController.java
+│   │       ├── model/Component.java
+│   │       └── model/Detail.java
+│   └── resources/
+│       ├── templates/components.html
+│       ├── application.yml
+│       └── components.yaml
+```
 
-Styles for the modal (.css file).
+---
 
-Integration with backend API sample.
+### 🧩 Model Classes
 
+#### `Component.java`
 
-All ready to plug-and-play! ✅
+```java
+package com.example.yamlui.model;
 
+import java.util.List;
 
+public class Component {
+    private String applicationComponent;
+    private List<Detail> details;
 
-        
+    // Getters and setters
+    public String getApplicationComponent() {
+        return applicationComponent;
+    }
+
+    public void setApplicationComponent(String applicationComponent) {
+        this.applicationComponent = applicationComponent;
+    }
+
+    public List<Detail> getDetails() {
+        return details;
+    }
+
+    public void setDetails(List<Detail> details) {
+        this.details = details;
+    }
+}
+```
+
+#### `Detail.java`
+
+```java
+package com.example.yamlui.model;
+
+public class Detail {
+    private String name;
+    private String type;
+    private String status;
+
+    // Getters and setters
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+}
+```
+
+---
+
+### 🧠 YAML Parsing and Controller
+
+#### `YamlController.java`
+
+```java
+package com.example.yamlui.controller;
+
+import com.example.yamlui.model.Component;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.TypeDescription;
+import org.yaml.snakeyaml.constructor.Constructor;
+
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
+
+@Controller
+public class YamlController {
+
+    @GetMapping("/components")
+    public String getComponents(Model model) {
+        try {
+            Constructor constructor = new Constructor(ComponentsWrapper.class);
+            TypeDescription wrapperDesc = new TypeDescription(ComponentsWrapper.class);
+            wrapperDesc.addPropertyParameters("components", Component.class);
+            constructor.addTypeDescription(wrapperDesc);
+
+            Yaml yaml = new Yaml(constructor);
+            InputStream inputStream = new ClassPathResource("components.yaml").getInputStream();
+            ComponentsWrapper wrapper = yaml.load(inputStream);
+
+            model.addAttribute("components", wrapper.getComponents());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "components";
+    }
+
+    public static class ComponentsWrapper {
+        private List<Component> components;
+
+        public List<Component> getComponents() {
+            return components;
+        }
+
+        public void setComponents(List<Component> components) {
+            this.components = components;
+        }
+    }
+}
+```
+
+---
+
+### 🖼️ Thymeleaf Template
+
+#### `components.html`
+
+```html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Application Components</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container mt-4">
+    <h2>Application Components</h2>
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item" th:each="component, iterStat : ${components}">
+            <a class="nav-link" th:classappend="${iterStat.index == 0} ? 'active'" 
+               th:href="'#tab' + ${iterStat.index}" data-bs-toggle="tab" 
+               th:text="${component.applicationComponent}" role="tab"></a>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-3">
+        <div class="tab-pane fade show" th:classappend="${iterStat.index == 0} ? 'active'" 
+             th:each="component, iterStat : ${components}" 
+             th:id="'tab' + ${iterStat.index}" role="tabpanel">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="detail : ${component.details}">
+                        <td th:text="${detail.name}">Name</td>
+                        <td th:text="${detail.type}">Type</td>
+                        <td th:text="${detail.status}">Status</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+```
+
+---
+
+### 🚀 Main Application
+
+#### `YamlUiApplication.java`
+
+```java
+package com.example.yamlui;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class YamlUiApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(YamlUiApplication.class, args);
+    }
+}
+```
+
+---
+
+### ✅ To Run:
+
+1. Place the YAML file in `src/main/resources/components.yaml`.
+2. Run the Spring Boot app.
+3. Visit: [http://localhost:8080/components](http://localhost:8080/components)
+
+---
+
+Would you like me to send this as a ZIP project or provide a GitHub-style README too?
