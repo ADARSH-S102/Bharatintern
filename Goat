@@ -1,345 +1,246 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+Perfect ✅ — that’s a clear and fun Angular UI task!
+Let’s build this step-by-step using Angular + AG Grid + Material (for the side menu and form).
 
-    <groupId>com.example</groupId>
-    <artifactId>yaml-ui</artifactId>
-    <version>1.0.0</version>
-    <packaging>jar</packaging>
+We’ll create:
 
-    <name>Yaml UI</name>
-    <description>Spring Boot project to parse YAML and render UI using Thymeleaf</description>
+A main layout with a sidenav (3-line menu)
 
-    <properties>
-        <java.version>17</java.version>
-        <spring.boot.version>3.2.5</spring.boot.version>
-    </properties>
+A menu item “New Travel Request”
 
-    <dependencies>
-        <!-- Spring Boot Starter Web -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
+A form that dynamically shows Approver 2 only when Travel Type = International
 
-        <!-- Thymeleaf templating engine -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-thymeleaf</artifactId>
-        </dependency>
-
-        <!-- YAML parsing with SnakeYAML -->
-        <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-            <version>2.2</version>
-        </dependency>
-
-        <!-- Optional: DevTools for hot reload -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
-        <!-- Optional: Testing -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <!-- Spring Boot Maven Plugin -->
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>${spring.boot.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
-</project>
+A placeholder AG Grid (optional, to show later records if you want)
 
 
-
-
-
-
-
-
-
-
-Sure! Below is a complete working example of a **Spring Boot + Thymeleaf** application that:
-
-* Parses a YAML file.
-* Displays each `applicationComponent` as a **tab**.
-* Shows related data under each tab in a **table format**.
 
 ---
 
-### 🧾 Sample `components.yaml` File (placed in `src/main/resources/`)
+🧱 Step 1 — Install Required Packages
 
-```yaml
-components:
-  - applicationComponent: "User Service"
-    details:
-      - name: "Login"
-        type: "REST API"
-        status: "Active"
-      - name: "Register"
-        type: "REST API"
-        status: "Active"
+In your Angular project root, run:
 
-  - applicationComponent: "Payment Service"
-    details:
-      - name: "Initiate Payment"
-        type: "SOAP API"
-        status: "Active"
-      - name: "Refund"
-        type: "SOAP API"
-        status: "Inactive"
-```
+npm install ag-grid-community ag-grid-angular @angular/material @angular/forms
+
+Also import Angular Material’s modules in app.module.ts.
+
 
 ---
 
-### 📁 Project Structure
+🗂️ Step 2 — app.module.ts
 
-```
-src/
-├── main/
-│   ├── java/
-│   │   └── com.example.yamlui/
-│   │       ├── YamlUiApplication.java
-│   │       ├── controller/YamlController.java
-│   │       ├── model/Component.java
-│   │       └── model/Detail.java
-│   └── resources/
-│       ├── templates/components.html
-│       ├── application.yml
-│       └── components.yaml
-```
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatIconModule } from '@angular/material/icon';
+import { MatListModule } from '@angular/material/list';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { AgGridModule } from 'ag-grid-angular';
+import { AppComponent } from './app.component';
+import { TravelRequestComponent } from './travel-request/travel-request.component';
 
----
+@NgModule({
+  declarations: [
+    AppComponent,
+    TravelRequestComponent
+  ],
+  imports: [
+    BrowserModule,
+    BrowserAnimationsModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatSidenavModule,
+    MatToolbarModule,
+    MatIconModule,
+    MatListModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    AgGridModule
+  ],
+  providers: [],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
 
-### 🧩 Model Classes
-
-#### `Component.java`
-
-```java
-package com.example.yamlui.model;
-
-import java.util.List;
-
-public class Component {
-    private String applicationComponent;
-    private List<Detail> details;
-
-    // Getters and setters
-    public String getApplicationComponent() {
-        return applicationComponent;
-    }
-
-    public void setApplicationComponent(String applicationComponent) {
-        this.applicationComponent = applicationComponent;
-    }
-
-    public List<Detail> getDetails() {
-        return details;
-    }
-
-    public void setDetails(List<Detail> details) {
-        this.details = details;
-    }
-}
-```
-
-#### `Detail.java`
-
-```java
-package com.example.yamlui.model;
-
-public class Detail {
-    private String name;
-    private String type;
-    private String status;
-
-    // Getters and setters
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-}
-```
 
 ---
 
-### 🧠 YAML Parsing and Controller
+🧭 Step 3 — app.component.html
 
-#### `YamlController.java`
+<mat-sidenav-container class="sidenav-container">
+  <mat-sidenav #sidenav mode="side" class="sidenav" fixedInViewport>
+    <mat-nav-list>
+      <mat-list-item (click)="selectedMenu = 'new'">New Travel Request</mat-list-item>
+    </mat-nav-list>
+  </mat-sidenav>
 
-```java
-package com.example.yamlui.controller;
+  <mat-sidenav-content>
+    <mat-toolbar color="primary">
+      <button mat-icon-button (click)="sidenav.toggle()">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <span>Travel Portal</span>
+    </mat-toolbar>
 
-import com.example.yamlui.model.Component;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.TypeDescription;
-import org.yaml.snakeyaml.constructor.Constructor;
-
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
-
-@Controller
-public class YamlController {
-
-    @GetMapping("/components")
-    public String getComponents(Model model) {
-        try {
-            Constructor constructor = new Constructor(ComponentsWrapper.class);
-            TypeDescription wrapperDesc = new TypeDescription(ComponentsWrapper.class);
-            wrapperDesc.addPropertyParameters("components", Component.class);
-            constructor.addTypeDescription(wrapperDesc);
-
-            Yaml yaml = new Yaml(constructor);
-            InputStream inputStream = new ClassPathResource("components.yaml").getInputStream();
-            ComponentsWrapper wrapper = yaml.load(inputStream);
-
-            model.addAttribute("components", wrapper.getComponents());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "components";
-    }
-
-    public static class ComponentsWrapper {
-        private List<Component> components;
-
-        public List<Component> getComponents() {
-            return components;
-        }
-
-        public void setComponents(List<Component> components) {
-            this.components = components;
-        }
-    }
-}
-```
-
----
-
-### 🖼️ Thymeleaf Template
-
-#### `components.html`
-
-```html
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title>Application Components</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-</head>
-<body>
-<div class="container mt-4">
-    <h2>Application Components</h2>
-    <ul class="nav nav-tabs" id="myTab" role="tablist">
-        <li class="nav-item" th:each="component, iterStat : ${components}">
-            <a class="nav-link" th:classappend="${iterStat.index == 0} ? 'active'" 
-               th:href="'#tab' + ${iterStat.index}" data-bs-toggle="tab" 
-               th:text="${component.applicationComponent}" role="tab"></a>
-        </li>
-    </ul>
-
-    <div class="tab-content mt-3">
-        <div class="tab-pane fade show" th:classappend="${iterStat.index == 0} ? 'active'" 
-             th:each="component, iterStat : ${components}" 
-             th:id="'tab' + ${iterStat.index}" role="tabpanel">
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr th:each="detail : ${component.details}">
-                        <td th:text="${detail.name}">Name</td>
-                        <td th:text="${detail.type}">Type</td>
-                        <td th:text="${detail.status}">Status</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+    <div class="content">
+      <app-travel-request *ngIf="selectedMenu === 'new'"></app-travel-request>
     </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>
+
+
+---
+
+🧭 Step 4 — app.component.ts
+
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent {
+  selectedMenu: string = '';
+}
+
+
+---
+
+🧾 Step 5 — travel-request.component.ts
+
+import { Component } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+
+@Component({
+  selector: 'app-travel-request',
+  templateUrl: './travel-request.component.html',
+  styleUrls: ['./travel-request.component.css']
+})
+export class TravelRequestComponent {
+  travelForm: FormGroup;
+  travelTypes = ['Domestic', 'International'];
+
+  constructor(private fb: FormBuilder) {
+    this.travelForm = this.fb.group({
+      uid: ['', Validators.required],
+      name: ['', Validators.required],
+      lineManager: ['', Validators.required],
+      travelType: ['', Validators.required],
+      approver1: ['', Validators.required],
+      approver2: ['']
+    });
+
+    this.travelForm.get('travelType')?.valueChanges.subscribe(type => {
+      if (type === 'International') {
+        this.travelForm.get('approver2')?.setValidators(Validators.required);
+      } else {
+        this.travelForm.get('approver2')?.clearValidators();
+      }
+      this.travelForm.get('approver2')?.updateValueAndValidity();
+    });
+  }
+
+  onSubmit() {
+    if (this.travelForm.valid) {
+      console.log('Travel Request Submitted:', this.travelForm.value);
+      alert('Travel request submitted successfully!');
+      this.travelForm.reset();
+    } else {
+      alert('Please fill all required fields!');
+    }
+  }
+}
+
+
+---
+
+🧾 Step 6 — travel-request.component.html
+
+<div class="form-container">
+  <h2>Add your travel details</h2>
+  <form [formGroup]="travelForm" (ngSubmit)="onSubmit()">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>UID</mat-label>
+      <input matInput formControlName="uid" placeholder="Enter UID">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" placeholder="Enter your name">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Line Manager Name</mat-label>
+      <input matInput formControlName="lineManager" placeholder="Enter manager name">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Travel Type</mat-label>
+      <mat-select formControlName="travelType">
+        <mat-option *ngFor="let type of travelTypes" [value]="type">{{ type }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Approver 1</mat-label>
+      <input matInput formControlName="approver1" placeholder="Enter approver 1 name">
+    </mat-form-field>
+
+    <mat-form-field *ngIf="travelForm.get('travelType')?.value === 'International'" appearance="outline" class="full-width">
+      <mat-label>Approver 2</mat-label>
+      <input matInput formControlName="approver2" placeholder="Enter approver 2 name">
+    </mat-form-field>
+
+    <button mat-raised-button color="primary" type="submit">Submit</button>
+  </form>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
-```
 
 ---
 
-### 🚀 Main Application
+🎨 Step 7 — Basic CSS (travel-request.component.css)
 
-#### `YamlUiApplication.java`
-
-```java
-package com.example.yamlui;
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
-public class YamlUiApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(YamlUiApplication.class, args);
-    }
+.form-container {
+  max-width: 500px;
+  margin: 20px auto;
+  background: #fafafa;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
-```
+
+.full-width {
+  width: 100%;
+  margin-bottom: 15px;
+}
+
 
 ---
 
-### ✅ To Run:
+🧭 Step 8 — app.component.css
 
-1. Place the YAML file in `src/main/resources/components.yaml`.
-2. Run the Spring Boot app.
-3. Visit: [http://localhost:8080/components](http://localhost:8080/components)
+.sidenav-container {
+  height: 100vh;
+}
+
+.sidenav {
+  width: 220px;
+}
+
+.content {
+  padding: 20px;
+}
+
 
 ---
 
-Would you like me to send this as a ZIP project or provide a GitHub-style README too?
+Would you like me to extend this next with an AG Grid table below the form showing submitted travel requests (like a small record list)?
+It’ll make the page feel more complete.
