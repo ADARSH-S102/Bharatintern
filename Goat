@@ -1,67 +1,51 @@
-Perfect ✅ — that’s a clear and fun Angular UI task!
-Let’s build this step-by-step using Angular + AG Grid + Material (for the side menu and form).
-
-We’ll create:
-
-A main layout with a sidenav (3-line menu)
-
-A menu item “New Travel Request”
-
-A form that dynamically shows Approver 2 only when Travel Type = International
-
-A placeholder AG Grid (optional, to show later records if you want)
-
+Got it ✅ — we’ll rename everything to travell (not travel or travel-request).
+Below is the complete Angular project setup with a white main page and green sidebar/menu, including an AG Grid UI structure and the Travell Form that shows “Approver 2” only when travel type = “International”.
 
 
 ---
 
-🧱 Step 1 — Install Required Packages
+🧩 1️⃣ Create Angular Project
 
-In your Angular project root, run:
+Run this in terminal:
 
-npm install ag-grid-community ag-grid-angular @angular/material @angular/forms
-
-Also import Angular Material’s modules in app.module.ts.
+ng new travell --routing --style=css
+cd travell
 
 
 ---
 
-🗂️ Step 2 — app.module.ts
+🧩 2️⃣ Install Dependencies
+
+npm install ag-grid-community ag-grid-angular
+npm install @angular/material @angular/animations
+
+
+---
+
+🧩 3️⃣ Update app.module.ts
+
+📂 src/app/app.module.ts
 
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatIconModule } from '@angular/material/icon';
-import { MatListModule } from '@angular/material/list';
-import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { AgGridModule } from 'ag-grid-angular';
+import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { TravelRequestComponent } from './travel-request/travel-request.component';
+import { TravellComponent } from './travell/travell.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    TravelRequestComponent
+    TravellComponent
   ],
   imports: [
     BrowserModule,
+    AppRoutingModule,
     BrowserAnimationsModule,
     FormsModule,
     ReactiveFormsModule,
-    MatSidenavModule,
-    MatToolbarModule,
-    MatIconModule,
-    MatListModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
     AgGridModule
   ],
   providers: [],
@@ -72,33 +56,38 @@ export class AppModule { }
 
 ---
 
-🧭 Step 3 — app.component.html
+🧩 4️⃣ Create Component
 
-<mat-sidenav-container class="sidenav-container">
-  <mat-sidenav #sidenav mode="side" class="sidenav" fixedInViewport>
-    <mat-nav-list>
-      <mat-list-item (click)="selectedMenu = 'new'">New Travel Request</mat-list-item>
-    </mat-nav-list>
-  </mat-sidenav>
-
-  <mat-sidenav-content>
-    <mat-toolbar color="primary">
-      <button mat-icon-button (click)="sidenav.toggle()">
-        <mat-icon>menu</mat-icon>
-      </button>
-      <span>Travel Portal</span>
-    </mat-toolbar>
-
-    <div class="content">
-      <app-travel-request *ngIf="selectedMenu === 'new'"></app-travel-request>
-    </div>
-  </mat-sidenav-content>
-</mat-sidenav-container>
+ng g c travell
 
 
 ---
 
-🧭 Step 4 — app.component.ts
+🧩 5️⃣ Update app-routing.module.ts
+
+📂 src/app/app-routing.module.ts
+
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+import { TravellComponent } from './travell/travell.component';
+
+const routes: Routes = [
+  { path: 'travell', component: TravellComponent },
+  { path: '', redirectTo: '/travell', pathMatch: 'full' }
+];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule]
+})
+export class AppRoutingModule { }
+
+
+---
+
+🧩 6️⃣ app.component.ts
+
+📂 src/app/app.component.ts
 
 import { Component } from '@angular/core';
 
@@ -108,28 +97,121 @@ import { Component } from '@angular/core';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  selectedMenu: string = '';
+  title = 'travell';
+  sidebarOpen = false;
+
+  toggleSidebar() {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
 }
 
 
 ---
 
-🧾 Step 5 — travel-request.component.ts
+🧩 7️⃣ app.component.html
+
+📂 src/app/app.component.html
+
+<div class="app-container">
+  <div class="topbar">
+    <button class="menu-btn" (click)="toggleSidebar()">☰</button>
+    <h2>Travell Portal</h2>
+  </div>
+
+  <div class="sidebar" [class.open]="sidebarOpen">
+    <a routerLink="/travell" (click)="toggleSidebar()">New Travell</a>
+  </div>
+
+  <div class="main-content">
+    <router-outlet></router-outlet>
+  </div>
+</div>
+
+
+---
+
+🧩 8️⃣ app.component.css
+
+📂 src/app/app.component.css
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: white;
+  font-family: Arial, sans-serif;
+}
+
+.topbar {
+  background-color: #2e7d32; /* green */
+  color: white;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+}
+
+.menu-btn {
+  font-size: 24px;
+  background: none;
+  border: none;
+  color: white;
+  margin-right: 15px;
+  cursor: pointer;
+}
+
+.sidebar {
+  position: fixed;
+  top: 50px;
+  left: -200px;
+  width: 200px;
+  height: 100%;
+  background-color: #388e3c;
+  padding-top: 20px;
+  transition: left 0.3s;
+}
+
+.sidebar.open {
+  left: 0;
+}
+
+.sidebar a {
+  display: block;
+  color: white;
+  padding: 10px 20px;
+  text-decoration: none;
+}
+
+.sidebar a:hover {
+  background-color: #2e7d32;
+}
+
+.main-content {
+  flex: 1;
+  padding: 30px;
+  background-color: white;
+}
+
+
+---
+
+🧩 9️⃣ travell.component.ts
+
+📂 src/app/travell/travell.component.ts
 
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 @Component({
-  selector: 'app-travel-request',
-  templateUrl: './travel-request.component.html',
-  styleUrls: ['./travel-request.component.css']
+  selector: 'app-travell',
+  templateUrl: './travell.component.html',
+  styleUrls: ['./travell.component.css']
 })
-export class TravelRequestComponent {
-  travelForm: FormGroup;
-  travelTypes = ['Domestic', 'International'];
+export class TravellComponent {
+  travellForm: FormGroup;
+  showApprover2 = false;
 
   constructor(private fb: FormBuilder) {
-    this.travelForm = this.fb.group({
+    this.travellForm = this.fb.group({
       uid: ['', Validators.required],
       name: ['', Validators.required],
       lineManager: ['', Validators.required],
@@ -137,24 +219,20 @@ export class TravelRequestComponent {
       approver1: ['', Validators.required],
       approver2: ['']
     });
+  }
 
-    this.travelForm.get('travelType')?.valueChanges.subscribe(type => {
-      if (type === 'International') {
-        this.travelForm.get('approver2')?.setValidators(Validators.required);
-      } else {
-        this.travelForm.get('approver2')?.clearValidators();
-      }
-      this.travelForm.get('approver2')?.updateValueAndValidity();
-    });
+  onTravelTypeChange(event: any) {
+    this.showApprover2 = event.target.value === 'international';
+    if (!this.showApprover2) {
+      this.travellForm.get('approver2')?.reset();
+    }
   }
 
   onSubmit() {
-    if (this.travelForm.valid) {
-      console.log('Travel Request Submitted:', this.travelForm.value);
-      alert('Travel request submitted successfully!');
-      this.travelForm.reset();
+    if (this.travellForm.valid) {
+      alert('Travel details submitted:\n' + JSON.stringify(this.travellForm.value, null, 2));
     } else {
-      alert('Please fill all required fields!');
+      alert('Please fill all required fields');
     }
   }
 }
@@ -162,85 +240,106 @@ export class TravelRequestComponent {
 
 ---
 
-🧾 Step 6 — travel-request.component.html
+🧩 🔟 travell.component.html
 
-<div class="form-container">
-  <h2>Add your travel details</h2>
-  <form [formGroup]="travelForm" (ngSubmit)="onSubmit()">
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>UID</mat-label>
-      <input matInput formControlName="uid" placeholder="Enter UID">
-    </mat-form-field>
+📂 src/app/travell/travell.component.html
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Name</mat-label>
-      <input matInput formControlName="name" placeholder="Enter your name">
-    </mat-form-field>
+<h2>Add Your Travell Details</h2>
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Line Manager Name</mat-label>
-      <input matInput formControlName="lineManager" placeholder="Enter manager name">
-    </mat-form-field>
+<form [formGroup]="travellForm" (ngSubmit)="onSubmit()" class="travell-form">
+  <label>UID:</label>
+  <input formControlName="uid" type="text" placeholder="Enter UID">
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Travel Type</mat-label>
-      <mat-select formControlName="travelType">
-        <mat-option *ngFor="let type of travelTypes" [value]="type">{{ type }}</mat-option>
-      </mat-select>
-    </mat-form-field>
+  <label>Name:</label>
+  <input formControlName="name" type="text" placeholder="Enter Name">
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Approver 1</mat-label>
-      <input matInput formControlName="approver1" placeholder="Enter approver 1 name">
-    </mat-form-field>
+  <label>Line Manager Name:</label>
+  <input formControlName="lineManager" type="text" placeholder="Enter Line Manager">
 
-    <mat-form-field *ngIf="travelForm.get('travelType')?.value === 'International'" appearance="outline" class="full-width">
-      <mat-label>Approver 2</mat-label>
-      <input matInput formControlName="approver2" placeholder="Enter approver 2 name">
-    </mat-form-field>
+  <label>Travel Type:</label>
+  <select formControlName="travelType" (change)="onTravelTypeChange($event)">
+    <option value="">Select</option>
+    <option value="domestic">Domestic</option>
+    <option value="international">International</option>
+  </select>
 
-    <button mat-raised-button color="primary" type="submit">Submit</button>
-  </form>
-</div>
+  <label>Approver 1:</label>
+  <input formControlName="approver1" type="text" placeholder="Enter Approver 1">
+
+  <div *ngIf="showApprover2">
+    <label>Approver 2:</label>
+    <input formControlName="approver2" type="text" placeholder="Enter Approver 2">
+  </div>
+
+  <button type="submit">Submit</button>
+</form>
 
 
 ---
 
-🎨 Step 7 — Basic CSS (travel-request.component.css)
+🧩 11️⃣ travell.component.css
 
-.form-container {
-  max-width: 500px;
-  margin: 20px auto;
-  background: #fafafa;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
+📂 src/app/travell/travell.component.css
 
-.full-width {
-  width: 100%;
-  margin-bottom: 15px;
-}
-
-
----
-
-🧭 Step 8 — app.component.css
-
-.sidenav-container {
-  height: 100vh;
-}
-
-.sidenav {
-  width: 220px;
-}
-
-.content {
+.travell-form {
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8fff8;
+  border: 1px solid #c8e6c9;
+  border-radius: 8px;
   padding: 20px;
 }
 
+label {
+  margin-top: 10px;
+  color: #2e7d32;
+  font-weight: bold;
+}
+
+input, select {
+  padding: 8px;
+  border: 1px solid #a5d6a7;
+  border-radius: 4px;
+}
+
+button {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #1b5e20;
+}
+
 
 ---
 
-Would you like me to extend this next with an AG Grid table below the form showing submitted travel requests (like a small record list)?
-It’ll make the page feel more complete.
+🧩 12️⃣ Run the Project
+
+ng serve
+
+or equivalently:
+
+npm start
+
+Then open 👉 http://localhost:4200
+
+
+---
+
+This setup gives you: ✅ White main page
+✅ Green sidebar and header
+✅ Responsive side menu
+✅ Travell form (Approver 2 shown only for International)
+✅ Clean green/white theme
+
+
+---
+
+Would you like me to also add a small AG Grid table below the form to show submitted entries dynamically (like a mini summary)?
