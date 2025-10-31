@@ -1,3 +1,652 @@
+Perfect 🔥 — now we’re taking the **Travell Portal** to a professional, visually rich, and functional level.
+
+Let’s summarize and then I’ll give you the **complete upgraded code** for all the files.
+
+---
+
+## ✨ What This Version Will Do
+
+✅ **Home Page (Welcome Page)**
+
+* Beautiful gradient background
+* Main heading: **“Welcome to Travell Portal”**
+* Two interactive cards below:
+
+  1. **Approvals**
+  2. **Travel Details**
+* When you click **Travel Details**, it opens a list showing all travel requests submitted so far.
+* When you click **Approvals**, it just shows a nice placeholder (“No approvals yet”) for now.
+
+✅ **New Travell Form**
+
+* Centered elegant form with **advanced CSS**
+* Validations (required fields, UID numeric pattern, name min length, etc.)
+* On submit → details get stored in a shared **in-memory service**
+* Redirects automatically back to **Travel Details** page to show the submitted record
+
+✅ **Next-level styling**
+
+* Smooth transitions
+* Shadow effects
+* Hover animation on cards
+* Consistent white + emerald green theme
+* Rounded UI cards
+
+---
+
+## 🟩 Folder Structure
+
+```
+src/app/
+├── app.ts
+├── app.html
+├── app.css
+├── app.route.ts
+├── app.config.ts
+├── welcome/
+│   ├── welcome.ts
+│   ├── welcome.html
+│   └── welcome.css
+├── travell/
+│   ├── travell.ts
+│   ├── travell.html
+│   └── travell.css
+├── travel-details/
+│   ├── travel-details.ts
+│   ├── travel-details.html
+│   └── travel-details.css
+├── approvals/
+│   ├── approvals.ts
+│   ├── approvals.html
+│   └── approvals.css
+└── services/
+    └── travel.service.ts
+```
+
+---
+
+## 🟩 1️⃣ `travel.service.ts`
+
+```ts
+import { Injectable } from '@angular/core';
+
+export interface TravelRequest {
+  uid: string;
+  name: string;
+  lineManager: string;
+  travelType: string;
+  approver1: string;
+  approver2?: string;
+}
+
+@Injectable({ providedIn: 'root' })
+export class TravelService {
+  private travelRequests: TravelRequest[] = [];
+
+  addTravel(request: TravelRequest) {
+    this.travelRequests.push(request);
+  }
+
+  getAllTravels(): TravelRequest[] {
+    return this.travelRequests;
+  }
+}
+```
+
+---
+
+## 🟩 2️⃣ `app.route.ts`
+
+```ts
+import { Routes } from '@angular/router';
+import { WelcomeComponent } from './welcome/welcome';
+import { Travell } from './travell/travell';
+import { TravelDetailsComponent } from './travel-details/travel-details';
+import { ApprovalsComponent } from './approvals/approvals';
+
+export const routes: Routes = [
+  { path: '', component: WelcomeComponent },
+  { path: 'travell', component: Travell },
+  { path: 'travel-details', component: TravelDetailsComponent },
+  { path: 'approvals', component: ApprovalsComponent }
+];
+```
+
+---
+
+## 🟩 3️⃣ `app.ts`
+
+```ts
+import { Component } from '@angular/core';
+import { RouterOutlet, RouterLink } from '@angular/router';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [RouterOutlet, RouterLink],
+  templateUrl: './app.html',
+  styleUrl: './app.css'
+})
+export class App {
+  sidebarOpen = false;
+
+  toggleSidebar() {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+}
+```
+
+---
+
+## 🟩 4️⃣ `app.html`
+
+```html
+<div class="app-container">
+  <div class="topbar">
+    <button class="menu-btn" (click)="toggleSidebar()">☰</button>
+    <h2>Travell Portal</h2>
+  </div>
+
+  <div class="sidebar" [class.open]="sidebarOpen">
+    <a routerLink="/" (click)="toggleSidebar()">🏠 Home</a>
+    <a routerLink="/travell" (click)="toggleSidebar()">🛄 New Travell</a>
+  </div>
+
+  <div class="main-content">
+    <router-outlet></router-outlet>
+  </div>
+</div>
+```
+
+---
+
+## 🟩 5️⃣ `app.css`
+
+```css
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #ffffff;
+  font-family: "Poppins", Arial, sans-serif;
+}
+
+.topbar {
+  background: linear-gradient(90deg, #004d40, #26a69a);
+  color: white;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+
+.menu-btn {
+  font-size: 26px;
+  background: none;
+  border: none;
+  color: white;
+  margin-right: 15px;
+  cursor: pointer;
+}
+
+.sidebar {
+  position: fixed;
+  top: 55px;
+  left: -230px;
+  width: 230px;
+  height: 100%;
+  background: linear-gradient(180deg, #00796b, #004d40);
+  padding-top: 30px;
+  transition: left 0.3s ease;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.25);
+}
+
+.sidebar.open {
+  left: 0;
+}
+
+.sidebar a {
+  display: block;
+  color: white;
+  font-weight: 500;
+  font-size: 16px;
+  padding: 12px 25px;
+  text-decoration: none;
+  border-radius: 4px;
+  margin: 5px 10px;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.sidebar a:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: translateX(5px);
+}
+
+.main-content {
+  flex: 1;
+  padding: 40px;
+  background: #f5fdfc;
+}
+```
+
+---
+
+## 🟩 6️⃣ `welcome.ts`
+
+```ts
+import { Component } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-welcome',
+  standalone: true,
+  imports: [CommonModule, RouterLink],
+  templateUrl: './welcome.html',
+  styleUrl: './welcome.css'
+})
+export class WelcomeComponent {
+  constructor(private router: Router) {}
+
+  goTo(path: string) {
+    this.router.navigate([path]);
+  }
+}
+```
+
+---
+
+## 🟩 7️⃣ `welcome.html`
+
+```html
+<div class="welcome-container">
+  <h1>Welcome to Travell Portal</h1>
+  <p>Manage your travel requests and approvals effortlessly.</p>
+
+  <div class="card-container">
+    <div class="option-card" (click)="goTo('approvals')">
+      <h2>🗂️ Approvals</h2>
+      <p>View and manage pending travel approvals.</p>
+    </div>
+
+    <div class="option-card" (click)="goTo('travel-details')">
+      <h2>✈️ Travel Details</h2>
+      <p>Check your submitted travel requests.</p>
+    </div>
+  </div>
+</div>
+```
+
+---
+
+## 🟩 8️⃣ `welcome.css`
+
+```css
+.welcome-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 85vh;
+  text-align: center;
+  background: linear-gradient(135deg, #e0f2f1, #ffffff);
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 0 25px rgba(0, 150, 136, 0.15);
+}
+
+h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #004d40;
+}
+
+p {
+  color: #00695c;
+  font-size: 1.2rem;
+  margin-bottom: 30px;
+}
+
+.card-container {
+  display: flex;
+  gap: 40px;
+  margin-top: 20px;
+}
+
+.option-card {
+  width: 260px;
+  height: 160px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 77, 64, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  padding: 25px;
+}
+
+.option-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 10px 30px rgba(0, 150, 136, 0.3);
+}
+
+.option-card h2 {
+  color: #004d40;
+  margin-bottom: 10px;
+}
+
+.option-card p {
+  color: #00796b;
+}
+```
+
+---
+
+## 🟩 9️⃣ `travell.ts`
+
+```ts
+import { Component } from '@angular/core';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { TravelService } from '../services/travel.service';
+
+@Component({
+  selector: 'app-travell',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './travell.html',
+  styleUrl: './travell.css'
+})
+export class Travell {
+  travellForm: FormGroup;
+  showApprover2 = false;
+
+  constructor(private fb: FormBuilder, private router: Router, private travelService: TravelService) {
+    this.travellForm = this.fb.group({
+      uid: ['', [Validators.required, Validators.pattern('^[0-9]+$')]],
+      name: ['', [Validators.required, Validators.minLength(3)]],
+      lineManager: ['', Validators.required],
+      travelType: ['', Validators.required],
+      approver1: ['', Validators.required],
+      approver2: ['']
+    });
+  }
+
+  onTravelTypeChange(event: any) {
+    this.showApprover2 = event.target.value === 'international';
+    if (!this.showApprover2) {
+      this.travellForm.get('approver2')?.reset();
+    }
+  }
+
+  onSubmit() {
+    if (this.travellForm.valid) {
+      this.travelService.addTravel(this.travellForm.value);
+      this.travellForm.reset();
+      alert('Travel request submitted successfully!');
+      this.router.navigate(['/travel-details']);
+    } else {
+      alert('Please fill in all required fields correctly.');
+    }
+  }
+}
+```
+
+---
+
+## 🟩 🔟 `travell.html`
+
+*(Same as before, no change except validation message support)*
+
+```html
+<div class="travell-container">
+  <form [formGroup]="travellForm" (ngSubmit)="onSubmit()" class="travell-form">
+    <h1>Add Your Travell Details</h1>
+
+    <div class="form-row">
+      <label>UID</label>
+      <input formControlName="uid" placeholder="Enter UID">
+      <small *ngIf="travellForm.get('uid')?.invalid && travellForm.get('uid')?.touched">
+        UID must be numeric and required
+      </small>
+    </div>
+
+    <div class="form-row">
+      <label>Name</label>
+      <input formControlName="name" placeholder="Enter Name">
+      <small *ngIf="travellForm.get('name')?.invalid && travellForm.get('name')?.touched">
+        Name is required (min 3 characters)
+      </small>
+    </div>
+
+    <div class="form-row">
+      <label>Line Manager</label>
+      <input formControlName="lineManager" placeholder="Enter Line Manager">
+    </div>
+
+    <div class="form-row">
+      <label>Travel Type</label>
+      <select formControlName="travelType" (change)="onTravelTypeChange($event)">
+        <option value="">Select Type</option>
+        <option value="domestic">Domestic</option>
+        <option value="international">International</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label>Approver 1</label>
+      <input formControlName="approver1" placeholder="Enter Approver 1">
+    </div>
+
+    <div class="form-row" *ngIf="showApprover2">
+      <label>Approver 2</label>
+      <input formControlName="approver2" placeholder="Enter Approver 2">
+    </div>
+
+    <button type="submit">Submit Request</button>
+  </form>
+</div>
+```
+
+---
+
+## 🟩 11️⃣ `travel-details.ts`
+
+```ts
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { TravelService, TravelRequest } from '../services/travel.service';
+
+@Component({
+  selector: 'app-travel-details',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './travel-details.html',
+  styleUrl: './travel-details.css'
+})
+export class TravelDetailsComponent {
+  travelList: TravelRequest[] = [];
+
+  constructor(private travelService: TravelService) {
+    this.travelList = this.travelService.getAllTravels();
+  }
+}
+```
+
+---
+
+## 🟩 12️⃣ `travel-details.html`
+
+```html
+<div class="travel-details-container">
+  <h1>Your Travel Requests</h1>
+
+  <table *ngIf="travelList.length > 0; else noData">
+    <thead>
+      <tr>
+        <th>UID</th>
+        <th>Name</th>
+        <th>Manager</th>
+        <th>Type</th>
+        <th>Approver 1</th>
+        <th>Approver 2</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let t of travelList">
+        <td>{{ t.uid }}</td>
+        <td>{{ t.name }}</td>
+        <td>{{ t.lineManager }}</td>
+        <td>{{ t.travelType }}</td>
+        <td>{{ t.approver1 }}</td>
+        <td>{{ t.approver2 || '-' }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ng-template #noData>
+    <p>No travel requests submitted yet.</p>
+  </ng-template>
+</div>
+```
+
+---
+
+## 🟩 13️⃣ `travel-details.css`
+
+```css
+.travel-details-container {
+  padding: 40px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 150, 136, 0.25);
+}
+
+h1 {
+  text-align: center;
+  color: #004d40;
+  margin-bottom: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  background: #00796b;
+  color: white;
+  padding: 12px;
+  text-align: left;
+  border-radius: 6px 6px 0 0;
+}
+
+td {
+  border-bottom: 1px solid #b2dfdb;
+  padding: 10px;
+}
+
+tr:hover {
+  background: #e0f2f1;
+  transition: 0.3s;
+}
+
+p {
+  text-align: center;
+  color: #00796b;
+  font-size: 1.2rem;
+}
+```
+
+---
+
+## 🟩 14️⃣ `approvals.ts`
+
+```ts
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-approvals',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './approvals.html',
+  styleUrl: './approvals.css'
+})
+export class ApprovalsComponent { }
+```
+
+---
+
+## 🟩 15️⃣ `approvals.html`
+
+```html
+<div class="approvals-container">
+  <h1>Pending Approvals</h1>
+  <p>No approvals pending at the moment.</p>
+</div>
+```
+
+---
+
+## 🟩 16️⃣ `approvals.css`
+
+```css
+.approvals-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 80vh;
+  background: linear-gradient(135deg, #e0f2f1, #ffffff);
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 150, 136, 0.25);
+}
+
+h1 {
+  color: #004d40;
+  font-size: 2rem;
+}
+
+p {
+  color: #00796b;
+  font-size: 1.2rem;
+  margin-top: 10px;
+}
+```
+
+---
+
+Would you like me to make the **Travel Details page** have a floating “+ New Travel” button at the bottom-right (to directly open the form again)? It would make navigation super smooth like modern apps.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect 👍 — thanks for clarifying.
 
 You said your actual files are named like this (exactly):
