@@ -1,3 +1,207 @@
+Perfect 👍 — you’ve shared exactly the right set of Angular compile-time issues.
+All of these are **common when using standalone components**, and we can fix them cleanly.
+
+Let’s fix *each issue one by one* (I’ll also give you corrected code for each relevant file).
+
+---
+
+## 🟩 1️⃣  Error:
+
+> **Module app.routes declares routes locally but is not exported**
+
+### ✅ Fix:
+
+Your `app.route.ts` should **export** a `Routes` array **and be imported** into `app.config.ts` properly.
+
+Here’s what both should look like 👇
+
+#### ✅ `src/app/app.route.ts`
+
+```typescript
+import { Routes } from '@angular/router';
+import { TravellComponent } from './travell/travell';
+import { WelcomeComponent } from './welcome/welcome';
+import { TravelDetailsComponent } from './travel-details/travel-details';
+import { ApprovalsComponent } from './approvals/approvals';
+
+export const appRoutes: Routes = [
+  { path: '', component: WelcomeComponent },
+  { path: 'new-travel', component: TravellComponent },
+  { path: 'travel-details', component: TravelDetailsComponent },
+  { path: 'approvals', component: ApprovalsComponent },
+];
+```
+
+#### ✅ `src/app/app.config.ts`
+
+```typescript
+import { ApplicationConfig } from '@angular/core';
+import { provideRouter } from '@angular/router';
+import { appRoutes } from './app.route';
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideRouter(appRoutes)]
+};
+```
+
+✅ This fixes the routing export/import mismatch.
+
+---
+
+## 🟩 2️⃣  Error:
+
+> **Router link is not used within the template of welcome component**
+
+This is just a *lint warning*, not a blocking error.
+It appears when you imported `RouterLink` but didn’t use it in the template.
+We’ll fix it by actually adding navigation buttons to Welcome.
+
+#### ✅ `src/app/welcome/welcome.html`
+
+```html
+<div class="welcome-container">
+  <h1>Welcome to Travel Portal</h1>
+  <div class="options">
+    <button routerLink="/travel-details">🧾 Travel Details</button>
+    <button routerLink="/approvals">✅ Approvals</button>
+  </div>
+</div>
+```
+
+#### ✅ `src/app/welcome/welcome.ts`
+
+```typescript
+import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-welcome',
+  standalone: true,
+  imports: [RouterLink, CommonModule],
+  templateUrl: './welcome.html',
+  styleUrls: ['./welcome.css']
+})
+export class WelcomeComponent {}
+```
+
+✅ This removes the warning and gives you clickable buttons.
+
+---
+
+## 🟩 3️⃣  Error:
+
+> **No directive found with export as ngForm**
+> **Can’t bind to ngModel since it isn’t a known property of input**
+
+✅ These mean the `FormsModule` was not imported in your standalone component.
+
+Fix it by importing `FormsModule` in your **travell.ts**:
+
+#### ✅ `src/app/travell/travell.ts`
+
+```typescript
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TravelService } from '../services/travel.service';
+
+@Component({
+  selector: 'app-travell',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './travell.html',
+  styleUrls: ['./travell.css']
+})
+export class TravellComponent {
+  travel = {
+    uid: '',
+    name: '',
+    lineManager: '',
+    travelType: '',
+    approver1: '',
+    approver2: ''
+  };
+
+  constructor(private travelService: TravelService) {}
+
+  onSubmit() {
+    this.travelService.addTravelDetail({ ...this.travel });
+    alert('Travel request submitted successfully!');
+    this.travel = { uid: '', name: '', lineManager: '', travelType: '', approver1: '', approver2: '' };
+  }
+}
+```
+
+✅ This fixes `ngForm` and `ngModel` errors *and* defines the missing `travel` object.
+
+---
+
+## 🟩 4️⃣  Error:
+
+> **Module ./app/app has no exported member App**
+
+This means your test file (`app.spec.ts`) or `main.ts` is looking for `App` instead of `AppComponent`.
+
+We already fixed `app.spec.ts` earlier ✅ — but now ensure **`main.ts`** (or `main.server.ts`) is also corrected.
+
+#### ✅ `src/main.ts`
+
+```typescript
+import { bootstrapApplication } from '@angular/platform-browser';
+import { AppComponent } from './app/app';
+import { appConfig } from './app/app.config';
+
+bootstrapApplication(AppComponent, appConfig)
+  .catch(err => console.error(err));
+```
+
+✅ This matches your `AppComponent` export and will run perfectly.
+
+---
+
+## ✅ Summary of Fixes
+
+| Error                   | Root Cause                            | Fixed In                     |
+| ----------------------- | ------------------------------------- | ---------------------------- |
+| app.routes not exported | routes not exported from app.route.ts | app.route.ts / app.config.ts |
+| routerLink warning      | imported RouterLink but unused        | welcome.ts / welcome.html    |
+| ngModel / ngForm errors | FormsModule missing                   | travell.ts                   |
+| travel not found        | variable undefined                    | travell.ts                   |
+| “App” not exported      | wrong import in test/main             | app.spec.ts + main.ts        |
+
+---
+
+Would you like me to now send the **final `travel-details` component code** so submitted travel records appear in a neat AG Grid table with green theme?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect ✅ — let’s make this polished and professional:
 
 You’ll have a **home page** shown **initially** (with “Welcome to Travel Portal” + “Approvals” + “Travel Details” buttons),
