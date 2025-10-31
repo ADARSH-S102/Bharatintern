@@ -1,3 +1,296 @@
+Perfect ✅ — let’s make this polished and professional:
+
+You’ll have a **home page** shown **initially** (with “Welcome to Travel Portal” + “Approvals” + “Travel Details” buttons),
+and when you click **New Travel** from the **side menu**, it will open a **centered, elegant form**.
+
+I’ll give you **complete updated code** for:
+
+* `app.ts`, `app.html`, `app.css`, `app.route.ts` (for routing logic and sidebar)
+* `travell.html` and `travell.css` (beautiful centered form)
+
+You already have the `TravelService` for storing and retrieving records.
+
+---
+
+## 🟩 1. app.route.ts
+
+```typescript
+import { Routes } from '@angular/router';
+import { TravellComponent } from './travell/travell';
+import { WelcomeComponent } from './welcome/welcome';
+import { TravelDetailsComponent } from './travel-details/travel-details';
+import { ApprovalsComponent } from './approvals/approvals';
+
+export const routes: Routes = [
+  { path: '', component: WelcomeComponent },
+  { path: 'new-travel', component: TravellComponent },
+  { path: 'travel-details', component: TravelDetailsComponent },
+  { path: 'approvals', component: ApprovalsComponent },
+];
+```
+
+---
+
+## 🟩 2. app.ts
+
+```typescript
+import { Component } from '@angular/core';
+import { RouterOutlet, Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [RouterOutlet, CommonModule],
+  templateUrl: './app.html',
+  styleUrls: ['./app.css']
+})
+export class AppComponent {
+  menuOpen = false;
+
+  constructor(private router: Router) {}
+
+  toggleMenu() {
+    this.menuOpen = !this.menuOpen;
+  }
+
+  navigateTo(path: string) {
+    this.menuOpen = false;
+    this.router.navigate([path]);
+  }
+}
+```
+
+---
+
+## 🟩 3. app.html
+
+```html
+<div class="container">
+  <div class="header">
+    <div class="menu-icon" (click)="toggleMenu()">☰</div>
+    <h1>Travel Portal</h1>
+  </div>
+
+  <div class="side-menu" [class.open]="menuOpen">
+    <ul>
+      <li (click)="navigateTo('')">🏠 Home</li>
+      <li (click)="navigateTo('new-travel')">✈️ New Travel</li>
+      <li (click)="navigateTo('travel-details')">🧾 Travel Details</li>
+      <li (click)="navigateTo('approvals')">✅ Approvals</li>
+    </ul>
+  </div>
+
+  <div class="content">
+    <router-outlet></router-outlet>
+  </div>
+</div>
+```
+
+---
+
+## 🟩 4. app.css
+
+```css
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f9fdf9;
+  font-family: "Poppins", sans-serif;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  background-color: #006400;
+  color: white;
+  padding: 10px 20px;
+}
+
+.menu-icon {
+  font-size: 26px;
+  margin-right: 20px;
+  cursor: pointer;
+}
+
+.side-menu {
+  position: fixed;
+  top: 60px;
+  left: -230px;
+  width: 230px;
+  height: 100%;
+  background-color: #017a38;
+  color: white;
+  padding-top: 30px;
+  transition: left 0.3s ease;
+  z-index: 999;
+}
+
+.side-menu.open {
+  left: 0;
+}
+
+.side-menu ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.side-menu li {
+  padding: 15px 20px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.3s;
+}
+
+.side-menu li:hover {
+  background-color: #04a94e;
+}
+
+.content {
+  flex-grow: 1;
+  padding: 30px;
+}
+```
+
+---
+
+## 🟩 5. travell.html
+
+```html
+<div class="travel-form-container">
+  <h2>Add Your Travel Details</h2>
+
+  <form (ngSubmit)="onSubmit()" #travelForm="ngForm">
+    <div class="form-group">
+      <label>UID</label>
+      <input type="text" name="uid" [(ngModel)]="travel.uid" required />
+    </div>
+
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" name="name" [(ngModel)]="travel.name" required />
+    </div>
+
+    <div class="form-group">
+      <label>Line Manager Name</label>
+      <input type="text" name="lineManager" [(ngModel)]="travel.lineManager" required />
+    </div>
+
+    <div class="form-group">
+      <label>Travel Type</label>
+      <select name="travelType" [(ngModel)]="travel.travelType" required>
+        <option value="Domestic">Domestic</option>
+        <option value="International">International</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Approver 1</label>
+      <input type="text" name="approver1" [(ngModel)]="travel.approver1" required />
+    </div>
+
+    <div class="form-group" *ngIf="travel.travelType === 'International'">
+      <label>Approver 2</label>
+      <input type="text" name="approver2" [(ngModel)]="travel.approver2" />
+    </div>
+
+    <button type="submit" [disabled]="!travelForm.valid">Submit</button>
+  </form>
+</div>
+```
+
+---
+
+## 🟩 6. travell.css
+
+```css
+.travel-form-container {
+  max-width: 600px;
+  margin: 60px auto;
+  background: #ffffff;
+  border-radius: 15px;
+  box-shadow: 0px 6px 20px rgba(0, 100, 0, 0.2);
+  padding: 40px 50px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.travel-form-container:hover {
+  transform: scale(1.02);
+}
+
+.travel-form-container h2 {
+  margin-bottom: 25px;
+  color: #006400;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  outline: none;
+  font-size: 15px;
+  transition: border-color 0.3s;
+}
+
+input:focus, select:focus {
+  border-color: #04a94e;
+}
+
+button {
+  margin-top: 10px;
+  background-color: #006400;
+  color: white;
+  border: none;
+  padding: 12px 40px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.3s ease;
+}
+
+button:hover {
+  background-color: #04a94e;
+}
+```
+
+---
+
+✅ **Result:**
+
+* When you open the app → you see a **Welcome Home Page**.
+* Click **☰ → “New Travel”** → shows the beautiful **centered green-and-white form**.
+* Form is validated and looks professional.
+* It uses your exact file names (no `.component` suffix).
+
+---
+
+Would you like me to now send the **Welcome Page** and **Travel Details Page** code next (with CSS and routing integrated)?
+
+
+
+
+
+
+
+
+
 Perfect 🔥 — now we’re taking the **Travell Portal** to a professional, visually rich, and functional level.
 
 Let’s summarize and then I’ll give you the **complete upgraded code** for all the files.
