@@ -1,29 +1,65 @@
-Perfect — that `TS2554: Expected 0 arguments but got 1` error usually means that in your form code (in `travell.ts`), something like this is happening:
+Got it ✅ — thank you for the reminder.
+You already have:
 
-```ts
-new FormGroup(form)
-```
+* a **`travel-details`** module/component,
+* a **`travel.service.ts`**,
+* and the rest of the structure we built earlier (`travell`, `welcome`, `approvals`, etc.).
 
-or
-
-```ts
-this.fb.group(form)
-```
-
-but Angular is expecting **no arguments** or **a different signature**.
-
-Let’s fix it properly 👇
+Let’s **not recreate** those — we’ll just **update** the existing ones so everything connects perfectly, and the new popup + validation + table logic fits your current setup.
 
 ---
 
-### ✅ Fix for `travell.ts`
+## 🟩 What we’ll do
 
-Make sure your **Travell component** looks like this (clean, validated, and working):
+1. Keep your existing `travel.service.ts` (we’ll just enhance it slightly).
+2. Update your existing `travell.ts` and `travel-details.ts` so:
+
+   * validation and success messages show as popups,
+   * submitted form data appears in the Travel Details page.
+
+---
+
+## 🟩 Step 1: Install SweetAlert2 (for popups)
+
+Run this once in your terminal:
+
+```bash
+npm install sweetalert2
+```
+
+---
+
+## 🟩 Step 2: Update your existing **`travel.service.ts`**
+
+```typescript
+import { Injectable } from '@angular/core';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class TravelService {
+  private travelList: any[] = [];
+
+  addTravel(detail: any) {
+    this.travelList.push(detail);
+  }
+
+  getTravels() {
+    return this.travelList;
+  }
+}
+```
+
+---
+
+## 🟩 Step 3: Update your existing **`travell.ts`**
 
 ```typescript
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import Swal from 'sweetalert2';
+import { TravelService } from '../travel.service';
 
 @Component({
   selector: 'app-travell',
@@ -36,8 +72,7 @@ export class TravellComponent {
   travelForm: FormGroup;
   isInternational = false;
 
-  constructor(private fb: FormBuilder) {
-    // ✅ Correct form group creation
+  constructor(private fb: FormBuilder, private travelService: TravelService) {
     this.travelForm = this.fb.group({
       uid: ['', Validators.required],
       name: ['', Validators.required],
@@ -61,142 +96,151 @@ export class TravellComponent {
   }
 
   onSubmit() {
-    if (this.travelForm.valid) {
-      alert('Travel details submitted successfully!');
-      console.log(this.travelForm.value);
-    } else {
-      alert('Please fill all required fields.');
+    if (this.travelForm.invalid) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Incomplete Form',
+        text: 'Please fill all required fields!',
+        confirmButtonColor: '#0a7c2e'
+      });
+      return;
     }
+
+    this.travelService.addTravel(this.travelForm.value);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Travel Submitted!',
+      text: 'Your travel request was successfully recorded.',
+      confirmButtonColor: '#0a7c2e'
+    });
+
+    this.travelForm.reset();
+    this.isInternational = false;
   }
 }
 ```
 
 ---
 
-### ✅ `travell.html`
+## 🟩 Step 4: Update your existing **`travel-details.ts`**
 
-Here’s the matching HTML (modern, responsive, and styled):
+```typescript
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { TravelService } from '../travel.service';
 
-```html
-<div class="form-container">
-  <h2>Add Your Travel Details</h2>
+@Component({
+  selector: 'app-travel-details',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './travel-details.html',
+  styleUrls: ['./travel-details.css']
+})
+export class TravelDetailsComponent implements OnInit {
+  travelList: any[] = [];
 
-  <form [formGroup]="travelForm" (ngSubmit)="onSubmit()" novalidate>
-    <div class="form-field">
-      <label>UID</label>
-      <input type="text" formControlName="uid" />
-    </div>
+  constructor(private travelService: TravelService) {}
 
-    <div class="form-field">
-      <label>Name</label>
-      <input type="text" formControlName="name" />
-    </div>
-
-    <div class="form-field">
-      <label>Line Manager Name</label>
-      <input type="text" formControlName="lineManager" />
-    </div>
-
-    <div class="form-field">
-      <label>Travel Type</label>
-      <select formControlName="travelType" (change)="onTravelTypeChange()">
-        <option value="">-- Select --</option>
-        <option value="domestic">Domestic</option>
-        <option value="international">International</option>
-      </select>
-    </div>
-
-    <div class="form-field">
-      <label>Approver 1</label>
-      <input type="text" formControlName="approver1" />
-    </div>
-
-    <div class="form-field" *ngIf="isInternational">
-      <label>Approver 2</label>
-      <input type="text" formControlName="approver2" />
-    </div>
-
-    <button type="submit" class="submit-btn">Submit</button>
-  </form>
-</div>
+  ngOnInit() {
+    this.travelList = this.travelService.getTravels();
+  }
+}
 ```
 
 ---
 
-### ✅ `travell.css`
+## 🟩 Step 5: Your existing **`travel-details.html`**
 
-Here’s the enhanced CSS for attractive, centered form:
+```html
+<div class="table-container" *ngIf="travelList.length > 0; else noData">
+  <h2>Travel Details</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>UID</th>
+        <th>Name</th>
+        <th>Line Manager</th>
+        <th>Travel Type</th>
+        <th>Approver 1</th>
+        <th>Approver 2</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let t of travelList">
+        <td>{{ t.uid }}</td>
+        <td>{{ t.name }}</td>
+        <td>{{ t.lineManager }}</td>
+        <td>{{ t.travelType }}</td>
+        <td>{{ t.approver1 }}</td>
+        <td>{{ t.approver2 || '-' }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<ng-template #noData>
+  <p class="no-data">No travel requests yet.</p>
+</ng-template>
+```
+
+---
+
+## 🟩 Step 6: Travel Details CSS
 
 ```css
-.form-container {
-  background-color: #ffffff;
-  border-radius: 12px;
+.table-container {
+  margin: 60px auto;
+  background-color: white;
+  border-radius: 10px;
   box-shadow: 0 8px 20px rgba(0, 128, 0, 0.2);
-  max-width: 500px;
-  margin: 80px auto;
-  padding: 40px;
-  text-align: center;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 30px;
+  max-width: 900px;
+  font-family: 'Segoe UI', sans-serif;
 }
 
 h2 {
   color: #0a7c2e;
-  font-size: 24px;
-  margin-bottom: 30px;
-}
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  text-align: left;
   margin-bottom: 20px;
 }
 
-label {
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: #064d1d;
+table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-input, select {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 15px;
-  transition: all 0.3s ease;
-}
-
-input:focus, select:focus {
-  border-color: #0a7c2e;
-  box-shadow: 0 0 5px #0a7c2e;
-}
-
-.submit-btn {
+th {
   background-color: #0a7c2e;
   color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s ease, transform 0.2s;
+  padding: 10px;
 }
 
-.submit-btn:hover {
-  background-color: #13a045;
-  transform: scale(1.05);
+td {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+tr:hover {
+  background-color: #e8f8ed;
+}
+
+.no-data {
+  text-align: center;
+  color: gray;
+  font-size: 18px;
 }
 ```
 
 ---
 
-✅ **This version fixes the `TS2554` error**,
-✅ **adds full required-field validations**,
-✅ **and makes the form stylish, large, and centered.**
+✅ **This version keeps your existing structure**
+✅ Adds stylish popups for validation & success
+✅ Automatically shows submitted data in the Travel Details page
 
 ---
 
-Would you like me to now send the updated **Home page (welcome)** code with the hoverable “Travel Details” and “Approvals” buttons as you described?
+Would you like me to now send the **updated Home Page (`welcome`)** code with the two beautiful hover buttons (“Travel Details” and “Approvals”) — styled to look professional and clickable?
+
 
 
 
