@@ -1,178 +1,341 @@
-Perfect 👍 — you’ve shared exactly the right set of Angular compile-time issues.
-All of these are **common when using standalone components**, and we can fix them cleanly.
+Perfect ✅ — you want:
 
-Let’s fix *each issue one by one* (I’ll also give you corrected code for each relevant file).
+1. **Strong validations** (all fields strictly required).
+2. **Beautiful, big, animated home page buttons** that show hover messages like “Click here to know your travel details”.
+3. **Side menu simplified** (no Travel Details or Approvals there).
 
----
-
-## 🟩 1️⃣  Error:
-
-> **Module app.routes declares routes locally but is not exported**
-
-### ✅ Fix:
-
-Your `app.route.ts` should **export** a `Routes` array **and be imported** into `app.config.ts` properly.
-
-Here’s what both should look like 👇
-
-#### ✅ `src/app/app.route.ts`
-
-```typescript
-import { Routes } from '@angular/router';
-import { TravellComponent } from './travell/travell';
-import { WelcomeComponent } from './welcome/welcome';
-import { TravelDetailsComponent } from './travel-details/travel-details';
-import { ApprovalsComponent } from './approvals/approvals';
-
-export const appRoutes: Routes = [
-  { path: '', component: WelcomeComponent },
-  { path: 'new-travel', component: TravellComponent },
-  { path: 'travel-details', component: TravelDetailsComponent },
-  { path: 'approvals', component: ApprovalsComponent },
-];
-```
-
-#### ✅ `src/app/app.config.ts`
-
-```typescript
-import { ApplicationConfig } from '@angular/core';
-import { provideRouter } from '@angular/router';
-import { appRoutes } from './app.route';
-
-export const appConfig: ApplicationConfig = {
-  providers: [provideRouter(appRoutes)]
-};
-```
-
-✅ This fixes the routing export/import mismatch.
+Let’s fix it completely with an elegant white-and-green theme 🌿 and rich CSS transitions.
 
 ---
 
-## 🟩 2️⃣  Error:
+## 🟩 UPDATED FILES
 
-> **Router link is not used within the template of welcome component**
-
-This is just a *lint warning*, not a blocking error.
-It appears when you imported `RouterLink` but didn’t use it in the template.
-We’ll fix it by actually adding navigation buttons to Welcome.
-
-#### ✅ `src/app/welcome/welcome.html`
+### ✅ 1️⃣ `app.html`
 
 ```html
-<div class="welcome-container">
-  <h1>Welcome to Travel Portal</h1>
-  <div class="options">
-    <button routerLink="/travel-details">🧾 Travel Details</button>
-    <button routerLink="/approvals">✅ Approvals</button>
+<div class="container">
+  <div class="header">
+    <div class="menu-icon" (click)="toggleMenu()">☰</div>
+    <h1>Travel Portal</h1>
+  </div>
+
+  <div class="side-menu" [class.open]="menuOpen">
+    <ul>
+      <li (click)="navigateTo('')">🏠 Home</li>
+      <li (click)="navigateTo('new-travel')">✈️ New Travel</li>
+    </ul>
+  </div>
+
+  <div class="content">
+    <router-outlet></router-outlet>
   </div>
 </div>
 ```
 
-#### ✅ `src/app/welcome/welcome.ts`
+---
 
-```typescript
-import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { CommonModule } from '@angular/common';
+### ✅ 2️⃣ `travell.html` (with validations)
 
-@Component({
-  selector: 'app-welcome',
-  standalone: true,
-  imports: [RouterLink, CommonModule],
-  templateUrl: './welcome.html',
-  styleUrls: ['./welcome.css']
-})
-export class WelcomeComponent {}
+```html
+<div class="travel-form-container">
+  <h2>Add Your Travel Details</h2>
+
+  <form (ngSubmit)="onSubmit(travelForm)" #travelForm="ngForm" novalidate>
+    <div class="form-group">
+      <label>UID</label>
+      <input
+        type="text"
+        name="uid"
+        [(ngModel)]="travel.uid"
+        required
+        #uid="ngModel"
+      />
+      <div class="error" *ngIf="uid.invalid && uid.touched">
+        UID is required
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Name</label>
+      <input
+        type="text"
+        name="name"
+        [(ngModel)]="travel.name"
+        required
+        #name="ngModel"
+      />
+      <div class="error" *ngIf="name.invalid && name.touched">
+        Name is required
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Line Manager Name</label>
+      <input
+        type="text"
+        name="lineManager"
+        [(ngModel)]="travel.lineManager"
+        required
+        #lineManager="ngModel"
+      />
+      <div class="error" *ngIf="lineManager.invalid && lineManager.touched">
+        Line Manager is required
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Travel Type</label>
+      <select
+        name="travelType"
+        [(ngModel)]="travel.travelType"
+        required
+        #travelType="ngModel"
+      >
+        <option value="" disabled>Select Type</option>
+        <option value="Domestic">Domestic</option>
+        <option value="International">International</option>
+      </select>
+      <div class="error" *ngIf="travelType.invalid && travelType.touched">
+        Please select a travel type
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Approver 1</label>
+      <input
+        type="text"
+        name="approver1"
+        [(ngModel)]="travel.approver1"
+        required
+        #approver1="ngModel"
+      />
+      <div class="error" *ngIf="approver1.invalid && approver1.touched">
+        Approver 1 is required
+      </div>
+    </div>
+
+    <div class="form-group" *ngIf="travel.travelType === 'International'">
+      <label>Approver 2</label>
+      <input
+        type="text"
+        name="approver2"
+        [(ngModel)]="travel.approver2"
+        required
+        #approver2="ngModel"
+      />
+      <div class="error" *ngIf="approver2.invalid && approver2.touched">
+        Approver 2 is required for International travel
+      </div>
+    </div>
+
+    <button type="submit" [disabled]="!travelForm.valid">Submit</button>
+  </form>
+</div>
 ```
-
-✅ This removes the warning and gives you clickable buttons.
 
 ---
 
-## 🟩 3️⃣  Error:
+### ✅ 3️⃣ `travell.css` (strong styling + validation)
 
-> **No directive found with export as ngForm**
-> **Can’t bind to ngModel since it isn’t a known property of input**
+```css
+.travel-form-container {
+  max-width: 650px;
+  margin: 80px auto;
+  background: #ffffff;
+  border-radius: 15px;
+  box-shadow: 0px 8px 25px rgba(0, 100, 0, 0.25);
+  padding: 50px 60px;
+  text-align: center;
+  animation: fadeIn 0.8s ease-in-out;
+}
 
-✅ These mean the `FormsModule` was not imported in your standalone component.
+.travel-form-container h2 {
+  margin-bottom: 25px;
+  color: #006400;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
 
-Fix it by importing `FormsModule` in your **travell.ts**:
+.form-group {
+  margin-bottom: 22px;
+  text-align: left;
+}
 
-#### ✅ `src/app/travell/travell.ts`
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+}
 
-```typescript
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { TravelService } from '../services/travel.service';
+input,
+select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  outline: none;
+  font-size: 15px;
+  transition: all 0.3s ease;
+}
 
-@Component({
-  selector: 'app-travell',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './travell.html',
-  styleUrls: ['./travell.css']
-})
-export class TravellComponent {
-  travel = {
-    uid: '',
-    name: '',
-    lineManager: '',
-    travelType: '',
-    approver1: '',
-    approver2: ''
-  };
+input:focus,
+select:focus {
+  border-color: #04a94e;
+  box-shadow: 0 0 5px rgba(4, 169, 78, 0.3);
+}
 
-  constructor(private travelService: TravelService) {}
+button {
+  margin-top: 15px;
+  background-color: #006400;
+  color: white;
+  border: none;
+  padding: 14px 50px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
 
-  onSubmit() {
-    this.travelService.addTravelDetail({ ...this.travel });
-    alert('Travel request submitted successfully!');
-    this.travel = { uid: '', name: '', lineManager: '', travelType: '', approver1: '', approver2: '' };
-  }
+button:hover {
+  background-color: #04a94e;
+  transform: scale(1.05);
+}
+
+.error {
+  color: red;
+  font-size: 13px;
+  margin-top: 5px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 ```
 
-✅ This fixes `ngForm` and `ngModel` errors *and* defines the missing `travel` object.
-
 ---
 
-## 🟩 4️⃣  Error:
+### ✅ 4️⃣ `welcome.html` (beautiful hover-effect buttons)
 
-> **Module ./app/app has no exported member App**
+```html
+<div class="welcome-container">
+  <h1>Welcome to Travel Portal</h1>
+  <p>Your one-stop destination for all travel requests and approvals.</p>
 
-This means your test file (`app.spec.ts`) or `main.ts` is looking for `App` instead of `AppComponent`.
+  <div class="options">
+    <div class="button-box" routerLink="/travel-details">
+      <span class="text">🧾 Travel Details</span>
+      <span class="hover-text">Click here to know your travel details</span>
+    </div>
 
-We already fixed `app.spec.ts` earlier ✅ — but now ensure **`main.ts`** (or `main.server.ts`) is also corrected.
-
-#### ✅ `src/main.ts`
-
-```typescript
-import { bootstrapApplication } from '@angular/platform-browser';
-import { AppComponent } from './app/app';
-import { appConfig } from './app/app.config';
-
-bootstrapApplication(AppComponent, appConfig)
-  .catch(err => console.error(err));
+    <div class="button-box" routerLink="/approvals">
+      <span class="text">✅ Approvals</span>
+      <span class="hover-text">Click here for pending approvals</span>
+    </div>
+  </div>
+</div>
 ```
 
-✅ This matches your `AppComponent` export and will run perfectly.
+---
+
+### ✅ 5️⃣ `welcome.css` (modern glowing buttons)
+
+```css
+.welcome-container {
+  text-align: center;
+  margin-top: 120px;
+  color: #004d1a;
+  animation: fadeIn 0.7s ease-in;
+}
+
+h1 {
+  font-size: 42px;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+p {
+  font-size: 18px;
+  color: #444;
+  margin-bottom: 50px;
+}
+
+.options {
+  display: flex;
+  justify-content: center;
+  gap: 50px;
+}
+
+.button-box {
+  position: relative;
+  width: 280px;
+  height: 130px;
+  background-color: #008000;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 22px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.4s ease;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0, 100, 0, 0.3);
+}
+
+.button-box:hover {
+  background-color: #04a94e;
+  transform: scale(1.07);
+  box-shadow: 0 12px 30px rgba(0, 100, 0, 0.45);
+}
+
+.button-box .hover-text {
+  position: absolute;
+  bottom: -100%;
+  width: 100%;
+  text-align: center;
+  font-size: 16px;
+  color: #fff;
+  opacity: 0;
+  transition: all 0.4s ease;
+  padding: 10px;
+}
+
+.button-box:hover .hover-text {
+  bottom: 20px;
+  opacity: 1;
+}
+
+.button-box .text {
+  transition: all 0.4s ease;
+}
+
+.button-box:hover .text {
+  transform: translateY(-20px);
+  opacity: 0.9;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+```
 
 ---
 
-## ✅ Summary of Fixes
+✅ **Result Summary**
 
-| Error                   | Root Cause                            | Fixed In                     |
-| ----------------------- | ------------------------------------- | ---------------------------- |
-| app.routes not exported | routes not exported from app.route.ts | app.route.ts / app.config.ts |
-| routerLink warning      | imported RouterLink but unused        | welcome.ts / welcome.html    |
-| ngModel / ngForm errors | FormsModule missing                   | travell.ts                   |
-| travel not found        | variable undefined                    | travell.ts                   |
-| “App” not exported      | wrong import in test/main             | app.spec.ts + main.ts        |
+* 🏠 Home page shows two **large, animated, hover-message buttons**.
+* ✈️ “New Travel” form is now **centered, modern, validated**.
+* ❌ Side menu now only has **Home** + **New Travel**.
+* 💚 Entire UI uses elegant **white and green** theme.
 
 ---
 
-Would you like me to now send the **final `travel-details` component code** so submitted travel records appear in a neat AG Grid table with green theme?
+Would you like me to now make the **Travel Details** page show submitted form data dynamically in a **green AG Grid table** (matching this theme)?
 
 
 
