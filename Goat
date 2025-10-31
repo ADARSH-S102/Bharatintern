@@ -1,3 +1,211 @@
+Perfect — that `TS2554: Expected 0 arguments but got 1` error usually means that in your form code (in `travell.ts`), something like this is happening:
+
+```ts
+new FormGroup(form)
+```
+
+or
+
+```ts
+this.fb.group(form)
+```
+
+but Angular is expecting **no arguments** or **a different signature**.
+
+Let’s fix it properly 👇
+
+---
+
+### ✅ Fix for `travell.ts`
+
+Make sure your **Travell component** looks like this (clean, validated, and working):
+
+```typescript
+import { Component } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-travell',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './travell.html',
+  styleUrls: ['./travell.css']
+})
+export class TravellComponent {
+  travelForm: FormGroup;
+  isInternational = false;
+
+  constructor(private fb: FormBuilder) {
+    // ✅ Correct form group creation
+    this.travelForm = this.fb.group({
+      uid: ['', Validators.required],
+      name: ['', Validators.required],
+      lineManager: ['', Validators.required],
+      travelType: ['', Validators.required],
+      approver1: ['', Validators.required],
+      approver2: ['']
+    });
+  }
+
+  onTravelTypeChange() {
+    const travelType = this.travelForm.get('travelType')?.value;
+    this.isInternational = travelType === 'international';
+
+    if (this.isInternational) {
+      this.travelForm.get('approver2')?.setValidators(Validators.required);
+    } else {
+      this.travelForm.get('approver2')?.clearValidators();
+    }
+    this.travelForm.get('approver2')?.updateValueAndValidity();
+  }
+
+  onSubmit() {
+    if (this.travelForm.valid) {
+      alert('Travel details submitted successfully!');
+      console.log(this.travelForm.value);
+    } else {
+      alert('Please fill all required fields.');
+    }
+  }
+}
+```
+
+---
+
+### ✅ `travell.html`
+
+Here’s the matching HTML (modern, responsive, and styled):
+
+```html
+<div class="form-container">
+  <h2>Add Your Travel Details</h2>
+
+  <form [formGroup]="travelForm" (ngSubmit)="onSubmit()" novalidate>
+    <div class="form-field">
+      <label>UID</label>
+      <input type="text" formControlName="uid" />
+    </div>
+
+    <div class="form-field">
+      <label>Name</label>
+      <input type="text" formControlName="name" />
+    </div>
+
+    <div class="form-field">
+      <label>Line Manager Name</label>
+      <input type="text" formControlName="lineManager" />
+    </div>
+
+    <div class="form-field">
+      <label>Travel Type</label>
+      <select formControlName="travelType" (change)="onTravelTypeChange()">
+        <option value="">-- Select --</option>
+        <option value="domestic">Domestic</option>
+        <option value="international">International</option>
+      </select>
+    </div>
+
+    <div class="form-field">
+      <label>Approver 1</label>
+      <input type="text" formControlName="approver1" />
+    </div>
+
+    <div class="form-field" *ngIf="isInternational">
+      <label>Approver 2</label>
+      <input type="text" formControlName="approver2" />
+    </div>
+
+    <button type="submit" class="submit-btn">Submit</button>
+  </form>
+</div>
+```
+
+---
+
+### ✅ `travell.css`
+
+Here’s the enhanced CSS for attractive, centered form:
+
+```css
+.form-container {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 128, 0, 0.2);
+  max-width: 500px;
+  margin: 80px auto;
+  padding: 40px;
+  text-align: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+h2 {
+  color: #0a7c2e;
+  font-size: 24px;
+  margin-bottom: 30px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #064d1d;
+}
+
+input, select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+  transition: all 0.3s ease;
+}
+
+input:focus, select:focus {
+  border-color: #0a7c2e;
+  box-shadow: 0 0 5px #0a7c2e;
+}
+
+.submit-btn {
+  background-color: #0a7c2e;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease, transform 0.2s;
+}
+
+.submit-btn:hover {
+  background-color: #13a045;
+  transform: scale(1.05);
+}
+```
+
+---
+
+✅ **This version fixes the `TS2554` error**,
+✅ **adds full required-field validations**,
+✅ **and makes the form stylish, large, and centered.**
+
+---
+
+Would you like me to now send the updated **Home page (welcome)** code with the hoverable “Travel Details” and “Approvals” buttons as you described?
+
+
+
+
+
+
+
+
+
 Perfect ✅ — you want:
 
 1. **Strong validations** (all fields strictly required).
