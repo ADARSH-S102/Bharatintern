@@ -1,117 +1,77 @@
-Got it ✅ — we’ll rename everything to travell (not travel or travel-request).
-Below is the complete Angular project setup with a white main page and green sidebar/menu, including an AG Grid UI structure and the Travell Form that shows “Approver 2” only when travel type = “International”.
+Perfect 👍 that means you’re likely using a **newer Angular (v18+) standalone project** — where each component and the app itself are **standalone**, and there’s **no `app.module.ts`**.
 
+So let’s match your structure **exactly** — keeping your existing filenames:
+✅ `travell.component.ts`, `travell.component.html`, `travell.component.css`,
+✅ `app.component.ts`, `app.component.html`, `app.component.css`,
+✅ `app.routes.ts`, `app.config.ts`.
 
----
+We’ll make the page **white + green themed**, with a **sidebar (menu icon)** and a **Travell form** where *Approver 2* appears **only for International travel**.
 
-🧩 1️⃣ Create Angular Project
-
-Run this in terminal:
-
-ng new travell --routing --style=css
-cd travell
-
+Here’s the **complete corrected code set** 👇
 
 ---
 
-🧩 2️⃣ Install Dependencies
+## 🟩 1️⃣ `app.config.ts`
 
-npm install ag-grid-community ag-grid-angular
-npm install @angular/material @angular/animations
+```ts
+import { ApplicationConfig } from '@angular/core';
+import { provideRouter } from '@angular/router';
+import { routes } from './app.routes';
+import { provideAnimations } from '@angular/platform-browser/animations';
+import { provideHttpClient } from '@angular/common/http';
 
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideRouter(routes),
+    provideAnimations(),
+    provideHttpClient()
+  ]
+};
+```
 
 ---
 
-🧩 3️⃣ Update app.module.ts
+## 🟩 2️⃣ `app.routes.ts`
 
-📂 src/app/app.module.ts
-
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { AgGridModule } from 'ag-grid-angular';
-import { AppRoutingModule } from './app-routing.module';
-import { AppComponent } from './app.component';
+```ts
+import { Routes } from '@angular/router';
 import { TravellComponent } from './travell/travell.component';
 
-@NgModule({
-  declarations: [
-    AppComponent,
-    TravellComponent
-  ],
-  imports: [
-    BrowserModule,
-    AppRoutingModule,
-    BrowserAnimationsModule,
-    FormsModule,
-    ReactiveFormsModule,
-    AgGridModule
-  ],
-  providers: [],
-  bootstrap: [AppComponent]
-})
-export class AppModule { }
-
-
----
-
-🧩 4️⃣ Create Component
-
-ng g c travell
-
-
----
-
-🧩 5️⃣ Update app-routing.module.ts
-
-📂 src/app/app-routing.module.ts
-
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-import { TravellComponent } from './travell/travell.component';
-
-const routes: Routes = [
-  { path: 'travell', component: TravellComponent },
-  { path: '', redirectTo: '/travell', pathMatch: 'full' }
+export const routes: Routes = [
+  { path: '', redirectTo: 'travell', pathMatch: 'full' },
+  { path: 'travell', component: TravellComponent }
 ];
-
-@NgModule({
-  imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
-})
-export class AppRoutingModule { }
-
+```
 
 ---
 
-🧩 6️⃣ app.component.ts
+## 🟩 3️⃣ `app.component.ts`
 
-📂 src/app/app.component.ts
-
+```ts
 import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
+  standalone: true,
+  imports: [RouterOutlet],
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+  styleUrl: './app.component.css'
 })
 export class AppComponent {
-  title = 'travell';
   sidebarOpen = false;
 
   toggleSidebar() {
     this.sidebarOpen = !this.sidebarOpen;
   }
 }
-
+```
 
 ---
 
-🧩 7️⃣ app.component.html
+## 🟩 4️⃣ `app.component.html`
 
-📂 src/app/app.component.html
-
+```html
 <div class="app-container">
   <div class="topbar">
     <button class="menu-btn" (click)="toggleSidebar()">☰</button>
@@ -126,14 +86,13 @@ export class AppComponent {
     <router-outlet></router-outlet>
   </div>
 </div>
-
+```
 
 ---
 
-🧩 8️⃣ app.component.css
+## 🟩 5️⃣ `app.component.css`
 
-📂 src/app/app.component.css
-
+```css
 .app-container {
   display: flex;
   flex-direction: column;
@@ -190,21 +149,23 @@ export class AppComponent {
   padding: 30px;
   background-color: white;
 }
-
+```
 
 ---
 
-🧩 9️⃣ travell.component.ts
+## 🟩 6️⃣ `travell.ts`
 
-📂 src/app/travell/travell.component.ts
-
+```ts
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-travell',
-  templateUrl: './travell.component.html',
-  styleUrls: ['./travell.component.css']
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './travell.html',
+  styleUrl: './travell.css'
 })
 export class TravellComponent {
   travellForm: FormGroup;
@@ -230,20 +191,19 @@ export class TravellComponent {
 
   onSubmit() {
     if (this.travellForm.valid) {
-      alert('Travel details submitted:\n' + JSON.stringify(this.travellForm.value, null, 2));
+      alert('Travell details submitted:\n' + JSON.stringify(this.travellForm.value, null, 2));
     } else {
       alert('Please fill all required fields');
     }
   }
 }
-
+```
 
 ---
 
-🧩 🔟 travell.component.html
+## 🟩 7️⃣ `travell.html`
 
-📂 src/app/travell/travell.component.html
-
+```html
 <h2>Add Your Travell Details</h2>
 
 <form [formGroup]="travellForm" (ngSubmit)="onSubmit()" class="travell-form">
@@ -273,14 +233,13 @@ export class TravellComponent {
 
   <button type="submit">Submit</button>
 </form>
-
+```
 
 ---
 
-🧩 11️⃣ travell.component.css
+## 🟩 8️⃣ `travell.css`
 
-📂 src/app/travell/travell.component.css
-
+```css
 .travell-form {
   max-width: 400px;
   display: flex;
@@ -316,30 +275,30 @@ button {
 button:hover {
   background-color: #1b5e20;
 }
-
+```
 
 ---
 
-🧩 12️⃣ Run the Project
+## 🟩 9️⃣ Run the Project
 
+Run this in terminal:
+
+```bash
 ng serve
+```
 
-or equivalently:
-
-npm start
-
-Then open 👉 http://localhost:4200
-
+Then open 👉 [http://localhost:4200](http://localhost:4200)
 
 ---
 
-This setup gives you: ✅ White main page
-✅ Green sidebar and header
-✅ Responsive side menu
-✅ Travell form (Approver 2 shown only for International)
-✅ Clean green/white theme
+✅ **Summary**
 
+* Project name: `travell`
+* White main page, green sidebar + topbar
+* Form title: “Add Your Travell Details”
+* Approver 2 field appears only for **International** travel
+* Fully standalone Angular (no module file)
 
 ---
 
-Would you like me to also add a small AG Grid table below the form to show submitted entries dynamically (like a mini summary)?
+Would you like me to now add a **simple AG Grid table below the form** that shows the list of all submitted “Travell” entries?
