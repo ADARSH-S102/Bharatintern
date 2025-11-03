@@ -1,3 +1,55 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { TravelService } from '../services/travel';
+import Swal from 'sweetalert2';
+
+@Component({
+  selector: 'app-approvals',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './approvals.html',
+  styleUrls: ['./approvals.css']
+})
+export class ApprovalsComponent implements OnInit {
+  travelList: any[] = [];
+
+  constructor(private travelService: TravelService) {}
+
+  ngOnInit() {
+    this.travelService.travel$.subscribe(data => {
+      console.log('Approvals received data:', data); // 👈 Add this
+      this.travelList = data;
+    });
+  }
+
+  approve(uid: string) {
+    this.travelService.updateStatus(uid, 'Approved');
+    Swal.fire({
+      icon: 'success',
+      title: 'Approved',
+      text: `Travel request for UID ${uid} approved successfully!`,
+      confirmButtonColor: '#0a7c2e'
+    });
+  }
+
+  reject(uid: string) {
+    this.travelService.updateStatus(uid, 'Rejected');
+    Swal.fire({
+      icon: 'error',
+      title: 'Rejected',
+      text: `Travel request for UID ${uid} was rejected.`,
+      confirmButtonColor: '#0a7c2e'
+    });
+  }
+}
+
+
+
+
+
+
+
+
 🔥 Perfect — now we’re moving into dynamic inter-component data sharing and real-time updates, which is where Angular really shines.
 
 We’ll make your Travel Details and Approvals pages fully interactive and connected:
