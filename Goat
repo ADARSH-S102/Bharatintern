@@ -1,37 +1,32 @@
 Got it ✅ — thank you for the reminder.
 You already have:
+	•	a travel-details module/component,
+	•	a travel.service.ts,
+	•	and the rest of the structure we built earlier (travell, welcome, approvals, etc.).
 
-* a **`travel-details`** module/component,
-* a **`travel.service.ts`**,
-* and the rest of the structure we built earlier (`travell`, `welcome`, `approvals`, etc.).
+Let’s not recreate those — we’ll just update the existing ones so everything connects perfectly, and the new popup + validation + table logic fits your current setup.
 
-Let’s **not recreate** those — we’ll just **update** the existing ones so everything connects perfectly, and the new popup + validation + table logic fits your current setup.
+⸻
 
----
+🟩 What we’ll do
+	1.	Keep your existing travel.service.ts (we’ll just enhance it slightly).
+	2.	Update your existing travell.ts and travel-details.ts so:
+	•	validation and success messages show as popups,
+	•	submitted form data appears in the Travel Details page.
 
-## 🟩 What we’ll do
+⸻
 
-1. Keep your existing `travel.service.ts` (we’ll just enhance it slightly).
-2. Update your existing `travell.ts` and `travel-details.ts` so:
-
-   * validation and success messages show as popups,
-   * submitted form data appears in the Travel Details page.
-
----
-
-## 🟩 Step 1: Install SweetAlert2 (for popups)
+🟩 Step 1: Install SweetAlert2 (for popups)
 
 Run this once in your terminal:
 
-```bash
 npm install sweetalert2
-```
 
----
 
-## 🟩 Step 2: Update your existing **`travel.service.ts`**
+⸻
 
-```typescript
+🟩 Step 2: Update your existing travel.service.ts
+
 import { Injectable } from '@angular/core';
 
 @Injectable({
@@ -48,13 +43,12 @@ export class TravelService {
     return this.travelList;
   }
 }
-```
 
----
 
-## 🟩 Step 3: Update your existing **`travell.ts`**
+⸻
 
-```typescript
+🟩 Step 3: Update your existing travell.ts
+
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -119,13 +113,12 @@ export class TravellComponent {
     this.isInternational = false;
   }
 }
-```
 
----
 
-## 🟩 Step 4: Update your existing **`travel-details.ts`**
+⸻
 
-```typescript
+🟩 Step 4: Update your existing travel-details.ts
+
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TravelService } from '../travel.service';
@@ -146,13 +139,12 @@ export class TravelDetailsComponent implements OnInit {
     this.travelList = this.travelService.getTravels();
   }
 }
-```
 
----
 
-## 🟩 Step 5: Your existing **`travel-details.html`**
+⸻
 
-```html
+🟩 Step 5: Your existing travel-details.html
+
 <div class="table-container" *ngIf="travelList.length > 0; else noData">
   <h2>Travel Details</h2>
   <table>
@@ -182,13 +174,12 @@ export class TravelDetailsComponent implements OnInit {
 <ng-template #noData>
   <p class="no-data">No travel requests yet.</p>
 </ng-template>
-```
 
----
 
-## 🟩 Step 6: Travel Details CSS
+⸻
 
-```css
+🟩 Step 6: Travel Details CSS
+
 .table-container {
   margin: 60px auto;
   background-color: white;
@@ -229,17 +220,29 @@ tr:hover {
   color: gray;
   font-size: 18px;
 }
-```
 
----
 
-✅ **This version keeps your existing structure**
+⸻
+
+✅ This version keeps your existing structure
 ✅ Adds stylish popups for validation & success
 ✅ Automatically shows submitted data in the Travel Details page
 
----
+⸻
 
-Would you like me to now send the **updated Home Page (`welcome`)** code with the two beautiful hover buttons (“Travel Details” and “Approvals”) — styled to look professional and clickable?
+Would you like me to now send the updated Home Page (welcome) code with the two beautiful hover buttons (“Travel Details” and “Approvals”) — styled to look professional and clickable?
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
