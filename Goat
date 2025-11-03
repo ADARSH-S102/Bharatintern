@@ -1,47 +1,284 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { TravelService } from '../services/travel';
-import Swal from 'sweetalert2';
+🔥 Love that energy bro — let’s make those tables look premium now!
+We’ll go for a clean modern corporate design (white + green theme like before), with subtle shadows, rounded corners, and hover transitions that feel alive.
 
-@Component({
-  selector: 'app-approvals',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './approvals.html',
-  styleUrls: ['./approvals.css']
-})
-export class ApprovalsComponent implements OnInit {
-  travelList: any[] = [];
+Below is the final high-level CSS you can directly drop into:
+	•	travel-details.css
+	•	approvals.css
 
-  constructor(private travelService: TravelService) {}
+✅ Both tables will share a consistent elegant look
+✅ They’ll automatically expand to near full width
+✅ Buttons and statuses will have rich hover effects
 
-  ngOnInit() {
-    this.travelService.travel$.subscribe(data => {
-      console.log('Approvals received data:', data); // 👈 Add this
-      this.travelList = data;
-    });
-  }
+⸻
 
-  approve(uid: string) {
-    this.travelService.updateStatus(uid, 'Approved');
-    Swal.fire({
-      icon: 'success',
-      title: 'Approved',
-      text: `Travel request for UID ${uid} approved successfully!`,
-      confirmButtonColor: '#0a7c2e'
-    });
-  }
+🟩 travel-details.css
 
-  reject(uid: string) {
-    this.travelService.updateStatus(uid, 'Rejected');
-    Swal.fire({
-      icon: 'error',
-      title: 'Rejected',
-      text: `Travel request for UID ${uid} was rejected.`,
-      confirmButtonColor: '#0a7c2e'
-    });
-  }
+:host {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, #ffffff, #e8f5e9);
+  padding: 50px 0;
+  font-family: 'Poppins', sans-serif;
 }
+
+.table-container {
+  width: 90%;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  padding: 20px;
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+h2 {
+  text-align: center;
+  color: #0a7c2e;
+  margin-bottom: 20px;
+  font-size: 28px;
+  letter-spacing: 1px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th {
+  background: #0a7c2e;
+  color: #fff;
+  padding: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+td {
+  padding: 14px;
+  text-align: center;
+  color: #333;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+tr:hover {
+  background-color: #e8f5e9;
+  transition: 0.3s ease;
+}
+
+.status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  color: #fff;
+  font-weight: 600;
+}
+
+.status.pending {
+  background-color: #ffb300;
+}
+
+.status.approved {
+  background-color: #43a047;
+}
+
+.status.rejected {
+  background-color: #e53935;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+⸻
+
+🟩 approvals.css
+
+:host {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, #ffffff, #e8f5e9);
+  padding: 50px 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.table-container {
+  width: 90%;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  padding: 20px;
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+h2 {
+  text-align: center;
+  color: #0a7c2e;
+  margin-bottom: 20px;
+  font-size: 28px;
+  letter-spacing: 1px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+th {
+  background: #0a7c2e;
+  color: #fff;
+  padding: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+td {
+  padding: 14px;
+  text-align: center;
+  color: #333;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+tr:hover {
+  background-color: #e8f5e9;
+  transition: 0.3s ease;
+}
+
+button {
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s ease;
+  font-size: 14px;
+}
+
+button.approve {
+  background-color: #43a047;
+  color: white;
+}
+
+button.reject {
+  background-color: #e53935;
+  color: white;
+  margin-left: 8px;
+}
+
+button.approve:hover {
+  background-color: #2e7d32;
+  transform: scale(1.05);
+}
+
+button.reject:hover {
+  background-color: #c62828;
+  transform: scale(1.05);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+⸻
+
+💡 Optional: Add wrapper div in your templates
+
+Make sure both HTML templates wrap the table like this for proper spacing:
+
+travel-details.html
+
+<div class="table-container">
+  <h2>Travel Details</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>UID</th>
+        <th>Name</th>
+        <th>Line Manager</th>
+        <th>Travel Type</th>
+        <th>Approver 1</th>
+        <th>Approver 2</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of travelList">
+        <td>{{item.uid}}</td>
+        <td>{{item.name}}</td>
+        <td>{{item.manager}}</td>
+        <td>{{item.type}}</td>
+        <td>{{item.approver1}}</td>
+        <td>{{item.approver2}}</td>
+        <td><span class="status {{item.status | lowercase}}">{{item.status}}</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+approvals.html
+
+<div class="table-container">
+  <h2>Approvals</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>UID</th>
+        <th>Name</th>
+        <th>Line Manager</th>
+        <th>Travel Type</th>
+        <th>Approver 1</th>
+        <th>Approver 2</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of travelList">
+        <td>{{item.uid}}</td>
+        <td>{{item.name}}</td>
+        <td>{{item.manager}}</td>
+        <td>{{item.type}}</td>
+        <td>{{item.approver1}}</td>
+        <td>{{item.approver2}}</td>
+        <td><span class="status {{item.status | lowercase}}">{{item.status}}</span></td>
+        <td>
+          <button class="approve" (click)="approve(item.uid)">Approve</button>
+          <button class="reject" (click)="reject(item.uid)">Reject</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+⸻
+
+💥 Result:
+	•	Both tables stretch nicely to full width.
+	•	Rows highlight softly on hover.
+	•	Buttons look modern, rounded, and interactive.
+	•	Status badges are colorful and clean.
+	•	Entire UI feels unified and elegant.
+
+⸻
+
+Would you like me to now add responsive styling (so the tables look perfect on tablets/mobiles with scrollable layout)?
+
+
+
+
 
 
 
