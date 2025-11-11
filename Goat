@@ -1,3 +1,12 @@
+import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+import { AppModule } from './app/app.config';
+
+platformBrowserDynamic()
+  .bootstrapModule(AppModule)
+  .catch((err: any) => console.error(err));
+
+
+
 Perfect 👏 — that’s a classic Angular 10 routing linkage issue, and it’s because your app.config.ts (which you’re using instead of the usual app.module.ts) is not correctly importing and exporting the routing module.
 
 Let’s fix this cleanly and clearly 👇
