@@ -1,4 +1,39 @@
 import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { FormsModule } from '@angular/forms';
+
+import { AppComponent } from './app';
+import { TravellComponent } from './travell/travell';
+import { TravelDetailsComponent } from './travel-details/travel-details';
+import { ApprovalsComponent } from './approvals/approvals';
+import { WelcomeComponent } from './welcome/welcome';
+import { AppRoutingModule } from './app.routes'; // ✅ correct import
+
+@NgModule({
+  declarations: [
+    AppComponent,
+    TravellComponent,
+    TravelDetailsComponent,
+    ApprovalsComponent,
+    WelcomeComponent
+  ],
+  imports: [
+    BrowserModule,
+    FormsModule,
+    AppRoutingModule   // ✅ correct usage
+  ],
+  bootstrap: [AppComponent]
+})
+export class AppModule {}
+
+
+
+
+
+
+
+
+import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
 import { WelcomeComponent } from './welcome/welcome';
