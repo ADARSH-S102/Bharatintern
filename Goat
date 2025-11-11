@@ -1,3 +1,84 @@
+import { Component, OnInit } from '@angular/core';
+import { NgForm } from '@angular/forms';
+import { TravelService } from '../services/travel';
+
+@Component({
+  selector: 'app-travell',
+  templateUrl: './travell.html',
+  styleUrls: ['./travell.css']
+})
+export class TravellComponent implements OnInit {
+  
+  // Form model
+  travel = {
+    uid: '',
+    name: '',
+    lineManager: '',
+    domain: '',
+    cluster: '',
+    subCluster: '',
+    cluster1: '',
+    hod: '',
+    travelType: '',
+    originCity: '',
+    destinationCity: '',
+    startDate: '',
+    endDate: '',
+    travelClass: '',
+    type: '',
+    purpose: ''
+  };
+
+  // Dropdown lists populated from backend
+  domains: string[] = [];
+  clusters: string[] = [];
+  subClusters: string[] = [];
+  cluster1List: string[] = [];
+  hodList: string[] = [];
+  cities: string[] = [];
+
+  // Flags
+  submitted = false;
+
+  constructor(private travelService: TravelService) {}
+
+  ngOnInit(): void {
+    // Fetch dropdown values from backend YAMLs
+    this.travelService.getDomains().subscribe(data => this.domains = data);
+    this.travelService.getClusters().subscribe(data => this.clusters = data);
+    this.travelService.getSubClusters().subscribe(data => this.subClusters = data);
+    this.travelService.getCluster1List().subscribe(data => this.cluster1List = data);
+    this.travelService.getHods().subscribe(data => this.hodList = data);
+    this.travelService.getCities().subscribe(data => this.cities = data);
+  }
+
+  // ✅ Proper onSubmit function
+  onSubmit(form: NgForm): void {
+    if (form.invalid) {
+      alert('⚠️ Please fill all required fields before submitting.');
+      return;
+    }
+
+    this.submitted = true;
+
+    // Save new travel record
+    this.travelService.addTravel(this.travel);
+
+    alert('✅ Travel request submitted successfully!');
+    
+    // Reset form
+    form.resetForm();
+  }
+}
+
+
+
+
+
+
+
+
+
 import { NgModule, Component } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
