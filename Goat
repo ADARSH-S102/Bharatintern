@@ -1,3 +1,22 @@
+import { Component } from '@angular/core';
+import { RouterModule } from '@angular/router';  // ✅ import RouterModule
+
+@Component({
+  selector: 'app-welcome',
+  standalone: true,
+  imports: [RouterModule],  // ✅ add RouterModule here
+  templateUrl: './welcome.html',
+  styleUrls: ['./welcome.css']
+})
+export class WelcomeComponent {}
+
+
+
+
+
+
+
+
 Ah! That error always happens when FormsModule is not imported in your standalone component. Since you are using standalone components (travell, etc.), you need to explicitly import FormsModule in the imports array of the component that uses [(ngModel)].
 
 Here’s how to fix it for travell.ts:
