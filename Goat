@@ -1,3 +1,240 @@
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { TravelService } from '../services/travel';
+
+@Component({
+  selector: 'app-travell',
+  templateUrl: './travell.html',
+  styleUrls: ['./travell.css']
+})
+export class TravellComponent implements OnInit {
+
+  travellForm!: FormGroup;
+
+  // dropdown data — will be populated via backend YAMLs later
+  domains: string[] = [];
+  clusters: string[] = [];
+  subClusters: string[] = [];
+  cluster1List: string[] = [];
+  hods: string[] = [];
+  cities: string[] = [];
+
+  constructor(private fb: FormBuilder, private travelService: TravelService) {}
+
+  ngOnInit(): void {
+    this.travellForm = this.fb.group({
+      uid: ['', Validators.required],
+      name: ['', Validators.required],
+      lineManager: ['', Validators.required],
+      domain: ['', Validators.required],
+      cluster: ['', Validators.required],
+      subCluster: ['', Validators.required],
+      cluster1: ['', Validators.required],
+      hod: ['', Validators.required],
+      travelType: ['', Validators.required],
+      originCity: ['', Validators.required],
+      destinationCity: ['', Validators.required],
+      startDate: ['', Validators.required],
+      endDate: ['', Validators.required],
+      travelClass: ['', Validators.required],
+      type: ['', Validators.required],
+      purpose: ['', [Validators.required, Validators.maxLength(300)]]
+    });
+
+    // Static mock data for now (will come from backend YAMLs later)
+    this.domains = ['Finance', 'Technology', 'HR', 'Operations'];
+    this.clusters = ['Cluster A', 'Cluster B', 'Cluster C'];
+    this.subClusters = ['Sub1', 'Sub2', 'Sub3'];
+    this.cluster1List = ['Cluster1-A', 'Cluster1-B'];
+    this.hods = ['Mr. Smith', 'Ms. Taylor', 'Dr. Brown'];
+    this.cities = ['Bangalore', 'Delhi', 'Mumbai', 'Chennai', 'Hyderabad'];
+  }
+
+  onSubmit(): void {
+    if (this.travellForm.invalid) {
+      alert('⚠️ Please fill all required fields correctly before submitting!');
+      return;
+    }
+
+    const travelData = {
+      ...this.travellForm.value,
+      status: 'Approval Pending'
+    };
+
+    this.travelService.addTravel(travelData);
+    alert('✅ Travel request submitted successfully!');
+
+    // Reset the form after submission
+    this.travellForm.reset();
+  }
+}
+
+
+
+Perfect bro 👌 those two errors are common TypeScript type-safety issues — they’re happening because:
+	1.	In approvals.ts, we’re passing a number (index) to a function that expects a string parameter.
+	2.	In travell.ts, we’re dynamically assigning object properties using strings, but TypeScript doesn’t know those property names yet.
+
+Let’s fix both cleanly and permanently 🔧
+
+⸻
+
+✅ 1️⃣ Fix approvals.ts
+
+Here’s the updated and correct version:
+
+import { Component, OnInit } from '@angular/core';
+import { TravelService } from '../services/travel';
+
+@Component({
+  selector: 'app-approvals',
+  templateUrl: './approvals.html',
+  styleUrls: ['./approvals.css']
+})
+export class ApprovalsComponent implements OnInit {
+
+  travels: any[] = [];
+
+  constructor(private travelService: TravelService) {}
+
+  ngOnInit() {
+    this.travels = this.travelService.getTravels();
+  }
+
+  updateStatus(index: number, status: string) {
+    this.travelService.updateStatus(index, status);
+    this.travels = this.travelService.getTravels(); // refresh local copy
+  }
+}
+
+✅ What changed
+	•	The service function updateStatus now explicitly accepts number instead of string.
+	•	We refresh the local travels list after updating the status, so UI updates immediately.
+
+⸻
+
+✅ 2️⃣ Fix in travel.service.ts
+
+Let’s make sure this service handles the update properly:
+
+import { Injectable } from '@angular/core';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class TravelService {
+
+  private travels: any[] = [];
+
+  addTravel(travel: any) {
+    this.travels.push({ ...travel, status: 'Approval Pending' });
+  }
+
+  getTravels() {
+    return this.travels;
+  }
+
+  updateStatus(index: number, status: string) {
+    if (this.travels[index]) {
+      this.travels[index].status = status;
+    }
+  }
+}
+
+✅ What changed
+	•	updateStatus() now takes index: number, no more type mismatch.
+	•	Safe check added to prevent undefined errors.
+
+⸻
+
+✅ 3️⃣ Fix travell.ts (form component)
+
+You likely have something like:
+
+this.travel[fieldName] = value;
+
+TypeScript complains because it doesn’t know your object’s shape.
+Fix it like this:
+
+interface TravelForm {
+  uid: string;
+  name: string;
+  lineManager: string;
+  domain: string;
+  cluster: string;
+  subCluster: string;
+  cluster1: string;
+  hod: string;
+  travelType: string;
+  originCity: string;
+  destinationCity: string;
+  startDate: string;
+  endDate: string;
+  travelClass: string;
+  type: string;
+  purpose: string;
+}
+
+@Component({
+  selector: 'app-travell',
+  templateUrl: './travell.html',
+  styleUrls: ['./travell.css']
+})
+export class TravellComponent {
+  travel: TravelForm = {
+    uid: '',
+    name: '',
+    lineManager: '',
+    domain: '',
+    cluster: '',
+    subCluster: '',
+    cluster1: '',
+    hod: '',
+    travelType: '',
+    originCity: '',
+    destinationCity: '',
+    startDate: '',
+    endDate: '',
+    travelClass: '',
+    type: '',
+    purpose: ''
+  };
+
+  constructor(private travelService: TravelService) {}
+
+  onSubmit() {
+    this.travelService.addTravel(this.travel);
+    alert('Travel request submitted successfully!');
+  }
+}
+
+✅ Why this works
+	•	The TravelForm interface defines the expected fields — no more dynamic “${string}s” issues.
+	•	TypeScript now knows the exact shape of travel.
+
+⸻
+
+✅ Summary
+
+File	Fix Applied	Result
+approvals.ts	Changed update function to use index: number	Type-safe updates
+travel.service.ts	Updated updateStatus() to use number index	Removes mismatch
+travell.ts	Added TravelForm interface for strong typing	Removes “string index” error
+
+
+⸻
+
+Would you like me to make the dropdowns in your form auto-populate from backend YAMLs next (Spring Boot side + Angular HTTP call setup)?
+That’s the next major part you mentioned earlier 🔥
+
+
+
+
+
+
+
+
+
 Absolutely bro 💪 — here are your entire updated and polished codes for both the
 🟩 Travel Details page and 🟢 Approvals page — with all the new fields, beautiful styling, and working approve/reject logic.
 
