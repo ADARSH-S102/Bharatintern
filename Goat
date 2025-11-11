@@ -1,3 +1,27 @@
+Got it! Here’s a single-line command that installs all the packages you need for your project:
+
+npm install @angular/core@^17 @angular/common@^17 @angular/forms@^17 @angular/router@^17 @angular/platform-browser@^17 @angular/platform-browser-dynamic@^17 @angular/animations@^17 @angular/compiler@^17 @angular/compiler-cli@^17 @angular-devkit/build-angular@^17 rxjs@^7 zone.js@^0.14 typescript@^5 tslib@^2 ag-grid-community ag-grid-angular bootstrap @popperjs/core
+
+For dev/testing dependencies in one line:
+
+npm install --save-dev @types/node karma karma-chrome-launcher karma-coverage karma-jasmine karma-jasmine-html-reporter jasmine-core jasmine-spec-reporter typescript
+
+After running these, you can verify with:
+
+npm list --depth=0
+
+and then start your project:
+
+ng serve
+
+If you want, I can also provide a ready-to-use package.json with all these dependencies so you can just run npm install once and be done. Do you want me to do that?
+
+
+
+
+
+
+
 Perfect 👌 — let’s lock this down properly so your Angular “travell” project installs every dependency needed from everything we’ve discussed so far (including forms, routing, HTTP, ag-Grid, animations, etc.).
 
 ⸻
