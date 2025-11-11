@@ -1,3 +1,31 @@
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+
+import { WelcomeComponent } from './welcome/welcome';
+import { TravellComponent } from './travell/travell';
+import { TravelDetailsComponent } from './travel-details/travel-details';
+import { ApprovalsComponent } from './approvals/approvals';
+
+const routes: Routes = [
+  { path: '', redirectTo: '/welcome', pathMatch: 'full' },
+  { path: 'welcome', component: WelcomeComponent },
+  { path: 'new-travel', component: TravellComponent },
+  { path: 'travel-details', component: TravelDetailsComponent },
+  { path: 'approvals', component: ApprovalsComponent }
+];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule]
+})
+export class AppRoutingModule {}
+
+
+
+
+
+
+
 Perfect 👍
 You’re 100% right — that’s a common Angular 17+ mistake that happens when we mix standalone components with the older NgModule system.
 
