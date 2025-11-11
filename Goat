@@ -1,3 +1,59 @@
+import { NgModule, Component } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+
+import { TravellComponent } from './travell/travell';
+import { TravelDetailsComponent } from './travel-details/travel-details';
+import { ApprovalsComponent } from './approvals/approvals';
+import { WelcomeComponent } from './welcome/welcome';
+import { TravelService } from './services/travel';
+
+/* -----------------------------------------------------------
+   Root Component (Main App)
+------------------------------------------------------------ */
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.html',
+  styleUrls: ['./app.css']
+})
+export class App {
+  title = 'Travel Portal';
+}
+
+/* -----------------------------------------------------------
+   App Module Configuration
+------------------------------------------------------------ */
+@NgModule({
+  declarations: [
+    App,
+    TravellComponent,
+    TravelDetailsComponent,
+    ApprovalsComponent,
+    WelcomeComponent
+  ],
+  imports: [
+    BrowserModule,
+    CommonModule,              // ✅ Enables *ngIf, *ngFor, ngClass, etc.
+    FormsModule,               // ✅ Enables ngForm
+    ReactiveFormsModule,       // ✅ Enables FormBuilder
+    RouterModule.forRoot([
+      { path: '', component: WelcomeComponent },
+      { path: 'new-travel', component: TravellComponent },
+      { path: 'travel-details', component: TravelDetailsComponent },
+      { path: 'approvals', component: ApprovalsComponent }
+    ])
+  ],
+  providers: [TravelService],
+  bootstrap: [App]
+})
+export class AppModule {}
+
+
+
+
+
 Perfect bro 🔥 — these errors are 100% Angular module/import related, not logic issues.
 They happen when we use Angular structural directives (*ngIf, *ngFor, ngClass, ngForm)
 without importing the right modules in your app setup.
