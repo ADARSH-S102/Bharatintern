@@ -1,3 +1,137 @@
+Perfect 👏 — that’s a classic Angular 10 routing linkage issue, and it’s because your app.config.ts (which you’re using instead of the usual app.module.ts) is not correctly importing and exporting the routing module.
+
+Let’s fix this cleanly and clearly 👇
+
+⸻
+
+✅ What’s happening
+
+You have:
+	•	app.routes.ts — defines the routes (good ✅)
+	•	app.config.ts — supposed to wire everything (like AppModule normally does)
+
+The error:
+
+“app.routes declares routes locally but it is not exported”
+
+means:
+Angular can see the routes file, but it’s not exported as a module for the app to actually use.
+
+⸻
+
+✅ Step-by-step fix
+
+1️⃣ Your app.routes.ts should look exactly like this:
+
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+
+import { WelcomeComponent } from './welcome/welcome';
+import { TravellComponent } from './travell/travell';
+import { TravelDetailsComponent } from './travel-details/travel-details';
+import { ApprovalsComponent } from './approvals/approvals';
+
+const routes: Routes = [
+  { path: '', redirectTo: '/welcome', pathMatch: 'full' },
+  { path: 'welcome', component: WelcomeComponent },
+  { path: 'new-travel', component: TravellComponent },
+  { path: 'travel-details', component: TravelDetailsComponent },
+  { path: 'approvals', component: ApprovalsComponent }
+];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule]  // ✅ this makes it usable by other modules
+})
+export class AppRoutingModule {}
+
+
+⸻
+
+2️⃣ Update your app.config.ts
+
+(Think of this as your main Angular module)
+
+Replace it with this:
+
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { FormsModule } from '@angular/forms';
+
+import { AppComponent } from './app';
+import { TravellComponent } from './travell/travell';
+import { TravelDetailsComponent } from './travel-details/travel-details';
+import { ApprovalsComponent } from './approvals/approvals';
+import { WelcomeComponent } from './welcome/welcome';
+import { AppRoutingModule } from './app.routes';  // ✅ import routing module
+
+@NgModule({
+  declarations: [
+    AppComponent,
+    TravellComponent,
+    TravelDetailsComponent,
+    ApprovalsComponent,
+    WelcomeComponent
+  ],
+  imports: [
+    BrowserModule,
+    FormsModule,
+    AppRoutingModule  // ✅ include router
+  ],
+  bootstrap: [AppComponent]
+})
+export class AppModule {}  // ✅ export a proper module
+
+
+⸻
+
+3️⃣ Update your main.ts
+
+Angular expects to bootstrap the AppModule, not the config file.
+
+So make sure src/main.ts looks like this:
+
+import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+import { AppModule } from './app/app.config';
+
+platformBrowserDynamic().bootstrapModule(AppModule)
+  .catch(err => console.error(err));
+
+
+⸻
+
+✅ Summary
+
+File	Purpose	Must Export
+app.routes.ts	Contains Routes	✅ AppRoutingModule
+app.config.ts	Main module	✅ AppModule
+main.ts	Bootstraps AppModule	✅ Imports AppModule
+
+
+⸻
+
+Once you apply these changes, rerun:
+
+ng serve
+
+The error
+
+“app.routes declares routes locally but is not exported”
+will disappear 🎯
+
+⸻
+
+Would you like me to also include the correct AppComponent (app.ts + app.html) setup so navigation and side menu still work perfectly with this routing?
+
+
+
+
+
+
+
+
+
+
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
