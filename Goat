@@ -1,3 +1,145 @@
+Perfect bro 🔥 — these errors are 100% Angular module/import related, not logic issues.
+They happen when we use Angular structural directives (*ngIf, *ngFor, ngClass, ngForm)
+without importing the right modules in your app setup.
+
+Let’s fix all of them step-by-step and cleanly 👇
+
+⸻
+
+⚠️ Errors You’re Seeing
+
+Error	Root Cause
+NgIf used but not imported	Missing CommonModule import
+NgFor used but not imported	Missing CommonModule import
+ngClass not a known property	Missing CommonModule import
+No directive found with exportAs ngForm	Missing FormsModule or ReactiveFormsModule import
+Expected 0 arguments but got 1	Usually from incorrect FormBuilder.group() or service method call
+
+
+⸻
+
+✅ FIX 1 – Update app.module.ts
+
+Please open src/app/app.module.ts (if it’s named differently like app.ts, adjust accordingly).
+Replace the imports & declarations with this clean, complete version 👇
+
+✅ app.module.ts
+
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+
+import { AppComponent } from './app';
+import { TravellComponent } from './travell/travell';
+import { TravelDetailsComponent } from './travel-details/travel-details';
+import { ApprovalsComponent } from './approvals/approvals';
+import { WelcomeComponent } from './welcome/welcome';
+
+import { TravelService } from './services/travel';
+
+@NgModule({
+  declarations: [
+    AppComponent,
+    TravellComponent,
+    TravelDetailsComponent,
+    ApprovalsComponent,
+    WelcomeComponent
+  ],
+  imports: [
+    BrowserModule,
+    CommonModule,              // ✅ Required for *ngIf, *ngFor, ngClass, etc.
+    FormsModule,               // ✅ Required for Template-driven forms
+    ReactiveFormsModule,       // ✅ Required for Reactive forms (FormBuilder)
+    RouterModule.forRoot([
+      { path: '', component: WelcomeComponent },
+      { path: 'new-travel', component: TravellComponent },
+      { path: 'travel-details', component: TravelDetailsComponent },
+      { path: 'approvals', component: ApprovalsComponent }
+    ])
+  ],
+  providers: [TravelService],
+  bootstrap: [AppComponent]
+})
+export class AppModule {}
+
+✅ This imports everything you need:
+	•	CommonModule → for *ngIf, *ngFor, ngClass
+	•	FormsModule → for ngForm
+	•	ReactiveFormsModule → for FormBuilder
+	•	RouterModule → for navigation
+	•	Registered all components properly
+
+⸻
+
+✅ FIX 2 – Check travell.ts FormBuilder
+
+You might have written:
+
+this.fb.group({...}, someArg);
+
+But FormBuilder.group() takes only one argument (an object).
+So correct it to this:
+
+this.travellForm = this.fb.group({
+  uid: ['', Validators.required],
+  name: ['', Validators.required],
+  lineManager: ['', Validators.required],
+  domain: ['', Validators.required],
+  cluster: ['', Validators.required],
+  subCluster: ['', Validators.required],
+  cluster1: ['', Validators.required],
+  hod: ['', Validators.required],
+  travelType: ['', Validators.required],
+  originCity: ['', Validators.required],
+  destinationCity: ['', Validators.required],
+  startDate: ['', Validators.required],
+  endDate: ['', Validators.required],
+  travelClass: ['', Validators.required],
+  type: ['', Validators.required],
+  purpose: ['', [Validators.required, Validators.maxLength(300)]]
+});
+
+✅ No more Expected 0 arguments but got 1 error.
+
+⸻
+
+✅ FIX 3 – Restart the Server
+
+Once done:
+
+npm run start
+
+or
+
+ng serve --open
+
+
+⸻
+
+💡 Summary
+
+Error	Fix
+NgIf / NgFor / NgClass issues	Import CommonModule
+ngForm issue	Import FormsModule
+Reactive form issue	Import ReactiveFormsModule
+“Expected 0 args”	Remove extra args in FormBuilder.group()
+
+
+⸻
+
+If you show me your exact app.ts or app.config.ts file (since your structure isn’t the default Angular one),
+I can tailor the imports perfectly for your file layout so no mismatches remain.
+Would you like me to do that next?
+
+
+
+
+
+
+
+
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { TravelService } from '../services/travel';
