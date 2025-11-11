@@ -1,3 +1,107 @@
+Perfect 💪 this will completely reset your TypeScript configuration so Angular 10 builds cleanly — no more “standalone”, “customConditions”, or “moduleResolution” errors.
+
+Here are the exact files you should use 👇
+
+⸻
+
+✅ tsconfig.json  → (Root-level config)
+
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "baseUrl": "./",
+    "outDir": "./dist/out-tsc",
+    "sourceMap": true,
+    "declaration": false,
+    "downlevelIteration": true,
+    "experimentalDecorators": true,
+    "moduleResolution": "node",
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "es2020",
+    "typeRoots": ["node_modules/@types"],
+    "lib": ["es2018", "dom"],
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noImplicitAny": false
+  },
+  "angularCompilerOptions": {
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": false
+  }
+}
+
+✅ Key things:
+	•	"moduleResolution": "node" fixes the customConditions error.
+	•	Decorators and template compilation enabled.
+
+⸻
+
+✅ tsconfig.app.json  → (for your main app build)
+
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../out-tsc/app",
+    "types": []
+  },
+  "files": ["main.ts", "polyfills.ts"],
+  "include": ["src/**/*.d.ts", "src/**/*.ts"]
+}
+
+✅ This keeps the app build lightweight — no spec/test code included.
+
+⸻
+
+✅ tsconfig.spec.json  → (for tests)
+
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../out-tsc/spec",
+    "types": ["jasmine", "node"]
+  },
+  "files": ["test.ts", "polyfills.ts"],
+  "include": ["src/**/*.spec.ts", "src/**/*.d.ts"]
+}
+
+✅ Ensures test files (like app.spec.ts) compile properly.
+
+⸻
+
+⚙️ Final Step: Clean Rebuild
+
+After saving these three files, run:
+
+rm -rf node_modules
+npm cache clean --force
+npm install
+ng serve
+
+
+⸻
+
+After this, your Angular 10 project will be fully aligned with the expected TypeScript 3.9/4.0 settings — and you’ll have:
+	•	No standalone warnings
+	•	No moduleResolution errors
+	•	No customConditions issues
+
+⸻
+
+Would you like me to also include the polyfills.ts and tsconfig.base.json (if your CLI expects them)? Some Angular 10 setups generate those by default.
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect 👏 — that’s a clean and valid Angular 10 structure.
 
 Let’s make sure each of those four files (app.ts, app.config.ts, app.routes.ts, app.spec.ts) are correctly written and connected, so that the app boots up without any “standalone”, “not exported”, or “module not found” errors.
