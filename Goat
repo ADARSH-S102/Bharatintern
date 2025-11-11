@@ -1,3 +1,120 @@
+Perfect — that helps a lot 👌
+
+So your setup is Angular 10-style, but instead of the standard app.component.ts, you’re using a root file called app.ts (which exports a class named App).
+
+That’s totally fine ✅ — we’ll keep your structure as-is and make the fixes around it.
+
+⸻
+
+🧩 The Real Problem
+
+You’re seeing:
+
+❌ “Component X is standalone and cannot be declared in NgModule”
+
+because Angular thinks your components are standalone, but in Angular 10 (and in your setup),
+there is no standalone mode — all components must be declared in your main module (which is your App class in app.ts).
+
+⸻
+
+✅ Fix Summary (Step-by-Step)
+
+Step 1 — Edit all component .ts files
+
+For each of these:
+	•	travell.ts
+	•	traveldetails.ts
+	•	approvals.ts
+	•	welcome.ts
+
+Remove the line standalone: true from the @Component({}) decorator.
+
+So for example, your travell.ts should look like this 👇
+
+import { Component } from '@angular/core';
+import { NgForm } from '@angular/forms';
+
+@Component({
+  selector: 'app-travell',
+  templateUrl: './travell.html',
+  styleUrls: ['./travell.css']
+})
+export class TravellComponent {
+  // component logic here
+}
+
+✅ Repeat the same change for all other components.
+
+⸻
+
+Step 2 — Update your app.ts (main module)
+
+Make sure your app.ts looks like this 👇
+
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { FormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
+import { RouterModule } from '@angular/router';
+
+import { App } from './app';  // your main class
+import { TravellComponent } from './travell';
+import { TravelDetailsComponent } from './traveldetails';
+import { ApprovalsComponent } from './approvals';
+import { WelcomeComponent } from './welcome';
+import { routes } from './app.route';  // assuming this exports routes[]
+
+@NgModule({
+  declarations: [
+    App,
+    TravellComponent,
+    TravelDetailsComponent,
+    ApprovalsComponent,
+    WelcomeComponent
+  ],
+  imports: [
+    BrowserModule,
+    FormsModule,
+    HttpClientModule,
+    RouterModule.forRoot(routes)
+  ],
+  bootstrap: [App]
+})
+export class AppModule { }
+
+
+⸻
+
+Step 3 — Make sure your main.ts bootstraps this module
+
+import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+import { AppModule } from './app/app';
+
+platformBrowserDynamic()
+  .bootstrapModule(AppModule)
+  .catch(err => console.error(err));
+
+
+⸻
+
+Once that’s done, run:
+
+ng serve
+
+✅ This will finally eliminate all “standalone cannot be declared in NgModule” and related routing/module declaration errors.
+
+⸻
+
+Would you like me to double-check your exact folder layout and send the matching app.route.ts + main.ts + app.ts set (all corrected for your structure)?
+
+
+
+
+
+
+
+
+
 import { enableProdMode } from '@angular/core';
 import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 import { AppModule } from './app/app.config';
