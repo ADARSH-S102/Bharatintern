@@ -1,3 +1,23 @@
+import { Routes } from '@angular/router';
+import { TravellComponent } from './travell/travell';
+import { TravelDetailsComponent } from './traveldetails/traveldetails';
+import { ApprovalsComponent } from './approvals/approvals';
+import { WelcomeComponent } from './welcome/welcome';
+
+export const routes: Routes = [
+  { path: '', component: WelcomeComponent },
+  { path: 'new-travel', component: TravellComponent },
+  { path: 'travel-details', component: TravelDetailsComponent },
+  { path: 'approvals', component: ApprovalsComponent },
+  { path: '**', redirectTo: '' }
+];
+
+
+
+
+
+
+
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
