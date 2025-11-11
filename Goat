@@ -1,3 +1,169 @@
+Perfect 👍 thanks for clarifying!
+
+So your project doesn’t use app.module.ts or app.component.ts, instead everything is inside app.ts, app.config.ts, etc. — meaning you’re probably using a standalone component setup (Angular 15+ style).
+
+Let’s make this work exactly with your folder setup — keeping your files as:
+
+app.ts
+app.html
+app.css
+app.config.ts
+app.route.ts
+app.spec.ts
+
+
+⸻
+
+✅ Here’s the fixed, clean structure and working code
+
+1️⃣ app.ts
+This is your root application component (formerly app.component.ts):
+
+import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [RouterOutlet],
+  templateUrl: './app.html',
+  styleUrls: ['./app.css']
+})
+export class App {}
+
+
+⸻
+
+2️⃣ app.html
+
+<nav class="navbar">
+  <div class="menu">
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">🏠 Home</a>
+    <a routerLink="/new-travel" routerLinkActive="active">✈️ New Travel</a>
+    <a routerLink="/travel-details" routerLinkActive="active">📋 Travel Details</a>
+    <a routerLink="/approvals" routerLinkActive="active">✅ Approvals</a>
+  </div>
+</nav>
+
+<div class="main-content">
+  <router-outlet></router-outlet>
+</div>
+
+
+⸻
+
+3️⃣ app.css
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: white;
+}
+
+.navbar {
+  background-color: #2e7d32;
+  padding: 15px;
+  display: flex;
+  justify-content: center;
+}
+
+.menu a {
+  color: white;
+  text-decoration: none;
+  margin: 0 20px;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.menu a.active {
+  border-bottom: 3px solid #fff;
+}
+
+.main-content {
+  padding: 40px;
+  min-height: 100vh;
+}
+
+
+⸻
+
+4️⃣ app.routes.ts
+Here we define the route list.
+
+import { Routes } from '@angular/router';
+import { WelcomeComponent } from './welcome/welcome';
+import { TravellComponent } from './travell/travell';
+import { TravelDetailsComponent } from './travel-details/travel-details';
+import { ApprovalsComponent } from './approvals/approvals';
+
+export const routes: Routes = [
+  { path: '', component: WelcomeComponent },
+  { path: 'new-travel', component: TravellComponent },
+  { path: 'travel-details', component: TravelDetailsComponent },
+  { path: 'approvals', component: ApprovalsComponent }
+];
+
+Make sure all those component files (welcome.ts, travell.ts, etc.) are marked with standalone: true.
+
+⸻
+
+5️⃣ app.config.ts
+This is the configuration used to bootstrap your app (replaces app.module.ts):
+
+import { ApplicationConfig } from '@angular/core';
+import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideAnimations } from '@angular/platform-browser/animations';
+import { routes } from './app.routes';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideRouter(routes),
+    provideHttpClient(),
+    provideAnimations()
+  ]
+};
+
+
+⸻
+
+6️⃣ main.ts
+You’ll bootstrap App here with your config:
+
+import { bootstrapApplication } from '@angular/platform-browser';
+import { App } from './app/app';
+import { appConfig } from './app/app.config';
+
+bootstrapApplication(App, appConfig)
+  .catch((err) => console.error(err));
+
+
+⸻
+
+💡 Notes:
+
+✅ You no longer need AppModule — this setup works fully standalone.
+✅ Ensure all other components (like travell.ts, travel-details.ts, approvals.ts, and welcome.ts) have:
+
+@Component({
+  standalone: true,
+  ...
+})
+
+✅ Import what you need (e.g., CommonModule, FormsModule, etc.) directly into each component’s imports array.
+
+⸻
+
+Would you like me to now send all component files (travell.ts, travel-details.ts, approvals.ts, welcome.ts) fully updated to match this setup?
+
+
+
+
+
+
+
+
+
 Perfect 💪 this will completely reset your TypeScript configuration so Angular 10 builds cleanly — no more “standalone”, “customConditions”, or “moduleResolution” errors.
 
 Here are the exact files you should use 👇
