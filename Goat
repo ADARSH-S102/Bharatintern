@@ -1,3 +1,25 @@
+import { enableProdMode } from '@angular/core';
+import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+import { AppModule } from './app/app.config';
+
+// Enable production mode if needed
+if (process.env.NODE_ENV === 'production') {
+  enableProdMode();
+}
+
+// Bootstrap the main Angular module
+platformBrowserDynamic()
+  .bootstrapModule(AppModule)
+  .catch((err: any) => console.error('Error bootstrapping Angular app:', err));
+
+
+
+
+
+
+
+
+
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
