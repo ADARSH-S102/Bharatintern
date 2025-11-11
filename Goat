@@ -1,3 +1,59 @@
+Ah! That error always happens when FormsModule is not imported in your standalone component. Since you are using standalone components (travell, etc.), you need to explicitly import FormsModule in the imports array of the component that uses [(ngModel)].
+
+Here’s how to fix it for travell.ts:
+
+import { Component } from '@angular/core';
+import { FormsModule, NgForm } from '@angular/forms'; // ✅ import FormsModule
+import { CommonModule } from '@angular/common';
+import { TravelService } from '../travel.service';
+
+@Component({
+  selector: 'app-travell',
+  standalone: true,
+  imports: [CommonModule, FormsModule],  // ✅ add FormsModule here
+  templateUrl: './travell.html',
+  styleUrls: ['./travell.css']
+})
+export class TravellComponent {
+  travel: any = {
+    uid: '', name: '', lineManager: '', type: '', approver1: '', approver2: ''
+  };
+
+  constructor(private travelService: TravelService) {}
+
+  onSubmit(form: NgForm) {
+    if (form.valid) {
+      alert('Form submitted successfully!');
+      this.travelService.addTravel(this.travel);
+      form.resetForm();
+    } else {
+      alert('Please fill all required fields.');
+    }
+  }
+}
+
+
+⸻
+
+✅ Key Points:
+	1.	Standalone Components do not automatically get FormsModule.
+	2.	You must import FormsModule (and/or ReactiveFormsModule if using reactive forms) in every component that uses [(ngModel)].
+	3.	Also, make sure your input has a name attribute:
+
+<input type="text" name="uid" [(ngModel)]="travel.uid" required />
+
+
+⸻
+
+Do you want me to update all your components (travell, approvals, travel-details) with the proper FormsModule import so this error disappears everywhere?
+
+
+
+
+
+
+
+
 Perfect! Let’s create a fully working Angular “travell” project using your folder structure (app.ts, app.route.ts, app.config.ts, etc.) and include all components with proper code, plus the commands to generate them. I’ll make sure everything is standalone-compatible, ready to run.
 
 ⸻
