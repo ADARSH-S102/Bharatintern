@@ -1,3 +1,354 @@
+Absolutely bro 💪 — here are your entire updated and polished codes for both the
+🟩 Travel Details page and 🟢 Approvals page — with all the new fields, beautiful styling, and working approve/reject logic.
+
+These are fully compatible with your TravellComponent form and TravelService setup.
+
+⸻
+
+🧾 travel-details.ts
+
+import { Component, OnInit } from '@angular/core';
+import { TravelService } from '../services/travel';
+
+@Component({
+  selector: 'app-travel-details',
+  templateUrl: './travel-details.html',
+  styleUrls: ['./travel-details.css']
+})
+export class TravelDetailsComponent implements OnInit {
+
+  travels: any[] = [];
+
+  constructor(private travelService: TravelService) {}
+
+  ngOnInit() {
+    this.travels = this.travelService.getTravels();
+  }
+}
+
+
+⸻
+
+🧾 travel-details.html
+
+<div class="details-container">
+  <h2>Travel Details</h2>
+
+  <table *ngIf="travels.length > 0; else noData">
+    <thead>
+      <tr>
+        <th>UID</th>
+        <th>Name</th>
+        <th>Line Manager</th>
+        <th>Domain</th>
+        <th>Cluster</th>
+        <th>Sub Cluster</th>
+        <th>Cluster-1</th>
+        <th>HOD</th>
+        <th>Travel Type</th>
+        <th>Origin City</th>
+        <th>Destination City</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Travel Class</th>
+        <th>Type</th>
+        <th>Purpose</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr *ngFor="let t of travels">
+        <td>{{ t.uid }}</td>
+        <td>{{ t.name }}</td>
+        <td>{{ t.lineManager }}</td>
+        <td>{{ t.domain }}</td>
+        <td>{{ t.cluster }}</td>
+        <td>{{ t.subCluster }}</td>
+        <td>{{ t.cluster1 }}</td>
+        <td>{{ t.hod }}</td>
+        <td>{{ t.travelType }}</td>
+        <td>{{ t.originCity }}</td>
+        <td>{{ t.destinationCity }}</td>
+        <td>{{ t.startDate }}</td>
+        <td>{{ t.endDate }}</td>
+        <td>{{ t.travelClass }}</td>
+        <td>{{ t.type }}</td>
+        <td>{{ t.purpose }}</td>
+        <td>{{ t.status }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ng-template #noData>
+    <p class="no-data">No travel requests submitted yet.</p>
+  </ng-template>
+</div>
+
+
+⸻
+
+🎨 travel-details.css
+
+.details-container {
+  width: 95%;
+  margin: 30px auto;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0px 4px 15px rgba(0, 128, 0, 0.2);
+  border: 2px solid #1b5e20;
+}
+
+h2 {
+  text-align: center;
+  color: #1b5e20;
+  margin-bottom: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+th {
+  background-color: #1b5e20;
+  color: white;
+  padding: 10px;
+  text-align: left;
+}
+
+td {
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+tr:hover {
+  background-color: #f1f8e9;
+}
+
+.no-data {
+  text-align: center;
+  color: gray;
+  padding: 20px;
+  font-style: italic;
+}
+
+
+⸻
+
+🧾 approvals.ts
+
+import { Component, OnInit } from '@angular/core';
+import { TravelService } from '../services/travel';
+
+@Component({
+  selector: 'app-approvals',
+  templateUrl: './approvals.html',
+  styleUrls: ['./approvals.css']
+})
+export class ApprovalsComponent implements OnInit {
+
+  travels: any[] = [];
+
+  constructor(private travelService: TravelService) {}
+
+  ngOnInit() {
+    this.travels = this.travelService.getTravels();
+  }
+
+  updateStatus(index: number, status: string) {
+    this.travelService.updateStatus(index, status);
+  }
+}
+
+
+⸻
+
+🧾 approvals.html
+
+<div class="approvals-container">
+  <h2>Pending Approvals</h2>
+
+  <table *ngIf="travels.length > 0; else noData">
+    <thead>
+      <tr>
+        <th>UID</th>
+        <th>Name</th>
+        <th>Line Manager</th>
+        <th>Domain</th>
+        <th>Cluster</th>
+        <th>Sub Cluster</th>
+        <th>Cluster-1</th>
+        <th>HOD</th>
+        <th>Travel Type</th>
+        <th>Origin City</th>
+        <th>Destination City</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Travel Class</th>
+        <th>Type</th>
+        <th>Purpose</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr *ngFor="let t of travels; let i = index">
+        <td>{{ t.uid }}</td>
+        <td>{{ t.name }}</td>
+        <td>{{ t.lineManager }}</td>
+        <td>{{ t.domain }}</td>
+        <td>{{ t.cluster }}</td>
+        <td>{{ t.subCluster }}</td>
+        <td>{{ t.cluster1 }}</td>
+        <td>{{ t.hod }}</td>
+        <td>{{ t.travelType }}</td>
+        <td>{{ t.originCity }}</td>
+        <td>{{ t.destinationCity }}</td>
+        <td>{{ t.startDate }}</td>
+        <td>{{ t.endDate }}</td>
+        <td>{{ t.travelClass }}</td>
+        <td>{{ t.type }}</td>
+        <td>{{ t.purpose }}</td>
+        <td>{{ t.status }}</td>
+
+        <td>
+          <ng-container *ngIf="t.status === 'Approval Pending'; else finalStatus">
+            <button class="approve-btn" (click)="updateStatus(i, 'Approved')">Approve</button>
+            <button class="reject-btn" (click)="updateStatus(i, 'Rejected')">Reject</button>
+          </ng-container>
+
+          <ng-template #finalStatus>
+            <span [ngClass]="{
+              'approved': t.status === 'Approved',
+              'rejected': t.status === 'Rejected'
+            }">{{ t.status }}</span>
+          </ng-template>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ng-template #noData>
+    <p class="no-data">No travel requests available for approval.</p>
+  </ng-template>
+</div>
+
+
+⸻
+
+🎨 approvals.css
+
+.approvals-container {
+  width: 95%;
+  margin: 30px auto;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0px 4px 15px rgba(0, 128, 0, 0.2);
+  border: 2px solid #1b5e20;
+}
+
+h2 {
+  text-align: center;
+  color: #1b5e20;
+  margin-bottom: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+th {
+  background-color: #1b5e20;
+  color: white;
+  padding: 10px;
+  text-align: left;
+}
+
+td {
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+tr:hover {
+  background-color: #f1f8e9;
+}
+
+button {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.approve-btn {
+  background-color: #2e7d32;
+}
+
+.reject-btn {
+  background-color: #c62828;
+  margin-left: 8px;
+}
+
+button:hover {
+  opacity: 0.85;
+}
+
+.approved {
+  color: #2e7d32;
+  font-weight: bold;
+}
+
+.rejected {
+  color: #c62828;
+  font-weight: bold;
+}
+
+.no-data {
+  text-align: center;
+  color: gray;
+  padding: 20px;
+  font-style: italic;
+}
+
+
+⸻
+
+✅ Everything is connected:
+	•	When you submit a new travel in Travell Form, it shows in both Travel Details and Approvals tables.
+	•	When you click Approve or Reject, it instantly updates both tables.
+	•	Both pages use identical field structures, ensuring total consistency.
+	•	Tables are full-width, green-white theme, and responsive.
+
+⸻
+
+Would you like me to now make it so that the tables auto-refresh live (no page reload when a new form is submitted or status changes)?
+That’s a small addition but gives a real professional UX feel ✨
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect bro 💪 — this is exactly the kind of structured and scalable upgrade we should do next.
 Let’s break this clearly into Angular + Spring Boot + YAML backend flow so you can plug it in cleanly.
 
