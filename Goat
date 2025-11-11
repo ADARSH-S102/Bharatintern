@@ -1,3 +1,154 @@
+Perfect 👏 — that’s a clean and valid Angular 10 structure.
+
+Let’s make sure each of those four files (app.ts, app.config.ts, app.routes.ts, app.spec.ts) are correctly written and connected, so that the app boots up without any “standalone”, “not exported”, or “module not found” errors.
+
+⸻
+
+✅ 1️⃣ app.ts — Your Root Component
+
+This defines the root UI container (the green sidebar + router-outlet area).
+
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.html',
+  styleUrls: ['./app.css']
+})
+export class App {
+  title = 'Travel Portal';
+  sidebarOpen = false;
+
+  toggleSidebar() {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+}
+
+✅ Make sure you have app.html and app.css alongside this file.
+
+⸻
+
+✅ 2️⃣ app.routes.ts — Routing Configuration
+
+This defines navigation between pages.
+
+import { Routes } from '@angular/router';
+import { WelcomeComponent } from './welcome/welcome';
+import { TravellComponent } from './travell/travell';
+import { TravelDetailsComponent } from './travel-details/travel-details';
+import { ApprovalsComponent } from './approvals/approvals';
+
+export const routes: Routes = [
+  { path: '', component: WelcomeComponent },
+  { path: 'new-travel', component: TravellComponent },
+  { path: 'travel-details', component: TravelDetailsComponent },
+  { path: 'approvals', component: ApprovalsComponent }
+];
+
+✅ Make sure each of those components exists and is not standalone.
+
+⸻
+
+✅ 3️⃣ app.config.ts — Root Module (replaces app.module.ts)
+
+This is where everything is declared and imported.
+
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { FormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
+import { RouterModule } from '@angular/router';
+
+import { App } from './app';
+import { TravellComponent } from './travell/travell';
+import { ApprovalsComponent } from './approvals/approvals';
+import { TravelDetailsComponent } from './travel-details/travel-details';
+import { WelcomeComponent } from './welcome/welcome';
+import { routes } from './app.routes';
+
+@NgModule({
+  declarations: [
+    App,
+    TravellComponent,
+    ApprovalsComponent,
+    TravelDetailsComponent,
+    WelcomeComponent
+  ],
+  imports: [
+    BrowserModule,
+    FormsModule,
+    HttpClientModule,
+    RouterModule.forRoot(routes)
+  ],
+  bootstrap: [App]
+})
+export class AppModule {}
+
+✅ This replaces app.module.ts, so don’t create that file.
+
+⸻
+
+✅ 4️⃣ app.spec.ts — Optional Test File
+
+You can keep this minimal:
+
+import { TestBed } from '@angular/core/testing';
+import { App } from './app';
+
+describe('App Root Component', () => {
+  beforeEach(() => TestBed.configureTestingModule({ declarations: [App] }));
+
+  it('should create the app', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    expect(app).toBeTruthy();
+  });
+});
+
+
+⸻
+
+✅ 5️⃣ main.ts — Bootstrapping Angular
+
+import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+import { AppModule } from './app/app.config';
+
+platformBrowserDynamic()
+  .bootstrapModule(AppModule)
+  .catch((err: any) => console.error(err));
+
+
+⸻
+
+✅ Summary of Connection Flow
+
+main.ts
+  └── bootstraps AppModule (from app.config.ts)
+         ├── declares App component (from app.ts)
+         ├── imports routes (from app.routes.ts)
+         └── bootstraps <app-root> in index.html
+
+
+⸻
+
+If you copy these five snippets exactly into your project, your Angular 10 setup will:
+	•	✅ Recognize all components
+	•	✅ Avoid standalone errors
+	•	✅ Correctly load routes
+	•	✅ Compile cleanly without module export issues
+
+⸻
+
+Would you like me to also send the matching folder structure (visual) so you can confirm where every file should be placed?
+
+
+
+
+
+
+
+
+
 import { Routes } from '@angular/router';
 import { TravellComponent } from './travell/travell';
 import { TravelDetailsComponent } from './traveldetails/traveldetails';
