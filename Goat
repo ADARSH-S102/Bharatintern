@@ -1,3 +1,48 @@
+import { Component, OnInit } from '@angular/core';
+import { TravelService } from '../services/travel';
+
+@Component({
+  selector: 'app-approvals',
+  templateUrl: './approvals.html',
+  styleUrls: ['./approvals.css']
+})
+export class ApprovalsComponent implements OnInit {
+
+  approvalsList: any[] = [];
+
+  constructor(private travelService: TravelService) {}
+
+  ngOnInit(): void {
+    this.loadApprovals();
+  }
+
+  loadApprovals(): void {
+    this.approvalsList = this.travelService.getAllTravels();
+  }
+
+  approve(travel: any): void {
+    const uid = String(travel.uid); // ✅ Convert UID to string to fix type issue
+    this.travelService.updateStatus(uid, 'Approved');
+
+    // Update status instantly in the approvals table
+    travel.status = 'Approved';
+  }
+
+  reject(travel: any): void {
+    const uid = String(travel.uid); // ✅ Convert UID to string to fix type issue
+    this.travelService.updateStatus(uid, 'Rejected');
+
+    // Update status instantly in the approvals table
+    travel.status = 'Rejected';
+  }
+}
+
+
+
+
+
+
+
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
