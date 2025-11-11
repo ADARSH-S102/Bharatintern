@@ -1,3 +1,163 @@
+Perfect 👍
+You’re 100% right — that’s a common Angular 17+ mistake that happens when we mix standalone components with the older NgModule system.
+
+Let’s clarify and fix it once and for all 👇
+
+⸻
+
+🧩 Why You’re Seeing This Error
+
+Error:
+
+❌ Component App is standalone and cannot be declared in an NgModule.
+
+⚙️ What it means:
+
+Angular now allows two ways to define components:
+
+Type	Description
+🧱 NgModule-based (older style)	Uses @NgModule + declarations array (ex: AppModule)
+⚡ Standalone components (Angular 15+)	Uses @Component({ standalone: true }) and imported directly into routes
+
+You cannot mix both at the same time.
+
+⸻
+
+✅ Two Ways to Fix It
+
+Option 1 (Recommended for Angular 17+):
+
+👉 Make everything standalone — no AppModule at all.
+We’ll use app.ts (standalone root) and routes properly.
+
+⸻
+
+🧱 Fix Steps — Stand-alone Component Setup
+
+Let’s go file by file 👇
+
+⸻
+
+1️⃣ app.ts — your root setup
+
+Replace your existing app.ts with this:
+
+import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [RouterOutlet, CommonModule],
+  templateUrl: './app.html',
+  styleUrls: ['./app.css']
+})
+export class App {}
+
+✅ This defines your root as a standalone component (no AppModule needed).
+
+⸻
+
+2️⃣ app.routes.ts
+
+import { Routes } from '@angular/router';
+import { WelcomeComponent } from './welcome';
+import { TravellComponent } from './travell';
+import { TravelDetailsComponent } from './travel-details';
+import { ApprovalsComponent } from './approvals';
+
+export const routes: Routes = [
+  { path: '', component: WelcomeComponent },
+  { path: 'new-travel', component: TravellComponent },
+  { path: 'travel-details', component: TravelDetailsComponent },
+  { path: 'approvals', component: ApprovalsComponent }
+];
+
+
+⸻
+
+3️⃣ main.ts
+
+Make sure this looks like:
+
+import { bootstrapApplication } from '@angular/platform-browser';
+import { App } from './app/app';
+import { provideRouter } from '@angular/router';
+import { routes } from './app/app.routes';
+import { importProvidersFrom } from '@angular/core';
+import { HttpClientModule } from '@angular/common/http';
+
+bootstrapApplication(App, {
+  providers: [
+    provideRouter(routes),
+    importProvidersFrom(HttpClientModule)
+  ]
+}).catch(err => console.error(err));
+
+
+⸻
+
+4️⃣ Each Component (like travell.ts, approvals.ts, etc.)
+
+At the top of every component (travell, travel-details, approvals, welcome),
+make sure the decorator looks like this 👇
+
+@Component({
+  selector: 'app-travell',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './travell.html',
+  styleUrls: ['./travell.css']
+})
+export class TravellComponent { ... }
+
+✅ Add standalone: true
+✅ Add imports: [CommonModule, FormsModule]
+
+For each component —
+use CommonModule (for *ngIf, *ngFor, etc.)
+and FormsModule (for [(ngModel)], forms, etc.)
+
+⸻
+
+5️⃣ Delete Any Old Module File
+
+If you still have something like app.module.ts, delete it.
+Standalone components don’t use modules anymore.
+
+⸻
+
+After this
+
+Run:
+
+ng serve
+
+✅ The error “Component is standalone cannot be declared in NgModule” will disappear.
+✅ All routes (home, new travel, approvals, travel details) will load perfectly.
+
+⸻
+
+Would you like me to send you the updated decorator blocks for all 4 components (travell, travel-details, approvals, welcome) so you can copy them directly without missing imports?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { Component, OnInit } from '@angular/core';
 import { TravelService } from '../services/travel';
 
