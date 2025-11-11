@@ -1,3 +1,44 @@
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { FormsModule } from '@angular/forms';
+import { HttpClientModule } from '@angular/common/http';
+import { RouterModule } from '@angular/router';
+
+import { App } from './app';
+import { TravellComponent } from './travell';
+import { TravelDetailsComponent } from './traveldetails';
+import { ApprovalsComponent } from './approvals';
+import { WelcomeComponent } from './welcome';
+import { routes } from './app.route';
+
+@NgModule({
+  declarations: [
+    App,
+    TravellComponent,
+    TravelDetailsComponent,
+    ApprovalsComponent,
+    WelcomeComponent
+  ],
+  imports: [
+    BrowserModule,
+    FormsModule,
+    HttpClientModule,
+    RouterModule.forRoot(routes)
+  ],
+  bootstrap: [App]
+})
+export class AppModule { }
+
+
+
+
+
+
+
+
+
+
+
 Perfect — that helps a lot 👌
 
 So your setup is Angular 10-style, but instead of the standard app.component.ts, you’re using a root file called app.ts (which exports a class named App).
