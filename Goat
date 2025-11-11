@@ -1,1694 +1,370 @@
-Got it! Here’s a single-line command that installs all the packages you need for your project:
-
-npm install @angular/core@^17 @angular/common@^17 @angular/forms@^17 @angular/router@^17 @angular/platform-browser@^17 @angular/platform-browser-dynamic@^17 @angular/animations@^17 @angular/compiler@^17 @angular/compiler-cli@^17 @angular-devkit/build-angular@^17 rxjs@^7 zone.js@^0.14 typescript@^5 tslib@^2 ag-grid-community ag-grid-angular bootstrap @popperjs/core
-
-For dev/testing dependencies in one line:
-
-npm install --save-dev @types/node karma karma-chrome-launcher karma-coverage karma-jasmine karma-jasmine-html-reporter jasmine-core jasmine-spec-reporter typescript
-
-After running these, you can verify with:
-
-npm list --depth=0
-
-and then start your project:
-
-ng serve
-
-If you want, I can also provide a ready-to-use package.json with all these dependencies so you can just run npm install once and be done. Do you want me to do that?
-
-
-
-
-
-
-
-Perfect 👌 — let’s lock this down properly so your Angular “travell” project installs every dependency needed from everything we’ve discussed so far (including forms, routing, HTTP, ag-Grid, animations, etc.).
+Perfect! Let’s create a fully working Angular “travell” project using your folder structure (app.ts, app.route.ts, app.config.ts, etc.) and include all components with proper code, plus the commands to generate them. I’ll make sure everything is standalone-compatible, ready to run.
 
 ⸻
 
-🧩 Step 1 — Core Angular CLI (Global)
+1️⃣ Folder Structure
 
-If you haven’t already:
-
-npm install -g @angular/cli
-
-
-⸻
-
-⚙️ Step 2 — Project Dependencies (run these inside your project folder)
-
-npm install \
-@angular/core@^17 \
-@angular/common@^17 \
-@angular/platform-browser@^17 \
-@angular/platform-browser-dynamic@^17 \
-@angular/forms@^17 \
-@angular/router@^17 \
-@angular/animations@^17 \
-@angular/compiler@^17 \
-@angular/compiler-cli@^17 \
-@angular-devkit/build-angular@^17 \
-rxjs@^7 \
-zone.js@^0.14 \
-typescript@^5 \
-tslib@^2
+src/
+└── app/
+    ├── app.ts
+    ├── app.html
+    ├── app.css
+    ├── app.route.ts
+    ├── app.config.ts
+    ├── app.spec.ts
+    ├── welcome/
+    │   ├── welcome.ts
+    │   ├── welcome.html
+    │   ├── welcome.css
+    ├── travell/
+    │   ├── travell.ts
+    │   ├── travell.html
+    │   ├── travell.css
+    ├── travel-details/
+    │   ├── travel-details.ts
+    │   ├── travel-details.html
+    │   ├── travel-details.css
+    ├── approvals/
+    │   ├── approvals.ts
+    │   ├── approvals.html
+    │   ├── approvals.css
+    └── travel.service.ts
 
 
 ⸻
 
-🌐 Step 3 — HTTP & Utility Libraries
+2️⃣ Commands to Generate Components & Service
 
-npm install @angular/common@latest @angular/common/http
+ng generate component welcome --standalone
+ng generate component travell --standalone
+ng generate component travel-details --standalone
+ng generate component approvals --standalone
+ng generate service travel
 
-(This ensures HttpClientModule is available for backend calls.)
-
-⸻
-
-🧱 Step 4 — UI Library (AG-Grid)
-
-Since you said you wanted AG Grid UI earlier:
-
-npm install ag-grid-community ag-grid-angular
-
-If you want Material design in the future:
-
-npm install @angular/material @angular/cdk
-
+These commands automatically create folders with ts, html, and css files.
 
 ⸻
 
-🧰 Step 5 — Optional Helpful Tools
+3️⃣ Component Codes
 
-npm install bootstrap
-npm install @popperjs/core
-
-Then, in your angular.json, add Bootstrap CSS under "styles":
-
-"styles": [
-  "node_modules/bootstrap/dist/css/bootstrap.min.css",
-  "src/styles.css"
-]
-
-
-⸻
-
-🧪 Step 6 — Dev Dependencies (for building/testing)
-
-npm install --save-dev \
-@types/node \
-karma \
-karma-chrome-launcher \
-karma-coverage \
-karma-jasmine \
-karma-jasmine-html-reporter \
-jasmine-core \
-jasmine-spec-reporter \
-typescript
-
-
-⸻
-
-✅ Step 7 — Verify Installation
-
-After installation, run:
-
-npm list --depth=0
-
-You should see all Angular packages (core, router, forms, etc.) listed.
-
-Then build or run your app:
-
-ng serve
-
-
-⸻
-
-🧾 Summary of All Installed Packages
-
-Here’s the full package list from all your previous requirements:
-
-Category	Packages
-Angular Core	@angular/core, @angular/common, @angular/forms, @angular/router, @angular/platform-browser, @angular/platform-browser-dynamic, @angular/animations
-Compilation & Build	@angular/compiler, @angular/compiler-cli, @angular-devkit/build-angular, typescript, tslib, zone.js, rxjs
-UI/Styling	ag-grid-angular, ag-grid-community, bootstrap, @popperjs/core
-HTTP	@angular/common/http
-Testing/Dev	karma, jasmine-core, karma-chrome-launcher, karma-jasmine, karma-jasmine-html-reporter, karma-coverage, jasmine-spec-reporter, @types/node
-
-
-⸻
-
-Would you like me to generate the final package.json file for this project so you can just drop it in and run npm install once?
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Perfect 👍 thanks for clarifying!
-
-So your project doesn’t use app.module.ts or app.component.ts, instead everything is inside app.ts, app.config.ts, etc. — meaning you’re probably using a standalone component setup (Angular 15+ style).
-
-Let’s make this work exactly with your folder setup — keeping your files as:
-
-app.ts
-app.html
-app.css
-app.config.ts
-app.route.ts
-app.spec.ts
-
-
-⸻
-
-✅ Here’s the fixed, clean structure and working code
-
-1️⃣ app.ts
-This is your root application component (formerly app.component.ts):
+welcome/welcome.ts
 
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterLink } from '@angular/router';
 
 @Component({
-  selector: 'app-root',
+  selector: 'app-welcome',
   standalone: true,
-  imports: [RouterOutlet],
-  templateUrl: './app.html',
-  styleUrls: ['./app.css']
+  imports: [RouterLink],
+  templateUrl: './welcome.html',
+  styleUrls: ['./welcome.css']
 })
-export class App {}
+export class WelcomeComponent {}
 
+welcome/welcome.html
 
-⸻
-
-2️⃣ app.html
-
-<nav class="navbar">
-  <div class="menu">
-    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">🏠 Home</a>
-    <a routerLink="/new-travel" routerLinkActive="active">✈️ New Travel</a>
-    <a routerLink="/travel-details" routerLinkActive="active">📋 Travel Details</a>
-    <a routerLink="/approvals" routerLinkActive="active">✅ Approvals</a>
-  </div>
-</nav>
-
-<div class="main-content">
-  <router-outlet></router-outlet>
+<h1>Welcome to Travel Portal</h1>
+<div class="home-buttons">
+  <button routerLink="/travel-details" title="Click here to know your travel details">Travel Details</button>
+  <button routerLink="/approvals" title="Click here for pending approvals">Approvals</button>
 </div>
 
+welcome/welcome.css
 
-⸻
-
-3️⃣ app.css
-
-body {
-  margin: 0;
-  font-family: 'Segoe UI', sans-serif;
-  background-color: white;
+h1 {
+  text-align: center;
+  margin-bottom: 50px;
+  color: #2e7d32;
 }
-
-.navbar {
-  background-color: #2e7d32;
-  padding: 15px;
+.home-buttons {
   display: flex;
   justify-content: center;
+  gap: 50px;
 }
-
-.menu a {
+button {
+  padding: 25px 50px;
+  font-size: 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background-color: #2e7d32;
   color: white;
-  text-decoration: none;
-  margin: 0 20px;
-  font-weight: bold;
-  font-size: 18px;
+  transition: all 0.3s ease;
 }
-
-.menu a.active {
-  border-bottom: 3px solid #fff;
-}
-
-.main-content {
-  padding: 40px;
-  min-height: 100vh;
+button:hover {
+  background-color: #1b5e20;
+  transform: scale(1.1);
 }
 
 
 ⸻
 
-4️⃣ app.routes.ts
-Here we define the route list.
-
-import { Routes } from '@angular/router';
-import { WelcomeComponent } from './welcome/welcome';
-import { TravellComponent } from './travell/travell';
-import { TravelDetailsComponent } from './travel-details/travel-details';
-import { ApprovalsComponent } from './approvals/approvals';
-
-export const routes: Routes = [
-  { path: '', component: WelcomeComponent },
-  { path: 'new-travel', component: TravellComponent },
-  { path: 'travel-details', component: TravelDetailsComponent },
-  { path: 'approvals', component: ApprovalsComponent }
-];
-
-Make sure all those component files (welcome.ts, travell.ts, etc.) are marked with standalone: true.
-
-⸻
-
-5️⃣ app.config.ts
-This is the configuration used to bootstrap your app (replaces app.module.ts):
-
-import { ApplicationConfig } from '@angular/core';
-import { provideRouter } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
-import { provideAnimations } from '@angular/platform-browser/animations';
-import { routes } from './app.routes';
-
-export const appConfig: ApplicationConfig = {
-  providers: [
-    provideRouter(routes),
-    provideHttpClient(),
-    provideAnimations()
-  ]
-};
-
-
-⸻
-
-6️⃣ main.ts
-You’ll bootstrap App here with your config:
-
-import { bootstrapApplication } from '@angular/platform-browser';
-import { App } from './app/app';
-import { appConfig } from './app/app.config';
-
-bootstrapApplication(App, appConfig)
-  .catch((err) => console.error(err));
-
-
-⸻
-
-💡 Notes:
-
-✅ You no longer need AppModule — this setup works fully standalone.
-✅ Ensure all other components (like travell.ts, travel-details.ts, approvals.ts, and welcome.ts) have:
-
-@Component({
-  standalone: true,
-  ...
-})
-
-✅ Import what you need (e.g., CommonModule, FormsModule, etc.) directly into each component’s imports array.
-
-⸻
-
-Would you like me to now send all component files (travell.ts, travel-details.ts, approvals.ts, welcome.ts) fully updated to match this setup?
-
-
-
-
-
-
-
-
-
-Perfect 💪 this will completely reset your TypeScript configuration so Angular 10 builds cleanly — no more “standalone”, “customConditions”, or “moduleResolution” errors.
-
-Here are the exact files you should use 👇
-
-⸻
-
-✅ tsconfig.json  → (Root-level config)
-
-{
-  "compileOnSave": false,
-  "compilerOptions": {
-    "baseUrl": "./",
-    "outDir": "./dist/out-tsc",
-    "sourceMap": true,
-    "declaration": false,
-    "downlevelIteration": true,
-    "experimentalDecorators": true,
-    "moduleResolution": "node",
-    "importHelpers": true,
-    "target": "es2015",
-    "module": "es2020",
-    "typeRoots": ["node_modules/@types"],
-    "lib": ["es2018", "dom"],
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "noImplicitAny": false
-  },
-  "angularCompilerOptions": {
-    "strictInjectionParameters": true,
-    "strictInputAccessModifiers": true,
-    "strictTemplates": false
-  }
-}
-
-✅ Key things:
-	•	"moduleResolution": "node" fixes the customConditions error.
-	•	Decorators and template compilation enabled.
-
-⸻
-
-✅ tsconfig.app.json  → (for your main app build)
-
-{
-  "extends": "../tsconfig.json",
-  "compilerOptions": {
-    "outDir": "../out-tsc/app",
-    "types": []
-  },
-  "files": ["main.ts", "polyfills.ts"],
-  "include": ["src/**/*.d.ts", "src/**/*.ts"]
-}
-
-✅ This keeps the app build lightweight — no spec/test code included.
-
-⸻
-
-✅ tsconfig.spec.json  → (for tests)
-
-{
-  "extends": "../tsconfig.json",
-  "compilerOptions": {
-    "outDir": "../out-tsc/spec",
-    "types": ["jasmine", "node"]
-  },
-  "files": ["test.ts", "polyfills.ts"],
-  "include": ["src/**/*.spec.ts", "src/**/*.d.ts"]
-}
-
-✅ Ensures test files (like app.spec.ts) compile properly.
-
-⸻
-
-⚙️ Final Step: Clean Rebuild
-
-After saving these three files, run:
-
-rm -rf node_modules
-npm cache clean --force
-npm install
-ng serve
-
-
-⸻
-
-After this, your Angular 10 project will be fully aligned with the expected TypeScript 3.9/4.0 settings — and you’ll have:
-	•	No standalone warnings
-	•	No moduleResolution errors
-	•	No customConditions issues
-
-⸻
-
-Would you like me to also include the polyfills.ts and tsconfig.base.json (if your CLI expects them)? Some Angular 10 setups generate those by default.
-
-
-
-
-
-
-
-
-
-
-
-
-Perfect 👏 — that’s a clean and valid Angular 10 structure.
-
-Let’s make sure each of those four files (app.ts, app.config.ts, app.routes.ts, app.spec.ts) are correctly written and connected, so that the app boots up without any “standalone”, “not exported”, or “module not found” errors.
-
-⸻
-
-✅ 1️⃣ app.ts — Your Root Component
-
-This defines the root UI container (the green sidebar + router-outlet area).
-
-import { Component } from '@angular/core';
-
-@Component({
-  selector: 'app-root',
-  templateUrl: './app.html',
-  styleUrls: ['./app.css']
-})
-export class App {
-  title = 'Travel Portal';
-  sidebarOpen = false;
-
-  toggleSidebar() {
-    this.sidebarOpen = !this.sidebarOpen;
-  }
-}
-
-✅ Make sure you have app.html and app.css alongside this file.
-
-⸻
-
-✅ 2️⃣ app.routes.ts — Routing Configuration
-
-This defines navigation between pages.
-
-import { Routes } from '@angular/router';
-import { WelcomeComponent } from './welcome/welcome';
-import { TravellComponent } from './travell/travell';
-import { TravelDetailsComponent } from './travel-details/travel-details';
-import { ApprovalsComponent } from './approvals/approvals';
-
-export const routes: Routes = [
-  { path: '', component: WelcomeComponent },
-  { path: 'new-travel', component: TravellComponent },
-  { path: 'travel-details', component: TravelDetailsComponent },
-  { path: 'approvals', component: ApprovalsComponent }
-];
-
-✅ Make sure each of those components exists and is not standalone.
-
-⸻
-
-✅ 3️⃣ app.config.ts — Root Module (replaces app.module.ts)
-
-This is where everything is declared and imported.
-
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { FormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
-import { RouterModule } from '@angular/router';
-
-import { App } from './app';
-import { TravellComponent } from './travell/travell';
-import { ApprovalsComponent } from './approvals/approvals';
-import { TravelDetailsComponent } from './travel-details/travel-details';
-import { WelcomeComponent } from './welcome/welcome';
-import { routes } from './app.routes';
-
-@NgModule({
-  declarations: [
-    App,
-    TravellComponent,
-    ApprovalsComponent,
-    TravelDetailsComponent,
-    WelcomeComponent
-  ],
-  imports: [
-    BrowserModule,
-    FormsModule,
-    HttpClientModule,
-    RouterModule.forRoot(routes)
-  ],
-  bootstrap: [App]
-})
-export class AppModule {}
-
-✅ This replaces app.module.ts, so don’t create that file.
-
-⸻
-
-✅ 4️⃣ app.spec.ts — Optional Test File
-
-You can keep this minimal:
-
-import { TestBed } from '@angular/core/testing';
-import { App } from './app';
-
-describe('App Root Component', () => {
-  beforeEach(() => TestBed.configureTestingModule({ declarations: [App] }));
-
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
-  });
-});
-
-
-⸻
-
-✅ 5️⃣ main.ts — Bootstrapping Angular
-
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
-import { AppModule } from './app/app.config';
-
-platformBrowserDynamic()
-  .bootstrapModule(AppModule)
-  .catch((err: any) => console.error(err));
-
-
-⸻
-
-✅ Summary of Connection Flow
-
-main.ts
-  └── bootstraps AppModule (from app.config.ts)
-         ├── declares App component (from app.ts)
-         ├── imports routes (from app.routes.ts)
-         └── bootstraps <app-root> in index.html
-
-
-⸻
-
-If you copy these five snippets exactly into your project, your Angular 10 setup will:
-	•	✅ Recognize all components
-	•	✅ Avoid standalone errors
-	•	✅ Correctly load routes
-	•	✅ Compile cleanly without module export issues
-
-⸻
-
-Would you like me to also send the matching folder structure (visual) so you can confirm where every file should be placed?
-
-
-
-
-
-
-
-
-
-import { Routes } from '@angular/router';
-import { TravellComponent } from './travell/travell';
-import { TravelDetailsComponent } from './traveldetails/traveldetails';
-import { ApprovalsComponent } from './approvals/approvals';
-import { WelcomeComponent } from './welcome/welcome';
-
-export const routes: Routes = [
-  { path: '', component: WelcomeComponent },
-  { path: 'new-travel', component: TravellComponent },
-  { path: 'travel-details', component: TravelDetailsComponent },
-  { path: 'approvals', component: ApprovalsComponent },
-  { path: '**', redirectTo: '' }
-];
-
-
-
-
-
-
-
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { FormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
-import { RouterModule } from '@angular/router';
-
-import { App } from './app';
-import { TravellComponent } from './travell';
-import { TravelDetailsComponent } from './traveldetails';
-import { ApprovalsComponent } from './approvals';
-import { WelcomeComponent } from './welcome';
-import { routes } from './app.route';
-
-@NgModule({
-  declarations: [
-    App,
-    TravellComponent,
-    TravelDetailsComponent,
-    ApprovalsComponent,
-    WelcomeComponent
-  ],
-  imports: [
-    BrowserModule,
-    FormsModule,
-    HttpClientModule,
-    RouterModule.forRoot(routes)
-  ],
-  bootstrap: [App]
-})
-export class AppModule { }
-
-
-
-
-
-
-
-
-
-
-
-Perfect — that helps a lot 👌
-
-So your setup is Angular 10-style, but instead of the standard app.component.ts, you’re using a root file called app.ts (which exports a class named App).
-
-That’s totally fine ✅ — we’ll keep your structure as-is and make the fixes around it.
-
-⸻
-
-🧩 The Real Problem
-
-You’re seeing:
-
-❌ “Component X is standalone and cannot be declared in NgModule”
-
-because Angular thinks your components are standalone, but in Angular 10 (and in your setup),
-there is no standalone mode — all components must be declared in your main module (which is your App class in app.ts).
-
-⸻
-
-✅ Fix Summary (Step-by-Step)
-
-Step 1 — Edit all component .ts files
-
-For each of these:
-	•	travell.ts
-	•	traveldetails.ts
-	•	approvals.ts
-	•	welcome.ts
-
-Remove the line standalone: true from the @Component({}) decorator.
-
-So for example, your travell.ts should look like this 👇
+travell/travell.ts
 
 import { Component } from '@angular/core';
 import { NgForm } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { TravelService } from '../travel.service';
 
 @Component({
   selector: 'app-travell',
+  standalone: true,
+  imports: [CommonModule],
   templateUrl: './travell.html',
   styleUrls: ['./travell.css']
 })
 export class TravellComponent {
-  // component logic here
-}
-
-✅ Repeat the same change for all other components.
-
-⸻
-
-Step 2 — Update your app.ts (main module)
-
-Make sure your app.ts looks like this 👇
-
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { FormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
-import { RouterModule } from '@angular/router';
-
-import { App } from './app';  // your main class
-import { TravellComponent } from './travell';
-import { TravelDetailsComponent } from './traveldetails';
-import { ApprovalsComponent } from './approvals';
-import { WelcomeComponent } from './welcome';
-import { routes } from './app.route';  // assuming this exports routes[]
-
-@NgModule({
-  declarations: [
-    App,
-    TravellComponent,
-    TravelDetailsComponent,
-    ApprovalsComponent,
-    WelcomeComponent
-  ],
-  imports: [
-    BrowserModule,
-    FormsModule,
-    HttpClientModule,
-    RouterModule.forRoot(routes)
-  ],
-  bootstrap: [App]
-})
-export class AppModule { }
-
-
-⸻
-
-Step 3 — Make sure your main.ts bootstraps this module
-
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
-import { AppModule } from './app/app';
-
-platformBrowserDynamic()
-  .bootstrapModule(AppModule)
-  .catch(err => console.error(err));
-
-
-⸻
-
-Once that’s done, run:
-
-ng serve
-
-✅ This will finally eliminate all “standalone cannot be declared in NgModule” and related routing/module declaration errors.
-
-⸻
-
-Would you like me to double-check your exact folder layout and send the matching app.route.ts + main.ts + app.ts set (all corrected for your structure)?
-
-
-
-
-
-
-
-
-
-import { enableProdMode } from '@angular/core';
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
-import { AppModule } from './app/app.config';
-
-// Enable production mode if needed
-if (process.env.NODE_ENV === 'production') {
-  enableProdMode();
-}
-
-// Bootstrap the main Angular module
-platformBrowserDynamic()
-  .bootstrapModule(AppModule)
-  .catch((err: any) => console.error('Error bootstrapping Angular app:', err));
-
-
-
-
-
-
-
-
-
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { FormsModule } from '@angular/forms';
-
-import { AppComponent } from './app';
-import { TravellComponent } from './travell/travell';
-import { TravelDetailsComponent } from './travel-details/travel-details';
-import { ApprovalsComponent } from './approvals/approvals';
-import { WelcomeComponent } from './welcome/welcome';
-import { AppRoutingModule } from './app.routes'; // ✅ correct import
-
-@NgModule({
-  declarations: [
-    AppComponent,
-    TravellComponent,
-    TravelDetailsComponent,
-    ApprovalsComponent,
-    WelcomeComponent
-  ],
-  imports: [
-    BrowserModule,
-    FormsModule,
-    AppRoutingModule   // ✅ correct usage
-  ],
-  bootstrap: [AppComponent]
-})
-export class AppModule {}
-
-
-
-
-
-
-
-
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-
-import { WelcomeComponent } from './welcome/welcome';
-import { TravellComponent } from './travell/travell';
-import { TravelDetailsComponent } from './travel-details/travel-details';
-import { ApprovalsComponent } from './approvals/approvals';
-
-const routes: Routes = [
-  { path: '', redirectTo: '/welcome', pathMatch: 'full' },
-  { path: 'welcome', component: WelcomeComponent },
-  { path: 'new-travel', component: TravellComponent },
-  { path: 'travel-details', component: TravelDetailsComponent },
-  { path: 'approvals', component: ApprovalsComponent }
-];
-
-@NgModule({
-  imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
-})
-export class AppRoutingModule {}
-
-
-
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
-import { AppModule } from './app/app.config';
-
-platformBrowserDynamic()
-  .bootstrapModule(AppModule)
-  .catch((err: any) => console.error(err));
-
-
-
-Perfect 👏 — that’s a classic Angular 10 routing linkage issue, and it’s because your app.config.ts (which you’re using instead of the usual app.module.ts) is not correctly importing and exporting the routing module.
-
-Let’s fix this cleanly and clearly 👇
-
-⸻
-
-✅ What’s happening
-
-You have:
-	•	app.routes.ts — defines the routes (good ✅)
-	•	app.config.ts — supposed to wire everything (like AppModule normally does)
-
-The error:
-
-“app.routes declares routes locally but it is not exported”
-
-means:
-Angular can see the routes file, but it’s not exported as a module for the app to actually use.
-
-⸻
-
-✅ Step-by-step fix
-
-1️⃣ Your app.routes.ts should look exactly like this:
-
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-
-import { WelcomeComponent } from './welcome/welcome';
-import { TravellComponent } from './travell/travell';
-import { TravelDetailsComponent } from './travel-details/travel-details';
-import { ApprovalsComponent } from './approvals/approvals';
-
-const routes: Routes = [
-  { path: '', redirectTo: '/welcome', pathMatch: 'full' },
-  { path: 'welcome', component: WelcomeComponent },
-  { path: 'new-travel', component: TravellComponent },
-  { path: 'travel-details', component: TravelDetailsComponent },
-  { path: 'approvals', component: ApprovalsComponent }
-];
-
-@NgModule({
-  imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]  // ✅ this makes it usable by other modules
-})
-export class AppRoutingModule {}
-
-
-⸻
-
-2️⃣ Update your app.config.ts
-
-(Think of this as your main Angular module)
-
-Replace it with this:
-
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { FormsModule } from '@angular/forms';
-
-import { AppComponent } from './app';
-import { TravellComponent } from './travell/travell';
-import { TravelDetailsComponent } from './travel-details/travel-details';
-import { ApprovalsComponent } from './approvals/approvals';
-import { WelcomeComponent } from './welcome/welcome';
-import { AppRoutingModule } from './app.routes';  // ✅ import routing module
-
-@NgModule({
-  declarations: [
-    AppComponent,
-    TravellComponent,
-    TravelDetailsComponent,
-    ApprovalsComponent,
-    WelcomeComponent
-  ],
-  imports: [
-    BrowserModule,
-    FormsModule,
-    AppRoutingModule  // ✅ include router
-  ],
-  bootstrap: [AppComponent]
-})
-export class AppModule {}  // ✅ export a proper module
-
-
-⸻
-
-3️⃣ Update your main.ts
-
-Angular expects to bootstrap the AppModule, not the config file.
-
-So make sure src/main.ts looks like this:
-
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
-import { AppModule } from './app/app.config';
-
-platformBrowserDynamic().bootstrapModule(AppModule)
-  .catch(err => console.error(err));
-
-
-⸻
-
-✅ Summary
-
-File	Purpose	Must Export
-app.routes.ts	Contains Routes	✅ AppRoutingModule
-app.config.ts	Main module	✅ AppModule
-main.ts	Bootstraps AppModule	✅ Imports AppModule
-
-
-⸻
-
-Once you apply these changes, rerun:
-
-ng serve
-
-The error
-
-“app.routes declares routes locally but is not exported”
-will disappear 🎯
-
-⸻
-
-Would you like me to also include the correct AppComponent (app.ts + app.html) setup so navigation and side menu still work perfectly with this routing?
-
-
-
-
-
-
-
-
-
-
-import { NgModule } from '@angular/core';
-import { RouterModule, Routes } from '@angular/router';
-
-import { WelcomeComponent } from './welcome/welcome';
-import { TravellComponent } from './travell/travell';
-import { TravelDetailsComponent } from './travel-details/travel-details';
-import { ApprovalsComponent } from './approvals/approvals';
-
-const routes: Routes = [
-  { path: '', redirectTo: '/welcome', pathMatch: 'full' },
-  { path: 'welcome', component: WelcomeComponent },
-  { path: 'new-travel', component: TravellComponent },
-  { path: 'travel-details', component: TravelDetailsComponent },
-  { path: 'approvals', component: ApprovalsComponent }
-];
-
-@NgModule({
-  imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
-})
-export class AppRoutingModule {}
-
-
-
-
-
-
-
-Perfect 👍
-You’re 100% right — that’s a common Angular 17+ mistake that happens when we mix standalone components with the older NgModule system.
-
-Let’s clarify and fix it once and for all 👇
-
-⸻
-
-🧩 Why You’re Seeing This Error
-
-Error:
-
-❌ Component App is standalone and cannot be declared in an NgModule.
-
-⚙️ What it means:
-
-Angular now allows two ways to define components:
-
-Type	Description
-🧱 NgModule-based (older style)	Uses @NgModule + declarations array (ex: AppModule)
-⚡ Standalone components (Angular 15+)	Uses @Component({ standalone: true }) and imported directly into routes
-
-You cannot mix both at the same time.
-
-⸻
-
-✅ Two Ways to Fix It
-
-Option 1 (Recommended for Angular 17+):
-
-👉 Make everything standalone — no AppModule at all.
-We’ll use app.ts (standalone root) and routes properly.
-
-⸻
-
-🧱 Fix Steps — Stand-alone Component Setup
-
-Let’s go file by file 👇
-
-⸻
-
-1️⃣ app.ts — your root setup
-
-Replace your existing app.ts with this:
-
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { CommonModule } from '@angular/common';
-
-@Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [RouterOutlet, CommonModule],
-  templateUrl: './app.html',
-  styleUrls: ['./app.css']
-})
-export class App {}
-
-✅ This defines your root as a standalone component (no AppModule needed).
-
-⸻
-
-2️⃣ app.routes.ts
-
-import { Routes } from '@angular/router';
-import { WelcomeComponent } from './welcome';
-import { TravellComponent } from './travell';
-import { TravelDetailsComponent } from './travel-details';
-import { ApprovalsComponent } from './approvals';
-
-export const routes: Routes = [
-  { path: '', component: WelcomeComponent },
-  { path: 'new-travel', component: TravellComponent },
-  { path: 'travel-details', component: TravelDetailsComponent },
-  { path: 'approvals', component: ApprovalsComponent }
-];
-
-
-⸻
-
-3️⃣ main.ts
-
-Make sure this looks like:
-
-import { bootstrapApplication } from '@angular/platform-browser';
-import { App } from './app/app';
-import { provideRouter } from '@angular/router';
-import { routes } from './app/app.routes';
-import { importProvidersFrom } from '@angular/core';
-import { HttpClientModule } from '@angular/common/http';
-
-bootstrapApplication(App, {
-  providers: [
-    provideRouter(routes),
-    importProvidersFrom(HttpClientModule)
-  ]
-}).catch(err => console.error(err));
-
-
-⸻
-
-4️⃣ Each Component (like travell.ts, approvals.ts, etc.)
-
-At the top of every component (travell, travel-details, approvals, welcome),
-make sure the decorator looks like this 👇
-
-@Component({
-  selector: 'app-travell',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './travell.html',
-  styleUrls: ['./travell.css']
-})
-export class TravellComponent { ... }
-
-✅ Add standalone: true
-✅ Add imports: [CommonModule, FormsModule]
-
-For each component —
-use CommonModule (for *ngIf, *ngFor, etc.)
-and FormsModule (for [(ngModel)], forms, etc.)
-
-⸻
-
-5️⃣ Delete Any Old Module File
-
-If you still have something like app.module.ts, delete it.
-Standalone components don’t use modules anymore.
-
-⸻
-
-After this
-
-Run:
-
-ng serve
-
-✅ The error “Component is standalone cannot be declared in NgModule” will disappear.
-✅ All routes (home, new travel, approvals, travel details) will load perfectly.
-
-⸻
-
-Would you like me to send you the updated decorator blocks for all 4 components (travell, travel-details, approvals, welcome) so you can copy them directly without missing imports?
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import { Component, OnInit } from '@angular/core';
-import { TravelService } from '../services/travel';
-
-@Component({
-  selector: 'app-approvals',
-  templateUrl: './approvals.html',
-  styleUrls: ['./approvals.css']
-})
-export class ApprovalsComponent implements OnInit {
-
-  approvalsList: any[] = [];
-
-  constructor(private travelService: TravelService) {}
-
-  ngOnInit(): void {
-    this.loadApprovals();
-  }
-
-  loadApprovals(): void {
-    this.approvalsList = this.travelService.getAllTravels();
-  }
-
-  approve(travel: any): void {
-    const uid = String(travel.uid); // ✅ Convert UID to string to fix type issue
-    this.travelService.updateStatus(uid, 'Approved');
-
-    // Update status instantly in the approvals table
-    travel.status = 'Approved';
-  }
-
-  reject(travel: any): void {
-    const uid = String(travel.uid); // ✅ Convert UID to string to fix type issue
-    this.travelService.updateStatus(uid, 'Rejected');
-
-    // Update status instantly in the approvals table
-    travel.status = 'Rejected';
-  }
-}
-
-
-
-
-
-
-
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-
-@Injectable({
-  providedIn: 'root'
-})
-export class TravelService {
-  
-  private baseUrl = 'http://localhost:8080/api/travel'; // 👈 Your Spring Boot base URL
-
-  // Store submitted travels (for Travel Details & Approvals tables)
-  private travelList: any[] = [];
-
-  constructor(private http: HttpClient) {}
-
-  // ---- Dropdown Fetch Methods ----
-  getDomains(): Observable<string[]> {
-    // Expected backend endpoint: /api/travel/domains
-    return this.http.get<string[]>(`${this.baseUrl}/domains`);
-  }
-
-  getClusters(): Observable<string[]> {
-    // Expected backend endpoint: /api/travel/clusters
-    return this.http.get<string[]>(`${this.baseUrl}/clusters`);
-  }
-
-  getSubClusters(): Observable<string[]> {
-    // Expected backend endpoint: /api/travel/sub-clusters
-    return this.http.get<string[]>(`${this.baseUrl}/sub-clusters`);
-  }
-
-  getCluster1List(): Observable<string[]> {
-    // Expected backend endpoint: /api/travel/cluster1
-    return this.http.get<string[]>(`${this.baseUrl}/cluster1`);
-  }
-
-  getHods(): Observable<string[]> {
-    // Expected backend endpoint: /api/travel/hods
-    return this.http.get<string[]>(`${this.baseUrl}/hods`);
-  }
-
-  getCities(): Observable<string[]> {
-    // Expected backend endpoint: /api/travel/cities
-    return this.http.get<string[]>(`${this.baseUrl}/cities`);
-  }
-
-  // ---- Add Travel Record ----
-  addTravel(travelData: any): void {
-    // Store locally (for now)
-    this.travelList.push({ ...travelData, status: 'Approval Pending' });
-
-    // Optional: send to backend (uncomment if backend is ready)
-    // return this.http.post(`${this.baseUrl}/submit`, travelData).subscribe();
-
-    console.log('✅ Travel added:', travelData);
-  }
-
-  // ---- Get All Travels ----
-  getAllTravels(): any[] {
-    return this.travelList;
-  }
-
-  // ---- Update Travel Status ----
-  updateStatus(uid: string, newStatus: string): void {
-    const travel = this.travelList.find(t => t.uid === uid);
-    if (travel) {
-      travel.status = newStatus;
-    }
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-import { Component, OnInit } from '@angular/core';
-import { NgForm } from '@angular/forms';
-import { TravelService } from '../services/travel';
-
-@Component({
-  selector: 'app-travell',
-  templateUrl: './travell.html',
-  styleUrls: ['./travell.css']
-})
-export class TravellComponent implements OnInit {
-  
-  // Form model
-  travel = {
-    uid: '',
-    name: '',
-    lineManager: '',
-    domain: '',
-    cluster: '',
-    subCluster: '',
-    cluster1: '',
-    hod: '',
-    travelType: '',
-    originCity: '',
-    destinationCity: '',
-    startDate: '',
-    endDate: '',
-    travelClass: '',
-    type: '',
-    purpose: ''
+  travel: any = {
+    uid: '', name: '', lineManager: '', type: '', approver1: '', approver2: ''
   };
 
-  // Dropdown lists populated from backend
-  domains: string[] = [];
-  clusters: string[] = [];
-  subClusters: string[] = [];
-  cluster1List: string[] = [];
-  hodList: string[] = [];
-  cities: string[] = [];
-
-  // Flags
-  submitted = false;
-
   constructor(private travelService: TravelService) {}
 
-  ngOnInit(): void {
-    // Fetch dropdown values from backend YAMLs
-    this.travelService.getDomains().subscribe(data => this.domains = data);
-    this.travelService.getClusters().subscribe(data => this.clusters = data);
-    this.travelService.getSubClusters().subscribe(data => this.subClusters = data);
-    this.travelService.getCluster1List().subscribe(data => this.cluster1List = data);
-    this.travelService.getHods().subscribe(data => this.hodList = data);
-    this.travelService.getCities().subscribe(data => this.cities = data);
-  }
-
-  // ✅ Proper onSubmit function
-  onSubmit(form: NgForm): void {
-    if (form.invalid) {
-      alert('⚠️ Please fill all required fields before submitting.');
-      return;
+  onSubmit(form: NgForm) {
+    if (form.valid) {
+      alert('Form submitted successfully!');
+      this.travelService.addTravel(this.travel);
+      form.resetForm();
+    } else {
+      alert('Please fill all required fields.');
     }
-
-    this.submitted = true;
-
-    // Save new travel record
-    this.travelService.addTravel(this.travel);
-
-    alert('✅ Travel request submitted successfully!');
-    
-    // Reset form
-    form.resetForm();
   }
 }
 
+travell/travell.html
 
+<div class="form-container">
+  <h2>Add Your Travel Details</h2>
+  <form #travelForm="ngForm" (ngSubmit)="onSubmit(travelForm)">
+    <label>UID</label>
+    <input type="text" name="uid" [(ngModel)]="travel.uid" required />
 
+    <label>Name</label>
+    <input type="text" name="name" [(ngModel)]="travel.name" required />
 
+    <label>Line Manager</label>
+    <input type="text" name="lineManager" [(ngModel)]="travel.lineManager" required />
 
+    <label>Travel Type</label>
+    <label><input type="radio" name="type" [(ngModel)]="travel.type" value="Domestic" required /> Domestic</label>
+    <label><input type="radio" name="type" [(ngModel)]="travel.type" value="International" required /> International</label>
 
+    <div *ngIf="travel.type === 'International'">
+      <label>Approver 2</label>
+      <input type="text" name="approver2" [(ngModel)]="travel.approver2" required />
+    </div>
 
+    <label>Approver 1</label>
+    <input type="text" name="approver1" [(ngModel)]="travel.approver1" required />
 
+    <button type="submit">Submit</button>
+  </form>
+</div>
 
-import { NgModule, Component } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+travell/travell.css
 
-import { TravellComponent } from './travell/travell';
-import { TravelDetailsComponent } from './travel-details/travel-details';
-import { ApprovalsComponent } from './approvals/approvals';
-import { WelcomeComponent } from './welcome/welcome';
-import { TravelService } from './services/travel';
-
-/* -----------------------------------------------------------
-   Root Component (Main App)
------------------------------------------------------------- */
-@Component({
-  selector: 'app-root',
-  templateUrl: './app.html',
-  styleUrls: ['./app.css']
-})
-export class App {
-  title = 'Travel Portal';
+.form-container {
+  width: 50%;
+  margin: 0 auto;
+  background: #f9fff9;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0px 0px 15px rgba(0,0,0,0.2);
 }
 
-/* -----------------------------------------------------------
-   App Module Configuration
------------------------------------------------------------- */
-@NgModule({
-  declarations: [
-    App,
-    TravellComponent,
-    TravelDetailsComponent,
-    ApprovalsComponent,
-    WelcomeComponent
-  ],
-  imports: [
-    BrowserModule,
-    CommonModule,              // ✅ Enables *ngIf, *ngFor, ngClass, etc.
-    FormsModule,               // ✅ Enables ngForm
-    ReactiveFormsModule,       // ✅ Enables FormBuilder
-    RouterModule.forRoot([
-      { path: '', component: WelcomeComponent },
-      { path: 'new-travel', component: TravellComponent },
-      { path: 'travel-details', component: TravelDetailsComponent },
-      { path: 'approvals', component: ApprovalsComponent }
-    ])
-  ],
-  providers: [TravelService],
-  bootstrap: [App]
-})
-export class AppModule {}
+label {
+  display: block;
+  margin-top: 15px;
+  font-weight: bold;
+}
 
+input, select, textarea {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
 
+button {
+  margin-top: 25px;
+  width: 100%;
+  padding: 12px;
+  background-color: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
 
-
-
-Perfect bro 🔥 — these errors are 100% Angular module/import related, not logic issues.
-They happen when we use Angular structural directives (*ngIf, *ngFor, ngClass, ngForm)
-without importing the right modules in your app setup.
-
-Let’s fix all of them step-by-step and cleanly 👇
-
-⸻
-
-⚠️ Errors You’re Seeing
-
-Error	Root Cause
-NgIf used but not imported	Missing CommonModule import
-NgFor used but not imported	Missing CommonModule import
-ngClass not a known property	Missing CommonModule import
-No directive found with exportAs ngForm	Missing FormsModule or ReactiveFormsModule import
-Expected 0 arguments but got 1	Usually from incorrect FormBuilder.group() or service method call
+button:hover {
+  background-color: #1b5e20;
+}
 
 
 ⸻
 
-✅ FIX 1 – Update app.module.ts
-
-Please open src/app/app.module.ts (if it’s named differently like app.ts, adjust accordingly).
-Replace the imports & declarations with this clean, complete version 👇
-
-✅ app.module.ts
-
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-
-import { AppComponent } from './app';
-import { TravellComponent } from './travell/travell';
-import { TravelDetailsComponent } from './travel-details/travel-details';
-import { ApprovalsComponent } from './approvals/approvals';
-import { WelcomeComponent } from './welcome/welcome';
-
-import { TravelService } from './services/travel';
-
-@NgModule({
-  declarations: [
-    AppComponent,
-    TravellComponent,
-    TravelDetailsComponent,
-    ApprovalsComponent,
-    WelcomeComponent
-  ],
-  imports: [
-    BrowserModule,
-    CommonModule,              // ✅ Required for *ngIf, *ngFor, ngClass, etc.
-    FormsModule,               // ✅ Required for Template-driven forms
-    ReactiveFormsModule,       // ✅ Required for Reactive forms (FormBuilder)
-    RouterModule.forRoot([
-      { path: '', component: WelcomeComponent },
-      { path: 'new-travel', component: TravellComponent },
-      { path: 'travel-details', component: TravelDetailsComponent },
-      { path: 'approvals', component: ApprovalsComponent }
-    ])
-  ],
-  providers: [TravelService],
-  bootstrap: [AppComponent]
-})
-export class AppModule {}
-
-✅ This imports everything you need:
-	•	CommonModule → for *ngIf, *ngFor, ngClass
-	•	FormsModule → for ngForm
-	•	ReactiveFormsModule → for FormBuilder
-	•	RouterModule → for navigation
-	•	Registered all components properly
-
-⸻
-
-✅ FIX 2 – Check travell.ts FormBuilder
-
-You might have written:
-
-this.fb.group({...}, someArg);
-
-But FormBuilder.group() takes only one argument (an object).
-So correct it to this:
-
-this.travellForm = this.fb.group({
-  uid: ['', Validators.required],
-  name: ['', Validators.required],
-  lineManager: ['', Validators.required],
-  domain: ['', Validators.required],
-  cluster: ['', Validators.required],
-  subCluster: ['', Validators.required],
-  cluster1: ['', Validators.required],
-  hod: ['', Validators.required],
-  travelType: ['', Validators.required],
-  originCity: ['', Validators.required],
-  destinationCity: ['', Validators.required],
-  startDate: ['', Validators.required],
-  endDate: ['', Validators.required],
-  travelClass: ['', Validators.required],
-  type: ['', Validators.required],
-  purpose: ['', [Validators.required, Validators.maxLength(300)]]
-});
-
-✅ No more Expected 0 arguments but got 1 error.
-
-⸻
-
-✅ FIX 3 – Restart the Server
-
-Once done:
-
-npm run start
-
-or
-
-ng serve --open
-
-
-⸻
-
-💡 Summary
-
-Error	Fix
-NgIf / NgFor / NgClass issues	Import CommonModule
-ngForm issue	Import FormsModule
-Reactive form issue	Import ReactiveFormsModule
-“Expected 0 args”	Remove extra args in FormBuilder.group()
-
-
-⸻
-
-If you show me your exact app.ts or app.config.ts file (since your structure isn’t the default Angular one),
-I can tailor the imports perfectly for your file layout so no mismatches remain.
-Would you like me to do that next?
-
-
-
-
-
-
-
+travel-details/travel-details.ts
 
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { TravelService } from '../services/travel';
+import { CommonModule } from '@angular/common';
+import { TravelService } from '../travel.service';
 
 @Component({
-  selector: 'app-travell',
-  templateUrl: './travell.html',
-  styleUrls: ['./travell.css']
+  selector: 'app-travel-details',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './travel-details.html',
+  styleUrls: ['./travel-details.css']
 })
-export class TravellComponent implements OnInit {
-
-  travellForm!: FormGroup;
-
-  // dropdown data — will be populated via backend YAMLs later
-  domains: string[] = [];
-  clusters: string[] = [];
-  subClusters: string[] = [];
-  cluster1List: string[] = [];
-  hods: string[] = [];
-  cities: string[] = [];
-
-  constructor(private fb: FormBuilder, private travelService: TravelService) {}
-
-  ngOnInit(): void {
-    this.travellForm = this.fb.group({
-      uid: ['', Validators.required],
-      name: ['', Validators.required],
-      lineManager: ['', Validators.required],
-      domain: ['', Validators.required],
-      cluster: ['', Validators.required],
-      subCluster: ['', Validators.required],
-      cluster1: ['', Validators.required],
-      hod: ['', Validators.required],
-      travelType: ['', Validators.required],
-      originCity: ['', Validators.required],
-      destinationCity: ['', Validators.required],
-      startDate: ['', Validators.required],
-      endDate: ['', Validators.required],
-      travelClass: ['', Validators.required],
-      type: ['', Validators.required],
-      purpose: ['', [Validators.required, Validators.maxLength(300)]]
-    });
-
-    // Static mock data for now (will come from backend YAMLs later)
-    this.domains = ['Finance', 'Technology', 'HR', 'Operations'];
-    this.clusters = ['Cluster A', 'Cluster B', 'Cluster C'];
-    this.subClusters = ['Sub1', 'Sub2', 'Sub3'];
-    this.cluster1List = ['Cluster1-A', 'Cluster1-B'];
-    this.hods = ['Mr. Smith', 'Ms. Taylor', 'Dr. Brown'];
-    this.cities = ['Bangalore', 'Delhi', 'Mumbai', 'Chennai', 'Hyderabad'];
-  }
-
-  onSubmit(): void {
-    if (this.travellForm.invalid) {
-      alert('⚠️ Please fill all required fields correctly before submitting!');
-      return;
-    }
-
-    const travelData = {
-      ...this.travellForm.value,
-      status: 'Approval Pending'
-    };
-
-    this.travelService.addTravel(travelData);
-    alert('✅ Travel request submitted successfully!');
-
-    // Reset the form after submission
-    this.travellForm.reset();
-  }
-}
-
-
-
-Perfect bro 👌 those two errors are common TypeScript type-safety issues — they’re happening because:
-	1.	In approvals.ts, we’re passing a number (index) to a function that expects a string parameter.
-	2.	In travell.ts, we’re dynamically assigning object properties using strings, but TypeScript doesn’t know those property names yet.
-
-Let’s fix both cleanly and permanently 🔧
-
-⸻
-
-✅ 1️⃣ Fix approvals.ts
-
-Here’s the updated and correct version:
-
-import { Component, OnInit } from '@angular/core';
-import { TravelService } from '../services/travel';
-
-@Component({
-  selector: 'app-approvals',
-  templateUrl: './approvals.html',
-  styleUrls: ['./approvals.css']
-})
-export class ApprovalsComponent implements OnInit {
-
+export class TravelDetailsComponent implements OnInit {
   travels: any[] = [];
 
   constructor(private travelService: TravelService) {}
 
-  ngOnInit() {
+  ngOnInit(): void {
+    this.travels = this.travelService.getTravels();
+  }
+}
+
+travel-details/travel-details.html
+
+<h2>Travel Details</h2>
+<table>
+  <tr>
+    <th>UID</th>
+    <th>Name</th>
+    <th>Manager</th>
+    <th>Type</th>
+    <th>Approver1</th>
+    <th>Approver2</th>
+    <th>Status</th>
+  </tr>
+  <tr *ngFor="let t of travels">
+    <td>{{ t.uid }}</td>
+    <td>{{ t.name }}</td>
+    <td>{{ t.lineManager }}</td>
+    <td>{{ t.type }}</td>
+    <td>{{ t.approver1 }}</td>
+    <td>{{ t.approver2 }}</td>
+    <td>{{ t.status }}</td>
+  </tr>
+</table>
+
+travel-details/travel-details.css
+
+table {
+  width: 95%;
+  margin: 0 auto;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 15px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
+th {
+  background-color: #2e7d32;
+  color: white;
+}
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+
+⸻
+
+approvals/approvals.ts
+
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { TravelService } from '../travel.service';
+
+@Component({
+  selector: 'app-approvals',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './approvals.html',
+  styleUrls: ['./approvals.css']
+})
+export class ApprovalsComponent implements OnInit {
+  travels: any[] = [];
+
+  constructor(private travelService: TravelService) {}
+
+  ngOnInit(): void {
     this.travels = this.travelService.getTravels();
   }
 
   updateStatus(index: number, status: string) {
     this.travelService.updateStatus(index, status);
-    this.travels = this.travelService.getTravels(); // refresh local copy
   }
 }
 
-✅ What changed
-	•	The service function updateStatus now explicitly accepts number instead of string.
-	•	We refresh the local travels list after updating the status, so UI updates immediately.
+approvals/approvals.html
+
+<h2>Approvals</h2>
+<table>
+  <tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Status</th>
+    <th>Action</th>
+  </tr>
+  <tr *ngFor="let t of travels; let i = index">
+    <td>{{ t.name }}</td>
+    <td>{{ t.type }}</td>
+    <td>{{ t.status }}</td>
+    <td>
+      <button *ngIf="t.status === 'Pending Approval'" (click)="updateStatus(i,'Approved')">Approve</button>
+      <button *ngIf="t.status === 'Pending Approval'" (click)="updateStatus(i,'Rejected')">Reject</button>
+      <span *ngIf="t.status !== 'Pending Approval'">{{ t.status }}</span>
+    </td>
+  </tr>
+</table>
+
+approvals/approvals.css
+
+table {
+  width: 95%;
+  margin: 0 auto;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 15px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
+th {
+  background-color: #2e7d32;
+  color: white;
+}
+tr:nth-child(even) {
+  background-color: #f9fff9;
+}
+button {
+  margin: 2px;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 5px;
+  border: none;
+  color: white;
+}
+button:first-child {
+  background-color: #2e7d32;
+}
+button:last-child {
+  background-color: #c62828;
+}
+button:hover {
+  opacity: 0.8;
+}
+
 
 ⸻
 
-✅ 2️⃣ Fix in travel.service.ts
-
-Let’s make sure this service handles the update properly:
+travel.service.ts
 
 import { Injectable } from '@angular/core';
 
@@ -1696,11 +372,10 @@ import { Injectable } from '@angular/core';
   providedIn: 'root'
 })
 export class TravelService {
-
   private travels: any[] = [];
 
   addTravel(travel: any) {
-    this.travels.push({ ...travel, status: 'Approval Pending' });
+    this.travels.push({ ...travel, status: 'Pending Approval' });
   }
 
   getTravels() {
@@ -1708,820 +383,22 @@ export class TravelService {
   }
 
   updateStatus(index: number, status: string) {
-    if (this.travels[index]) {
-      this.travels[index].status = status;
-    }
-  }
-}
-
-✅ What changed
-	•	updateStatus() now takes index: number, no more type mismatch.
-	•	Safe check added to prevent undefined errors.
-
-⸻
-
-✅ 3️⃣ Fix travell.ts (form component)
-
-You likely have something like:
-
-this.travel[fieldName] = value;
-
-TypeScript complains because it doesn’t know your object’s shape.
-Fix it like this:
-
-interface TravelForm {
-  uid: string;
-  name: string;
-  lineManager: string;
-  domain: string;
-  cluster: string;
-  subCluster: string;
-  cluster1: string;
-  hod: string;
-  travelType: string;
-  originCity: string;
-  destinationCity: string;
-  startDate: string;
-  endDate: string;
-  travelClass: string;
-  type: string;
-  purpose: string;
-}
-
-@Component({
-  selector: 'app-travell',
-  templateUrl: './travell.html',
-  styleUrls: ['./travell.css']
-})
-export class TravellComponent {
-  travel: TravelForm = {
-    uid: '',
-    name: '',
-    lineManager: '',
-    domain: '',
-    cluster: '',
-    subCluster: '',
-    cluster1: '',
-    hod: '',
-    travelType: '',
-    originCity: '',
-    destinationCity: '',
-    startDate: '',
-    endDate: '',
-    travelClass: '',
-    type: '',
-    purpose: ''
-  };
-
-  constructor(private travelService: TravelService) {}
-
-  onSubmit() {
-    this.travelService.addTravel(this.travel);
-    alert('Travel request submitted successfully!');
-  }
-}
-
-✅ Why this works
-	•	The TravelForm interface defines the expected fields — no more dynamic “${string}s” issues.
-	•	TypeScript now knows the exact shape of travel.
-
-⸻
-
-✅ Summary
-
-File	Fix Applied	Result
-approvals.ts	Changed update function to use index: number	Type-safe updates
-travel.service.ts	Updated updateStatus() to use number index	Removes mismatch
-travell.ts	Added TravelForm interface for strong typing	Removes “string index” error
-
-
-⸻
-
-Would you like me to make the dropdowns in your form auto-populate from backend YAMLs next (Spring Boot side + Angular HTTP call setup)?
-That’s the next major part you mentioned earlier 🔥
-
-
-
-
-
-
-
-
-
-Absolutely bro 💪 — here are your entire updated and polished codes for both the
-🟩 Travel Details page and 🟢 Approvals page — with all the new fields, beautiful styling, and working approve/reject logic.
-
-These are fully compatible with your TravellComponent form and TravelService setup.
-
-⸻
-
-🧾 travel-details.ts
-
-import { Component, OnInit } from '@angular/core';
-import { TravelService } from '../services/travel';
-
-@Component({
-  selector: 'app-travel-details',
-  templateUrl: './travel-details.html',
-  styleUrls: ['./travel-details.css']
-})
-export class TravelDetailsComponent implements OnInit {
-
-  travels: any[] = [];
-
-  constructor(private travelService: TravelService) {}
-
-  ngOnInit() {
-    this.travels = this.travelService.getTravels();
+    this.travels[index].status = status;
   }
 }
 
 
 ⸻
 
-🧾 travel-details.html
-
-<div class="details-container">
-  <h2>Travel Details</h2>
-
-  <table *ngIf="travels.length > 0; else noData">
-    <thead>
-      <tr>
-        <th>UID</th>
-        <th>Name</th>
-        <th>Line Manager</th>
-        <th>Domain</th>
-        <th>Cluster</th>
-        <th>Sub Cluster</th>
-        <th>Cluster-1</th>
-        <th>HOD</th>
-        <th>Travel Type</th>
-        <th>Origin City</th>
-        <th>Destination City</th>
-        <th>Start Date</th>
-        <th>End Date</th>
-        <th>Travel Class</th>
-        <th>Type</th>
-        <th>Purpose</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      <tr *ngFor="let t of travels">
-        <td>{{ t.uid }}</td>
-        <td>{{ t.name }}</td>
-        <td>{{ t.lineManager }}</td>
-        <td>{{ t.domain }}</td>
-        <td>{{ t.cluster }}</td>
-        <td>{{ t.subCluster }}</td>
-        <td>{{ t.cluster1 }}</td>
-        <td>{{ t.hod }}</td>
-        <td>{{ t.travelType }}</td>
-        <td>{{ t.originCity }}</td>
-        <td>{{ t.destinationCity }}</td>
-        <td>{{ t.startDate }}</td>
-        <td>{{ t.endDate }}</td>
-        <td>{{ t.travelClass }}</td>
-        <td>{{ t.type }}</td>
-        <td>{{ t.purpose }}</td>
-        <td>{{ t.status }}</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <ng-template #noData>
-    <p class="no-data">No travel requests submitted yet.</p>
-  </ng-template>
-</div>
-
+✅ With this setup:
+	•	welcome page shows big buttons for navigation.
+	•	new-travel page has centered form with validation.
+	•	travel-details page shows table of submitted travels.
+	•	approvals page allows approve/reject inline.
+	•	Everything is standalone, no app.module.ts.
 
 ⸻
 
-🎨 travel-details.css
+If you want, I can now also **provide the fully working main.ts, app.ts, app.config.ts, app.route.ts, and package.json** ready to copy-paste — after that you can just npm installandng serve`.
 
-.details-container {
-  width: 95%;
-  margin: 30px auto;
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0px 4px 15px rgba(0, 128, 0, 0.2);
-  border: 2px solid #1b5e20;
-}
-
-h2 {
-  text-align: center;
-  color: #1b5e20;
-  margin-bottom: 20px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 15px;
-}
-
-th {
-  background-color: #1b5e20;
-  color: white;
-  padding: 10px;
-  text-align: left;
-}
-
-td {
-  padding: 8px;
-  border-bottom: 1px solid #ddd;
-}
-
-tr:hover {
-  background-color: #f1f8e9;
-}
-
-.no-data {
-  text-align: center;
-  color: gray;
-  padding: 20px;
-  font-style: italic;
-}
-
-
-⸻
-
-🧾 approvals.ts
-
-import { Component, OnInit } from '@angular/core';
-import { TravelService } from '../services/travel';
-
-@Component({
-  selector: 'app-approvals',
-  templateUrl: './approvals.html',
-  styleUrls: ['./approvals.css']
-})
-export class ApprovalsComponent implements OnInit {
-
-  travels: any[] = [];
-
-  constructor(private travelService: TravelService) {}
-
-  ngOnInit() {
-    this.travels = this.travelService.getTravels();
-  }
-
-  updateStatus(index: number, status: string) {
-    this.travelService.updateStatus(index, status);
-  }
-}
-
-
-⸻
-
-🧾 approvals.html
-
-<div class="approvals-container">
-  <h2>Pending Approvals</h2>
-
-  <table *ngIf="travels.length > 0; else noData">
-    <thead>
-      <tr>
-        <th>UID</th>
-        <th>Name</th>
-        <th>Line Manager</th>
-        <th>Domain</th>
-        <th>Cluster</th>
-        <th>Sub Cluster</th>
-        <th>Cluster-1</th>
-        <th>HOD</th>
-        <th>Travel Type</th>
-        <th>Origin City</th>
-        <th>Destination City</th>
-        <th>Start Date</th>
-        <th>End Date</th>
-        <th>Travel Class</th>
-        <th>Type</th>
-        <th>Purpose</th>
-        <th>Status</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      <tr *ngFor="let t of travels; let i = index">
-        <td>{{ t.uid }}</td>
-        <td>{{ t.name }}</td>
-        <td>{{ t.lineManager }}</td>
-        <td>{{ t.domain }}</td>
-        <td>{{ t.cluster }}</td>
-        <td>{{ t.subCluster }}</td>
-        <td>{{ t.cluster1 }}</td>
-        <td>{{ t.hod }}</td>
-        <td>{{ t.travelType }}</td>
-        <td>{{ t.originCity }}</td>
-        <td>{{ t.destinationCity }}</td>
-        <td>{{ t.startDate }}</td>
-        <td>{{ t.endDate }}</td>
-        <td>{{ t.travelClass }}</td>
-        <td>{{ t.type }}</td>
-        <td>{{ t.purpose }}</td>
-        <td>{{ t.status }}</td>
-
-        <td>
-          <ng-container *ngIf="t.status === 'Approval Pending'; else finalStatus">
-            <button class="approve-btn" (click)="updateStatus(i, 'Approved')">Approve</button>
-            <button class="reject-btn" (click)="updateStatus(i, 'Rejected')">Reject</button>
-          </ng-container>
-
-          <ng-template #finalStatus>
-            <span [ngClass]="{
-              'approved': t.status === 'Approved',
-              'rejected': t.status === 'Rejected'
-            }">{{ t.status }}</span>
-          </ng-template>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-
-  <ng-template #noData>
-    <p class="no-data">No travel requests available for approval.</p>
-  </ng-template>
-</div>
-
-
-⸻
-
-🎨 approvals.css
-
-.approvals-container {
-  width: 95%;
-  margin: 30px auto;
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0px 4px 15px rgba(0, 128, 0, 0.2);
-  border: 2px solid #1b5e20;
-}
-
-h2 {
-  text-align: center;
-  color: #1b5e20;
-  margin-bottom: 20px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 15px;
-}
-
-th {
-  background-color: #1b5e20;
-  color: white;
-  padding: 10px;
-  text-align: left;
-}
-
-td {
-  padding: 8px;
-  border-bottom: 1px solid #ddd;
-}
-
-tr:hover {
-  background-color: #f1f8e9;
-}
-
-button {
-  padding: 5px 12px;
-  border: none;
-  border-radius: 5px;
-  color: white;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.approve-btn {
-  background-color: #2e7d32;
-}
-
-.reject-btn {
-  background-color: #c62828;
-  margin-left: 8px;
-}
-
-button:hover {
-  opacity: 0.85;
-}
-
-.approved {
-  color: #2e7d32;
-  font-weight: bold;
-}
-
-.rejected {
-  color: #c62828;
-  font-weight: bold;
-}
-
-.no-data {
-  text-align: center;
-  color: gray;
-  padding: 20px;
-  font-style: italic;
-}
-
-
-⸻
-
-✅ Everything is connected:
-	•	When you submit a new travel in Travell Form, it shows in both Travel Details and Approvals tables.
-	•	When you click Approve or Reject, it instantly updates both tables.
-	•	Both pages use identical field structures, ensuring total consistency.
-	•	Tables are full-width, green-white theme, and responsive.
-
-⸻
-
-Would you like me to now make it so that the tables auto-refresh live (no page reload when a new form is submitted or status changes)?
-That’s a small addition but gives a real professional UX feel ✨
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Perfect bro 💪 — this is exactly the kind of structured and scalable upgrade we should do next.
-Let’s break this clearly into Angular + Spring Boot + YAML backend flow so you can plug it in cleanly.
-
-⸻
-
-🧠 Objective Recap
-
-We’re upgrading the New Travel (TravellComponent) form to include a richer set of dropdowns and data-driven fields.
-Dropdown data will be fetched from the Spring Boot backend, which will in turn read values from YAML files.
-
-⸻
-
-🏗️ Updated Travel Form Fields
-
-Field	Type	Source
-UID	Text	User input
-Name	Text	User input
-Line Manager	Text	User input
-Domain	Dropdown	Backend (from YAML)
-Cluster	Dropdown	Backend (from YAML)
-Sub Cluster	Dropdown	Backend (from YAML)
-Cluster-1	Dropdown	Backend (from YAML)
-HOD	Dropdown	Backend (from YAML)
-Travel Type	Radio (Domestic / International)	Hardcoded
-Origin City	Dropdown	Backend (from YAML)
-Destination City	Dropdown	Backend (from YAML)
-Start Date	Date picker	User input
-End Date	Date picker	User input
-Travel Class	Radio (Economy / Business)	Hardcoded
-Type	Radio (BAU / NBAU)	Hardcoded
-Purpose of Travel	Text area	User input
-
-✅ All fields required
-✅ Dropdowns populated dynamically from backend
-✅ Form remains centered and beautifully styled
-
-⸻
-
-🧩 Part 1 – Spring Boot Setup
-
-🗂️ Folder structure
-
-src/main/resources/
- ├── application.yml
- ├── domains.yml
- ├── clusters.yml
- ├── subclusters.yml
- ├── cluster1.yml
- ├── hod.yml
- ├── cities.yml
-
-🧾 application.yml
-
-spring:
-  application:
-    name: travel-backend
-
-custom:
-  config-files:
-    domain: classpath:domains.yml
-    cluster: classpath:clusters.yml
-    subcluster: classpath:subclusters.yml
-    cluster1: classpath:cluster1.yml
-    hod: classpath:hod.yml
-    city: classpath:cities.yml
-
-✳️ Example YAMLs
-
-domains.yml
-
-domains:
-  - Technology
-  - Finance
-  - Operations
-  - HR
-
-clusters.yml
-
-clusters:
-  - Cluster A
-  - Cluster B
-  - Cluster C
-
-subclusters.yml
-
-subclusters:
-  - Sub-Cluster 1
-  - Sub-Cluster 2
-  - Sub-Cluster 3
-
-cluster1.yml
-
-cluster1:
-  - Cluster-1A
-  - Cluster-1B
-  - Cluster-1C
-
-hod.yml
-
-hod:
-  - John Smith
-  - Sarah Johnson
-  - Amit Patel
-
-cities.yml
-
-cities:
-  - Mumbai
-  - Bangalore
-  - Delhi
-  - Chennai
-  - Hyderabad
-
-
-⸻
-
-⚙️ Spring Boot Code
-
-YamlConfigController.java
-
-@RestController
-@RequestMapping("/api/config")
-public class YamlConfigController {
-
-    @GetMapping("/{type}")
-    public ResponseEntity<List<String>> getYamlValues(@PathVariable String type) throws IOException {
-        String fileName = switch (type.toLowerCase()) {
-            case "domain" -> "domains.yml";
-            case "cluster" -> "clusters.yml";
-            case "subcluster" -> "subclusters.yml";
-            case "cluster1" -> "cluster1.yml";
-            case "hod" -> "hod.yml";
-            case "city" -> "cities.yml";
-            default -> null;
-        };
-
-        if (fileName == null) return ResponseEntity.badRequest().build();
-
-        Yaml yaml = new Yaml();
-        InputStream inputStream = new ClassPathResource(fileName).getInputStream();
-        Map<String, List<String>> data = yaml.load(inputStream);
-        List<String> values = data.values().stream().findFirst().orElse(List.of());
-
-        return ResponseEntity.ok(values);
-    }
-}
-
-✅ Now your backend provides endpoints like:
-
-GET /api/config/domain  
-GET /api/config/cluster  
-GET /api/config/subcluster  
-GET /api/config/cluster1  
-GET /api/config/hod  
-GET /api/config/city  
-
-
-⸻
-
-🧩 Part 2 – Angular Frontend
-
-travell.ts
-
-import { Component, OnInit } from '@angular/core';
-import { NgForm } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
-import { TravelService } from '../services/travel';
-
-@Component({
-  selector: 'app-travell',
-  templateUrl: './travell.html',
-  styleUrls: ['./travell.css']
-})
-export class TravellComponent implements OnInit {
-
-  domains: string[] = [];
-  clusters: string[] = [];
-  subclusters: string[] = [];
-  cluster1s: string[] = [];
-  hods: string[] = [];
-  cities: string[] = [];
-
-  constructor(private travelService: TravelService, private http: HttpClient) {}
-
-  ngOnInit() {
-    const configTypes = ['domain', 'cluster', 'subcluster', 'cluster1', 'hod', 'city'];
-    configTypes.forEach(type => {
-      this.http.get<string[]>(`http://localhost:8080/api/config/${type}`).subscribe({
-        next: (data) => (this[`${type}s`] = data),
-        error: (err) => console.error(`Failed to load ${type}:`, err)
-      });
-    });
-  }
-
-  onSubmit(form: NgForm) {
-    if (form.invalid) {
-      alert('Please fill in all required fields!');
-      return;
-    }
-
-    this.travelService.addTravel(form.value);
-    alert('Travel request submitted successfully!');
-    form.resetForm();
-  }
-}
-
-
-⸻
-
-travell.html
-
-<div class="form-container">
-  <h2>Add Your Travel Details</h2>
-
-  <form #travelForm="ngForm" (ngSubmit)="onSubmit(travelForm)">
-    <div class="form-grid">
-      <label>UID:</label>
-      <input type="text" name="uid" ngModel required />
-
-      <label>Name:</label>
-      <input type="text" name="name" ngModel required />
-
-      <label>Line Manager:</label>
-      <input type="text" name="lineManager" ngModel required />
-
-      <label>Domain:</label>
-      <select name="domain" ngModel required>
-        <option *ngFor="let d of domains" [value]="d">{{ d }}</option>
-      </select>
-
-      <label>Cluster:</label>
-      <select name="cluster" ngModel required>
-        <option *ngFor="let c of clusters" [value]="c">{{ c }}</option>
-      </select>
-
-      <label>Sub Cluster:</label>
-      <select name="subCluster" ngModel required>
-        <option *ngFor="let s of subclusters" [value]="s">{{ s }}</option>
-      </select>
-
-      <label>Cluster-1:</label>
-      <select name="cluster1" ngModel required>
-        <option *ngFor="let c1 of cluster1s" [value]="c1">{{ c1 }}</option>
-      </select>
-
-      <label>HOD:</label>
-      <select name="hod" ngModel required>
-        <option *ngFor="let h of hods" [value]="h">{{ h }}</option>
-      </select>
-
-      <label>Travel Type:</label>
-      <div class="radio-group">
-        <label><input type="radio" name="travelType" value="Domestic" ngModel required /> Domestic</label>
-        <label><input type="radio" name="travelType" value="International" ngModel required /> International</label>
-      </div>
-
-      <label>Origin City:</label>
-      <select name="originCity" ngModel required>
-        <option *ngFor="let city of cities" [value]="city">{{ city }}</option>
-      </select>
-
-      <label>Destination City:</label>
-      <select name="destinationCity" ngModel required>
-        <option *ngFor="let city of cities" [value]="city">{{ city }}</option>
-      </select>
-
-      <label>Start Date:</label>
-      <input type="date" name="startDate" ngModel required />
-
-      <label>End Date:</label>
-      <input type="date" name="endDate" ngModel required />
-
-      <label>Travel Class:</label>
-      <div class="radio-group">
-        <label><input type="radio" name="travelClass" value="Economy" ngModel required /> Economy</label>
-        <label><input type="radio" name="travelClass" value="Business" ngModel required /> Business</label>
-      </div>
-
-      <label>Type:</label>
-      <div class="radio-group">
-        <label><input type="radio" name="type" value="BAU" ngModel required /> BAU</label>
-        <label><input type="radio" name="type" value="NBAU" ngModel required /> NBAU</label>
-      </div>
-
-      <label>Purpose of Travel:</label>
-      <textarea name="purpose" rows="3" ngModel required></textarea>
-    </div>
-
-    <button type="submit" class="submit-btn">Submit</button>
-  </form>
-</div>
-
-
-⸻
-
-💄 travell.css
-
-.form-container {
-  max-width: 900px;
-  margin: 50px auto;
-  background-color: #ffffff;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0px 4px 15px rgba(0, 128, 0, 0.3);
-  border: 2px solid #1b5e20;
-}
-
-h2 {
-  text-align: center;
-  color: #1b5e20;
-  margin-bottom: 20px;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 15px;
-}
-
-input, select, textarea {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #aaa;
-  border-radius: 6px;
-}
-
-.radio-group {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.submit-btn {
-  display: block;
-  margin: 25px auto;
-  background-color: #1b5e20;
-  color: white;
-  padding: 12px 25px;
-  border-radius: 6px;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-.submit-btn:hover {
-  background-color: #2e7d32;
-}
-
-
-⸻
-
-⚙️ Angular Service HTTP Setup
-
-Make sure you import HttpClientModule in your app.ts (or equivalent) so API calls work:
-
-import { HttpClientModule } from '@angular/common/http';
-
-bootstrapApplication(AppComponent, {
-  providers: [importProvidersFrom(HttpClientModule)]
-});
-
-
-⸻
-
-Would you like me to add dynamic filtering next? (for example: when you pick a Cluster, only relevant Sub Clusters show up — cascading dropdowns).
-It’ll make the form even smarter 🌿
+Do you want me to do that next?
