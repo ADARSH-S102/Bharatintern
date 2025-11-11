@@ -1,3 +1,85 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, of } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class TravelService {
+  
+  private baseUrl = 'http://localhost:8080/api/travel'; // 👈 Your Spring Boot base URL
+
+  // Store submitted travels (for Travel Details & Approvals tables)
+  private travelList: any[] = [];
+
+  constructor(private http: HttpClient) {}
+
+  // ---- Dropdown Fetch Methods ----
+  getDomains(): Observable<string[]> {
+    // Expected backend endpoint: /api/travel/domains
+    return this.http.get<string[]>(`${this.baseUrl}/domains`);
+  }
+
+  getClusters(): Observable<string[]> {
+    // Expected backend endpoint: /api/travel/clusters
+    return this.http.get<string[]>(`${this.baseUrl}/clusters`);
+  }
+
+  getSubClusters(): Observable<string[]> {
+    // Expected backend endpoint: /api/travel/sub-clusters
+    return this.http.get<string[]>(`${this.baseUrl}/sub-clusters`);
+  }
+
+  getCluster1List(): Observable<string[]> {
+    // Expected backend endpoint: /api/travel/cluster1
+    return this.http.get<string[]>(`${this.baseUrl}/cluster1`);
+  }
+
+  getHods(): Observable<string[]> {
+    // Expected backend endpoint: /api/travel/hods
+    return this.http.get<string[]>(`${this.baseUrl}/hods`);
+  }
+
+  getCities(): Observable<string[]> {
+    // Expected backend endpoint: /api/travel/cities
+    return this.http.get<string[]>(`${this.baseUrl}/cities`);
+  }
+
+  // ---- Add Travel Record ----
+  addTravel(travelData: any): void {
+    // Store locally (for now)
+    this.travelList.push({ ...travelData, status: 'Approval Pending' });
+
+    // Optional: send to backend (uncomment if backend is ready)
+    // return this.http.post(`${this.baseUrl}/submit`, travelData).subscribe();
+
+    console.log('✅ Travel added:', travelData);
+  }
+
+  // ---- Get All Travels ----
+  getAllTravels(): any[] {
+    return this.travelList;
+  }
+
+  // ---- Update Travel Status ----
+  updateStatus(uid: string, newStatus: string): void {
+    const travel = this.travelList.find(t => t.uid === uid);
+    if (travel) {
+      travel.status = newStatus;
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
 import { Component, OnInit } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { TravelService } from '../services/travel';
