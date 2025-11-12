@@ -1,3 +1,332 @@
+Perfect ✅ — let’s completely revamp the CSS so your Angular UI looks professional and modern.
+We’ll make it high-level, clean, and responsive, with:
+
+Smooth sidebar slide-in/out
+
+Top navigation bar
+
+White main area
+
+Green sidebar and menu
+
+Unified, elegant form styles for “Travell” and approvals
+
+Option for Home and New Travell in the sidebar
+
+
+I’ll provide a complete CSS set for all files you mentioned.
+
+
+---
+
+1️⃣ app.css (global layout)
+
+/* ===========================
+   Global Styles
+=========================== */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f9f9f9;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+h1, h2, h3, h4, h5 {
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ===========================
+   Top Toolbar
+=========================== */
+.topbar {
+  background-color: #2e7d32;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.menu-btn {
+  font-size: 28px;
+  background: none;
+  border: none;
+  color: white;
+  margin-right: 20px;
+  cursor: pointer;
+}
+
+.topbar h2 {
+  font-size: 22px;
+}
+
+/* ===========================
+   Sidebar
+=========================== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -250px; /* hidden by default */
+  width: 250px;
+  height: 100%;
+  background-color: #388e3c;
+  color: white;
+  padding-top: 60px; /* space for topbar */
+  transition: left 0.3s ease;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.2);
+  z-index: 999;
+}
+
+.sidebar.open {
+  left: 0;
+}
+
+.sidebar a {
+  display: block;
+  padding: 15px 25px;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.sidebar a:hover {
+  background-color: #2e7d32;
+  cursor: pointer;
+}
+
+/* ===========================
+   Main Content
+=========================== */
+.main-content {
+  margin-left: 0;
+  transition: margin-left 0.3s ease;
+  padding: 30px;
+  min-height: 100vh;
+  background-color: #ffffff;
+}
+
+/* When sidebar is open, push main content */
+.sidebar.open ~ .main-content {
+  margin-left: 250px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar.open ~ .main-content {
+    margin-left: 0;
+  }
+}
+
+
+---
+
+2️⃣ travell.css (travell form)
+
+.travell-form-container {
+  max-width: 600px;
+  margin: 40px auto;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 30px 40px;
+  box-shadow: 0 6px 15px rgba(0, 128, 0, 0.15);
+}
+
+.travell-form-container h2 {
+  text-align: center;
+  color: #2e7d32;
+  margin-bottom: 25px;
+  font-size: 24px;
+}
+
+.travell-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.travell-form label {
+  font-weight: 600;
+  color: #2e7d32;
+  margin-bottom: 5px;
+}
+
+.travell-form input,
+.travell-form select {
+  padding: 10px 12px;
+  border: 1px solid #a5d6a7;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border 0.2s;
+}
+
+.travell-form input:focus,
+.travell-form select:focus {
+  outline: none;
+  border-color: #2e7d32;
+  box-shadow: 0 0 5px rgba(46,125,50,0.3);
+}
+
+.travell-form button {
+  padding: 12px;
+  background-color: #2e7d32;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.travell-form button:hover {
+  background-color: #1b5e20;
+}
+
+
+---
+
+3️⃣ approvals.css (approver fields styling)
+
+.approvals-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.approvals-container label {
+  font-weight: 600;
+  color: #2e7d32;
+}
+
+.approvals-container input {
+  padding: 10px;
+  border: 1px solid #a5d6a7;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.approvals-container input:focus {
+  outline: none;
+  border-color: #2e7d32;
+  box-shadow: 0 0 5px rgba(46,125,50,0.3);
+}
+
+
+---
+
+4️⃣ travel-details.css (fields like UID, Name, Travel Type)
+
+.travel-details-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.travel-details-container label {
+  font-weight: 600;
+  color: #2e7d32;
+}
+
+.travel-details-container input,
+.travel-details-container select {
+  padding: 10px;
+  border: 1px solid #a5d6a7;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.travel-details-container input:focus,
+.travel-details-container select:focus {
+  outline: none;
+  border-color: #2e7d32;
+  box-shadow: 0 0 5px rgba(46,125,50,0.3);
+}
+
+
+---
+
+5️⃣ welcome.css (Home page styling)
+
+.welcome-container {
+  max-width: 800px;
+  margin: 50px auto;
+  background-color: #ffffff;
+  padding: 40px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 6px 15px rgba(0,128,0,0.1);
+}
+
+.welcome-container h1 {
+  color: #2e7d32;
+  font-size: 32px;
+  margin-bottom: 20px;
+}
+
+.welcome-container p {
+  font-size: 18px;
+  color: #4f4f4f;
+}
+
+
+---
+
+✅ Key Features of this CSS
+
+1. Sidebar slides in/out smoothly when 3-line menu is clicked.
+
+
+2. Sidebar options: Home / New Travell.
+
+
+3. Main content adjusts when sidebar opens.
+
+
+4. Forms (Travell + approvals + travel details) are modern, elegant, and consistent.
+
+
+5. Hover & focus effects on inputs and buttons for professional feel.
+
+
+6. Responsive design for mobile screens.
+
+
+
+
+---
+
+If you want, I can also provide the updated Angular HTML/TS structure that matches this new CSS, so the sidebar actually works and the forms use these classes correctly — making your app fully functional and high-level.
+
+Do you want me to do that next?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';  // ✅ import RouterModule
 
