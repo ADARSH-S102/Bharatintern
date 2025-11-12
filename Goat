@@ -1,48 +1,62 @@
-Perfect ✅ — let’s completely revamp the CSS so your Angular UI looks professional and modern.
-We’ll make it high-level, clean, and responsive, with:
+Ah! Now I understand clearly 😅 — you only want the HTML + CSS together for your pages, no TS files at all, and your component file is travell.ts, not travell.component.ts. Got it.
 
-Smooth sidebar slide-in/out
+Let’s do this once and properly — I’ll give you all HTML files + their CSS in a clean, professional style for:
 
-Top navigation bar
-
-White main area
-
-Green sidebar and menu
-
-Unified, elegant form styles for “Travell” and approvals
-
-Option for Home and New Travell in the sidebar
+1. App (layout, sidebar, topbar)
 
 
-I’ll provide a complete CSS set for all files you mentioned.
+2. Home / Welcome page
+
+
+3. Travell form (travel details + approvals)
+
+
 
 
 ---
 
-1️⃣ app.css (global layout)
+1️⃣ app.html + app.css
 
-/* ===========================
-   Global Styles
-=========================== */
+HTML (app.html)
+
+<div class="app-container">
+  <!-- Top Toolbar -->
+  <div class="topbar">
+    <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+    <h2>Travell Portal</h2>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <a href="home.html" onclick="closeSidebar()">Home</a>
+    <a href="travell.html" onclick="closeSidebar()">New Travell</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content" id="main-content">
+    <!-- Content will be loaded here -->
+  </div>
+</div>
+
+<script>
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('main-content').classList.toggle('shift');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('main-content').classList.remove('shift');
+  }
+</script>
+
+CSS (app.css)
+
 body {
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f9f9f9;
 }
 
-a {
-  text-decoration: none;
-  color: inherit;
-}
-
-h1, h2, h3, h4, h5 {
-  margin: 0;
-  font-weight: 500;
-}
-
-/* ===========================
-   Top Toolbar
-=========================== */
 .topbar {
   background-color: #2e7d32;
   color: #fff;
@@ -68,18 +82,15 @@ h1, h2, h3, h4, h5 {
   font-size: 22px;
 }
 
-/* ===========================
-   Sidebar
-=========================== */
 .sidebar {
   position: fixed;
   top: 0;
-  left: -250px; /* hidden by default */
+  left: -250px;
   width: 250px;
   height: 100%;
   background-color: #388e3c;
   color: white;
-  padding-top: 60px; /* space for topbar */
+  padding-top: 60px;
   transition: left 0.3s ease;
   box-shadow: 2px 0 8px rgba(0,0,0,0.2);
   z-index: 999;
@@ -102,9 +113,6 @@ h1, h2, h3, h4, h5 {
   cursor: pointer;
 }
 
-/* ===========================
-   Main Content
-=========================== */
 .main-content {
   margin-left: 0;
   transition: margin-left 0.3s ease;
@@ -113,149 +121,23 @@ h1, h2, h3, h4, h5 {
   background-color: #ffffff;
 }
 
-/* When sidebar is open, push main content */
-.sidebar.open ~ .main-content {
+.main-content.shift {
   margin-left: 250px;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .sidebar.open ~ .main-content {
-    margin-left: 0;
-  }
-}
-
 
 ---
 
-2️⃣ travell.css (travell form)
+2️⃣ home.html + welcome.css
 
-.travell-form-container {
-  max-width: 600px;
-  margin: 40px auto;
-  background-color: #ffffff;
-  border-radius: 12px;
-  padding: 30px 40px;
-  box-shadow: 0 6px 15px rgba(0, 128, 0, 0.15);
-}
+HTML (home.html)
 
-.travell-form-container h2 {
-  text-align: center;
-  color: #2e7d32;
-  margin-bottom: 25px;
-  font-size: 24px;
-}
+<div class="welcome-container">
+  <h1>Welcome to Travell Portal</h1>
+  <p>Use the sidebar menu to create a new travel request or view existing details.</p>
+</div>
 
-.travell-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.travell-form label {
-  font-weight: 600;
-  color: #2e7d32;
-  margin-bottom: 5px;
-}
-
-.travell-form input,
-.travell-form select {
-  padding: 10px 12px;
-  border: 1px solid #a5d6a7;
-  border-radius: 6px;
-  font-size: 14px;
-  width: 100%;
-  box-sizing: border-box;
-  transition: border 0.2s;
-}
-
-.travell-form input:focus,
-.travell-form select:focus {
-  outline: none;
-  border-color: #2e7d32;
-  box-shadow: 0 0 5px rgba(46,125,50,0.3);
-}
-
-.travell-form button {
-  padding: 12px;
-  background-color: #2e7d32;
-  color: #fff;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.travell-form button:hover {
-  background-color: #1b5e20;
-}
-
-
----
-
-3️⃣ approvals.css (approver fields styling)
-
-.approvals-container {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.approvals-container label {
-  font-weight: 600;
-  color: #2e7d32;
-}
-
-.approvals-container input {
-  padding: 10px;
-  border: 1px solid #a5d6a7;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-.approvals-container input:focus {
-  outline: none;
-  border-color: #2e7d32;
-  box-shadow: 0 0 5px rgba(46,125,50,0.3);
-}
-
-
----
-
-4️⃣ travel-details.css (fields like UID, Name, Travel Type)
-
-.travel-details-container {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.travel-details-container label {
-  font-weight: 600;
-  color: #2e7d32;
-}
-
-.travel-details-container input,
-.travel-details-container select {
-  padding: 10px;
-  border: 1px solid #a5d6a7;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-.travel-details-container input:focus,
-.travel-details-container select:focus {
-  outline: none;
-  border-color: #2e7d32;
-  box-shadow: 0 0 5px rgba(46,125,50,0.3);
-}
-
-
----
-
-5️⃣ welcome.css (Home page styling)
+CSS (welcome.css)
 
 .welcome-container {
   max-width: 800px;
@@ -281,119 +163,166 @@ h1, h2, h3, h4, h5 {
 
 ---
 
-✅ Key Features of this CSS
+3️⃣ travell.html + travell.css
 
-1. Sidebar slides in/out smoothly when 3-line menu is clicked.
+HTML (travell.html)
+
+<div class="travell-form-container">
+  <h2>Add Your Travell Details</h2>
+
+  <form class="travell-form" onsubmit="submitForm(event)">
+    <!-- Travel Details -->
+    <div class="travel-details-container">
+      <label>UID:</label>
+      <input id="uid" type="text" placeholder="Enter UID">
+
+      <label>Name:</label>
+      <input id="name" type="text" placeholder="Enter Name">
+
+      <label>Line Manager Name:</label>
+      <input id="lineManager" type="text" placeholder="Enter Line Manager">
+
+      <label>Travel Type:</label>
+      <select id="travelType" onchange="toggleApprover2()">
+        <option value="">Select</option>
+        <option value="Domestic">Domestic</option>
+        <option value="International">International</option>
+      </select>
+    </div>
+
+    <!-- Approvals -->
+    <div class="approvals-container">
+      <label>Approver 1:</label>
+      <input id="approver1" type="text" placeholder="Enter Approver 1">
+
+      <div id="approver2Div" style="display:none;">
+        <label>Approver 2:</label>
+        <input id="approver2" type="text" placeholder="Enter Approver 2">
+      </div>
+    </div>
+
+    <button type="submit">Submit</button>
+  </form>
+</div>
+
+<script>
+function toggleApprover2() {
+  const type = document.getElementById('travelType').value;
+  document.getElementById('approver2Div').style.display =
+    type === 'International' ? 'block' : 'none';
+}
+
+function submitForm(e) {
+  e.preventDefault();
+  const data = {
+    uid: document.getElementById('uid').value,
+    name: document.getElementById('name').value,
+    lineManager: document.getElementById('lineManager').value,
+    travelType: document.getElementById('travelType').value,
+    approver1: document.getElementById('approver1').value,
+    approver2: document.getElementById('approver2').value
+  };
+  alert('Form Submitted:\n' + JSON.stringify(data, null, 2));
+  document.querySelector('.travell-form').reset();
+  toggleApprover2();
+}
+</script>
+
+CSS (travell.css)
+
+.travell-form-container {
+  max-width: 600px;
+  margin: 40px auto;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 30px 40px;
+  box-shadow: 0 6px 15px rgba(0, 128, 0, 0.15);
+}
+
+.travell-form-container h2 {
+  text-align: center;
+  color: #2e7d32;
+  margin-bottom: 25px;
+  font-size: 24px;
+}
+
+.travell-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.travel-details-container,
+.approvals-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.travel-details-container label,
+.approvals-container label {
+  font-weight: 600;
+  color: #2e7d32;
+}
+
+.travel-details-container input,
+.travel-details-container select,
+.approvals-container input {
+  padding: 10px 12px;
+  border: 1px solid #a5d6a7;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.travel-details-container input:focus,
+.travel-details-container select:focus,
+.approvals-container input:focus {
+  outline: none;
+  border-color: #2e7d32;
+  box-shadow: 0 0 5px rgba(46,125,50,0.3);
+}
+
+.travell-form button {
+  padding: 12px;
+  background-color: #2e7d32;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.travell-form button:hover {
+  background-color: #1b5e20;
+}
 
 
-2. Sidebar options: Home / New Travell.
+---
 
+✅ This gives you:
 
-3. Main content adjusts when sidebar opens.
+Sidebar opens when ☰ clicked
 
+Options: Home / New Travell
 
-4. Forms (Travell + approvals + travel details) are modern, elegant, and consistent.
+Modern, white-green theme
 
+Travell form with Approver 2 shown only for International
 
-5. Hover & focus effects on inputs and buttons for professional feel.
-
-
-6. Responsive design for mobile screens.
-
+Professional, clean layout and styling
 
 
 
 ---
 
-If you want, I can also provide the updated Angular HTML/TS structure that matches this new CSS, so the sidebar actually works and the forms use these classes correctly — making your app fully functional and high-level.
+If you want, I can also merge all CSS into a single styles.css so you just include one CSS file instead of multiple — this will make your project cleaner and ready to run immediately.
 
-Do you want me to do that next?
+Do you want me to do that?
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';  // ✅ import RouterModule
-
-@Component({
-  selector: 'app-welcome',
-  standalone: true,
-  imports: [RouterModule],  // ✅ add RouterModule here
-  templateUrl: './welcome.html',
-  styleUrls: ['./welcome.css']
-})
-export class WelcomeComponent {}
-
-
-
-
-
-
-
-
-Ah! That error always happens when FormsModule is not imported in your standalone component. Since you are using standalone components (travell, etc.), you need to explicitly import FormsModule in the imports array of the component that uses [(ngModel)].
-
-Here’s how to fix it for travell.ts:
-
-import { Component } from '@angular/core';
-import { FormsModule, NgForm } from '@angular/forms'; // ✅ import FormsModule
-import { CommonModule } from '@angular/common';
-import { TravelService } from '../travel.service';
-
-@Component({
-  selector: 'app-travell',
-  standalone: true,
-  imports: [CommonModule, FormsModule],  // ✅ add FormsModule here
-  templateUrl: './travell.html',
-  styleUrls: ['./travell.css']
-})
-export class TravellComponent {
-  travel: any = {
-    uid: '', name: '', lineManager: '', type: '', approver1: '', approver2: ''
-  };
-
-  constructor(private travelService: TravelService) {}
-
-  onSubmit(form: NgForm) {
-    if (form.valid) {
-      alert('Form submitted successfully!');
-      this.travelService.addTravel(this.travel);
-      form.resetForm();
-    } else {
-      alert('Please fill all required fields.');
-    }
-  }
-}
-
-
-⸻
-
-✅ Key Points:
-	1.	Standalone Components do not automatically get FormsModule.
-	2.	You must import FormsModule (and/or ReactiveFormsModule if using reactive forms) in every component that uses [(ngModel)].
-	3.	Also, make sure your input has a name attribute:
-
-<input type="text" name="uid" [(ngModel)]="travel.uid" required />
-
-
-⸻
-
-Do you want me to update all your components (travell, approvals, travel-details) with the proper FormsModule import so this error disappears everywhere?
 
 
 
