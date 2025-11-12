@@ -1,3 +1,175 @@
+Perfect catch again 👏 — you were using SweetAlert popups in your earlier working code, not plain alert() boxes.
+Since Angular 10.9.2 and your setup are standalone (no module file), we’ll integrate SweetAlert correctly without touching your module structure.
+
+Let’s fix this the clean way ⬇️
+
+
+---
+
+✅ Step 1: Install SweetAlert2 (if not done)
+
+Run this once in your project root:
+
+npm install sweetalert2
+
+
+---
+
+✅ Step 2: Import SweetAlert2 in components where you need popups
+
+In your case, the popups appear in:
+
+travell.ts (on submit)
+
+approvals.ts (on approve/reject)
+
+
+So we’ll modify both to use SweetAlert2 properly.
+
+
+---
+
+🟢 travell.ts (New Travel Form)
+
+Replace your alert() calls with SweetAlert popups.
+
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { TravelService } from '../travel';
+import { Router } from '@angular/router';
+import Swal from 'sweetalert2'; // ✅ Add this import
+
+@Component({
+  selector: 'app-travell',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './travell.html',
+  styleUrls: ['./travell.css']
+})
+export class TravellComponent {
+  travelForm!: FormGroup;
+
+  domains = ['Finance', 'HR', 'IT'];
+  clusters = ['Cluster A', 'Cluster B', 'Cluster C'];
+  subclusters = ['Sub-1', 'Sub-2'];
+  cluster1s = ['Cluster1-X', 'Cluster1-Y'];
+  hods = ['HOD1', 'HOD2'];
+  cities = ['Bangalore', 'Chennai', 'Mumbai'];
+  travelTypes = ['Domestic', 'International'];
+  travelClasses = ['Economy', 'Business'];
+  types = ['Official', 'Personal'];
+
+  constructor(private fb: FormBuilder, private travelService: TravelService, private router: Router) {
+    this.travelForm = this.fb.group({
+      uid: ['', Validators.required],
+      name: ['', Validators.required],
+      lineManager: ['', Validators.required],
+      domain: ['', Validators.required],
+      cluster: ['', Validators.required],
+      subcluster: ['', Validators.required],
+      cluster1: ['', Validators.required],
+      hod: ['', Validators.required],
+      originCity: ['', Validators.required],
+      destinationCity: ['', Validators.required],
+      startDate: ['', Validators.required],
+      endDate: ['', Validators.required],
+      travelType: ['', Validators.required],
+      travelClass: ['', Validators.required],
+      type: ['', Validators.required],
+      purpose: ['', [Validators.required, Validators.maxLength(250)]]
+    });
+  }
+
+  submitForm() {
+    if (this.travelForm.valid) {
+      this.travelService.addTravel(this.travelForm.value);
+      Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: 'Travel request submitted successfully!',
+        confirmButtonColor: '#3085d6'
+      });
+      this.travelForm.reset();
+      this.router.navigate(['travel-details']);
+    } else {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Incomplete Form',
+        text: 'Please fill all required fields.',
+        confirmButtonColor: '#d33'
+      });
+    }
+  }
+}
+
+
+---
+
+🟢 approvals.ts (Approvals Page)
+
+Also replace alerts with SweetAlert2:
+
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { TravelService } from '../travel';
+import Swal from 'sweetalert2'; // ✅ Add this import
+
+@Component({
+  selector: 'app-approvals',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './approvals.html',
+  styleUrls: ['./approvals.css']
+})
+export class ApprovalsComponent {
+  travels: any[] = [];
+
+  constructor(private travelService: TravelService) {}
+
+  ngOnInit() {
+    this.travels = this.travelService.getTravels();
+  }
+
+  approve(uid: string) {
+    this.travelService.updateStatus(uid, 'Approved');
+    Swal.fire({
+      icon: 'success',
+      title: 'Approved!',
+      text: `Travel with UID ${uid} has been approved.`,
+      confirmButtonColor: '#3085d6'
+    });
+  }
+
+  reject(uid: string) {
+    this.travelService.updateStatus(uid, 'Rejected');
+    Swal.fire({
+      icon: 'error',
+      title: 'Rejected!',
+      text: `Travel with UID ${uid} has been rejected.`,
+      confirmButtonColor: '#d33'
+    });
+  }
+}
+
+
+---
+
+✅ Now SweetAlert will work flawlessly in your standalone Angular 10 setup — no app.module.ts needed.
+You can also customize the icons, colors, or even use confirmation dialogs (e.g., “Are you sure?”) if you’d like.
+
+
+---
+
+Would you like me to make the “Approve” and “Reject” buttons show a confirmation popup (with “Yes/No” before updating the status)?
+
+
+
+
+
+
+
+
 Perfect — you caught that at exactly the right point 👏
 
 Since your Angular app is standalone (no AppModule), each component must import its own dependencies, even if other components already did.
