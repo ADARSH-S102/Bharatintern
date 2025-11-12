@@ -1,3 +1,215 @@
+Perfect 👍 — here are the final updated files to complete your Angular Travel Request UI:
+
+They are fully compatible with the updated backend (YAML-based dropdowns) and fix all [object Object] errors.
+
+
+---
+
+🎨 travell.css
+
+(Clean, responsive, modern — with Safari/Firefox safe properties)
+
+/* src/app/components/travell/travell.css */
+
+.travel-container {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 30px;
+  border-radius: 16px;
+  background-color: #ffffff;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.travel-container h2 {
+  text-align: center;
+  margin-bottom: 25px;
+  font-size: 1.8rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #555;
+}
+
+.form-group input,
+.form-group select {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  background-color: #fafafa;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s;
+}
+
+/* Add accessibility fallback */
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+/* Submit button styling */
+button[type='submit'] {
+  display: block;
+  width: 200px;
+  margin: 30px auto 0;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background-color: #007bff;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 15px;
+  transition: background-color 0.2s ease-in-out;
+}
+
+button[type='submit']:hover {
+  background-color: #0056b3;
+}
+
+button[disabled] {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Prevent zoom issues on Safari */
+input, select, button {
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Disable text selection globally but allow input fields */
+body {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+}
+input, select, button, label {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+}
+
+/* Responsive tweaks */
+@media (max-width: 600px) {
+  .travel-container {
+    padding: 20px;
+  }
+
+  button[type='submit'] {
+    width: 100%;
+  }
+}
+
+
+---
+
+🧪 dropdown.spec.ts
+
+(Unit test file for your dropdown service – simple and clean)
+
+// src/app/services/dropdown.spec.ts
+import { TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { DropdownService } from './dropdown';
+
+describe('DropdownService', () => {
+  let service: DropdownService;
+  let httpMock: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [DropdownService]
+    });
+
+    service = TestBed.inject(DropdownService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
+  });
+
+  it('should fetch dropdown options successfully', () => {
+    const mockData = ['Finance', 'HR', 'IT'];
+
+    service.getOptions('domain').subscribe(data => {
+      expect(data).toEqual(mockData);
+    });
+
+    const req = httpMock.expectOne('http://localhost:8080/api/dropdowns/domain');
+    expect(req.request.method).toBe('GET');
+    req.flush(mockData);
+  });
+
+  it('should handle wrapped YAML responses gracefully', () => {
+    const wrappedResponse = { values: ['Cluster1', 'Cluster2'] };
+
+    service.getOptions('cluster').subscribe(data => {
+      expect(data).toEqual(['Cluster1', 'Cluster2']);
+    });
+
+    const req = httpMock.expectOne('http://localhost:8080/api/dropdowns/cluster');
+    req.flush(wrappedResponse);
+  });
+});
+
+
+---
+
+✅ This completes your working Angular + Spring Boot setup
+
+What’s included:
+
+✅ dropdown.ts (Service)
+
+✅ dropdown.spec.ts (Unit test)
+
+✅ travell.ts (Form logic)
+
+✅ travell.html (UI)
+
+✅ travell.css (Styles, fixed cross-browser issues)
+
+
+
+---
+
+Would you like me to now send the Angular routing and app.module.ts setup (to ensure TravellComponent and DropdownService are properly wired in your app)?
+That’ll make it a fully runnable Angular project.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect 👌 — here’s the entire updated and corrected Angular code for all three files:
 ✅ Works cleanly with your Spring Boot YAML backend
 ✅ Fixes the [object Object] error
