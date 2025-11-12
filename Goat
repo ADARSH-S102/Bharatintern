@@ -1,3 +1,148 @@
+Perfect — that error dump tells me Maven (or Gradle) isn’t recognizing your Spring Boot dependencies (especially the core + YAML libs).
+Let’s fix this cleanly 💪
+
+
+---
+
+✅ Root Cause
+
+Your compiler says:
+
+org.springframework.context.annotation.* not found → means spring-context not in classpath.
+
+org.springframework.beans.factory.annotation.* not found → means spring-beans missing.
+
+org.yaml.snakeyaml.* not found → means snakeyaml not included.
+
+
+So this isn’t a Java code problem — it’s your missing dependencies.
+
+
+---
+
+✅ Step 1: Check You’re in a Spring Boot Project
+
+In pom.xml (if using Maven), ensure you have:
+
+<parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.3.2</version> <!-- or your preferred version -->
+</parent>
+
+<dependencies>
+    <!-- Spring Boot Core -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+
+    <!-- Web Starter (for REST controllers) -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!-- YAML parser -->
+    <dependency>
+        <groupId>org.yaml</groupId>
+        <artifactId>snakeyaml</artifactId>
+        <version>2.2</version>
+    </dependency>
+
+    <!-- Optional: Lombok -->
+    <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <optional>true</optional>
+    </dependency>
+
+    <!-- Test dependencies -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+        </plugin>
+    </plugins>
+</build>
+
+Then run:
+
+mvn clean install
+
+or, if using Gradle:
+
+gradle clean build
+
+
+---
+
+✅ Step 2: Verify Imports in YamlConfig.java
+
+Make sure your imports look exactly like this:
+
+package com.example.travel.config;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.yaml.snakeyaml.Yaml;
+
+import java.io.InputStream;
+import java.util.Map;
+
+
+---
+
+✅ Step 3: Verify File Location
+
+Ensure the path is correct:
+
+src/main/java/com/example/travel/config/YamlConfig.java
+
+(lowercase config, not Config — Java package names should be lowercase).
+
+
+---
+
+Once you do the above, all 14 errors will disappear.
+Would you like me to also send a working pom.xml file with exactly these dependencies so you can just drop it in and build instantly?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 package com.example.travelbackend.config;
 
 import org.springframework.context.annotation.Configuration;
