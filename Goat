@@ -1,3 +1,46 @@
+package com.example.travelbackend.config;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.yaml.snakeyaml.Yaml;
+
+import java.io.InputStream;
+import java.util.Map;
+
+@Configuration
+public class YamlConfig {
+
+    @Bean
+    public static PropertySourcesPlaceholderConfigurer properties() {
+        return new PropertySourcesPlaceholderConfigurer();
+    }
+
+    @Bean
+    public Map<String, Object> loadMainYaml() {
+        Yaml yaml = new Yaml();
+        InputStream inputStream = this.getClass()
+                .getClassLoader()
+                .getResourceAsStream("main.yml");
+        return yaml.load(inputStream);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect 🔥 — since you just added dropdown.ts and your goal is to integrate backend-powered dropdowns + radio buttons (via YAML), here are only the updated Angular files that need modifications to work with it.
 
 I’ve carefully tailored everything for your setup:
