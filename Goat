@@ -1,3 +1,235 @@
+You’re absolutely right ✅ — you don’t have an app.module.ts, because your app is standalone (Angular 10.9.2 standalone setup using AppComponent + ApplicationConfig).
+Thanks for catching that — we’ll fix it without adding a module file.
+
+Let’s fix all three errors properly inside your existing standalone setup:
+
+
+---
+
+⚠️ The Errors You Mentioned
+
+1. “Neither ngFor directive nor CommonModule was imported”
+→ You need to import CommonModule in every standalone component that uses *ngFor or *ngIf.
+
+
+2. “RouterOutlet is not a known element”
+→ Import RouterOutlet in your AppComponent (which you already do, but we’ll double-check).
+
+
+3. “Can’t bind to formGroup since it isn’t a known property of form”
+→ You must import ReactiveFormsModule in your standalone component where the form is defined.
+
+
+
+
+---
+
+✅ Here’s how to fix everything
+
+🟢 app.ts
+
+Make sure your root component imports RouterOutlet and CommonModule (you already had this mostly right).
+
+import { Component } from '@angular/core';
+import { Router, RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [RouterOutlet, CommonModule],
+  templateUrl: './app.html',
+  styleUrls: ['./app.css']
+})
+export class AppComponent {
+  menuOpen = false;
+
+  constructor(private router: Router) {}
+
+  toggleMenu() {
+    this.menuOpen = !this.menuOpen;
+  }
+
+  navigateTo(path: string) {
+    this.menuOpen = false;
+    this.router.navigate([path]);
+  }
+}
+
+
+---
+
+🟢 travell.ts (your New Travel form component)
+
+Here’s the corrected version that includes all needed imports:
+
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { TravelService } from '../travel';
+import { Router } from '@angular/router';
+
+@Component({
+  selector: 'app-travell',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './travell.html',
+  styleUrls: ['./travell.css']
+})
+export class TravellComponent {
+  travelForm!: FormGroup;
+
+  domains = ['Finance', 'HR', 'IT'];
+  clusters = ['Cluster A', 'Cluster B', 'Cluster C'];
+  subclusters = ['Sub-1', 'Sub-2'];
+  cluster1s = ['Cluster1-X', 'Cluster1-Y'];
+  hods = ['HOD1', 'HOD2'];
+  cities = ['Bangalore', 'Chennai', 'Mumbai'];
+  travelTypes = ['Domestic', 'International'];
+  travelClasses = ['Economy', 'Business'];
+  types = ['Official', 'Personal'];
+
+  constructor(private fb: FormBuilder, private travelService: TravelService, private router: Router) {
+    this.travelForm = this.fb.group({
+      uid: ['', Validators.required],
+      name: ['', Validators.required],
+      lineManager: ['', Validators.required],
+      domain: ['', Validators.required],
+      cluster: ['', Validators.required],
+      subcluster: ['', Validators.required],
+      cluster1: ['', Validators.required],
+      hod: ['', Validators.required],
+      originCity: ['', Validators.required],
+      destinationCity: ['', Validators.required],
+      startDate: ['', Validators.required],
+      endDate: ['', Validators.required],
+      travelType: ['', Validators.required],
+      travelClass: ['', Validators.required],
+      type: ['', Validators.required],
+      purpose: ['', [Validators.required, Validators.maxLength(250)]]
+    });
+  }
+
+  submitForm() {
+    if (this.travelForm.valid) {
+      this.travelService.addTravel(this.travelForm.value);
+      alert('Travel request submitted successfully!');
+      this.travelForm.reset();
+      this.router.navigate(['travel-details']);
+    } else {
+      alert('Please fill all required fields.');
+    }
+  }
+}
+
+
+---
+
+🟢 travell.html
+
+Make sure your HTML uses formGroup and formControlName:
+
+<div class="form-container">
+  <h2>Add Your Travel Details</h2>
+
+  <form [formGroup]="travelForm" (ngSubmit)="submitForm()">
+    <label>UID</label>
+    <input formControlName="uid" type="text">
+
+    <label>Name</label>
+    <input formControlName="name" type="text">
+
+    <label>Line Manager</label>
+    <input formControlName="lineManager" type="text">
+
+    <label>Domain</label>
+    <select formControlName="domain">
+      <option *ngFor="let d of domains" [value]="d">{{d}}</option>
+    </select>
+
+    <label>Cluster</label>
+    <select formControlName="cluster">
+      <option *ngFor="let c of clusters" [value]="c">{{c}}</option>
+    </select>
+
+    <label>Subcluster</label>
+    <select formControlName="subcluster">
+      <option *ngFor="let s of subclusters" [value]="s">{{s}}</option>
+    </select>
+
+    <label>Cluster-1</label>
+    <select formControlName="cluster1">
+      <option *ngFor="let c1 of cluster1s" [value]="c1">{{c1}}</option>
+    </select>
+
+    <label>HOD</label>
+    <select formControlName="hod">
+      <option *ngFor="let h of hods" [value]="h">{{h}}</option>
+    </select>
+
+    <label>Origin City</label>
+    <select formControlName="originCity">
+      <option *ngFor="let o of cities" [value]="o">{{o}}</option>
+    </select>
+
+    <label>Destination City</label>
+    <select formControlName="destinationCity">
+      <option *ngFor="let d of cities" [value]="d">{{d}}</option>
+    </select>
+
+    <label>Start Date</label>
+    <input formControlName="startDate" type="date">
+
+    <label>End Date</label>
+    <input formControlName="endDate" type="date">
+
+    <label>Travel Type</label>
+    <div *ngFor="let t of travelTypes">
+      <input type="radio" [value]="t" formControlName="travelType"> {{t}}
+    </div>
+
+    <label>Travel Class</label>
+    <select formControlName="travelClass">
+      <option *ngFor="let c of travelClasses" [value]="c">{{c}}</option>
+    </select>
+
+    <label>Type</label>
+    <div *ngFor="let tp of types">
+      <input type="radio" [value]="tp" formControlName="type"> {{tp}}
+    </div>
+
+    <label>Purpose of Travel</label>
+    <textarea formControlName="purpose"></textarea>
+
+    <button type="submit">Submit</button>
+  </form>
+</div>
+
+
+---
+
+Now the errors you saw will completely disappear because:
+
+✅ CommonModule → handles *ngFor, *ngIf
+✅ RouterOutlet → imported in AppComponent
+✅ ReactiveFormsModule → enables [formGroup]
+
+
+---
+
+Would you like me to next send the updated travel-details.ts and approvals.ts (to display these same fields in a table)?
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect 👍 — understood completely:
 ✅ Angular version: 10.9.2 (so we’ll stick to NgModule structure, not standalone components)
 ✅ Your naming convention:
