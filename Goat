@@ -1,3 +1,98 @@
+import { Component } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import Swal from 'sweetalert2';
+import { DropdownService } from '../../services/dropdown';
+import { TravelService } from '../../services/travel';
+
+@Component({
+  selector: 'app-travell',
+  standalone: true,
+  templateUrl: './travell.html',
+  styleUrls: ['./travell.css'],
+  imports: [CommonModule, ReactiveFormsModule]
+})
+export class TravellComponent {
+  travelForm!: FormGroup;
+  dropdownOptions: any = {};
+
+  constructor(
+    private fb: FormBuilder,
+    private dropdownService: DropdownService,
+    private travelService: TravelService
+  ) {}
+
+  ngOnInit() {
+    this.travelForm = this.fb.group({
+      uid: ['', Validators.required],
+      name: ['', Validators.required],
+      lineManager: ['', Validators.required],
+      domain: ['', Validators.required],
+      cluster: ['', Validators.required],
+      subcluster: ['', Validators.required],
+      cluster1: ['', Validators.required],
+      hod: ['', Validators.required],
+      originCity: ['', Validators.required],
+      destinationCity: ['', Validators.required],
+      startDate: ['', Validators.required],
+      endDate: ['', Validators.required],
+      travelType: ['', Validators.required],
+      travelClass: ['', Validators.required],
+      type: ['', Validators.required],
+      purposeOfTravel: ['', Validators.required],
+    });
+
+    const fields = [
+      'domain',
+      'cluster',
+      'subcluster',
+      'cluster1',
+      'hod',
+      'originCity',
+      'destinationCity',
+      'travelType',
+      'travelClass',
+      'type'
+    ];
+
+    fields.forEach(f => {
+      this.dropdownService.getOptions(f).subscribe({
+        next: (data) => {
+          if (data.values) {
+            this.dropdownOptions[f] = data.values;
+          } else if (Array.isArray(data)) {
+            this.dropdownOptions[f] = data;
+          } else {
+            this.dropdownOptions[f] = [];
+          }
+        },
+        error: (err) => console.error(`Failed to fetch ${f} options`, err)
+      });
+    });
+  }
+
+  onSubmit() {
+    if (this.travelForm.invalid) {
+      Swal.fire('Validation Error', 'Please fill all required fields', 'error');
+      return;
+    }
+
+    const travelData = this.travelForm.value;
+    this.travelService.addTravel({ ...travelData, status: 'Approval Pending' });
+
+    Swal.fire('Success', 'Travel Request Submitted Successfully!', 'success');
+    this.travelForm.reset();
+  }
+}
+
+
+
+
+
+
+
+
+
 Perfect 👍 — here are the final updated files to complete your Angular Travel Request UI:
 
 They are fully compatible with the updated backend (YAML-based dropdowns) and fix all [object Object] errors.
