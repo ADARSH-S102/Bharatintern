@@ -1,3 +1,392 @@
+Perfect 👌 got it — you want two UI updates now:
+
+1️⃣ Travel Details Page → add a Status column that:
+
+Automatically shows “Approval Pending” once a travel request is submitted.
+
+Updates to “Approved” or “Rejected” based on the action taken in the Approvals page.
+
+
+2️⃣ Approvals Page → make Approve = green button, Reject = red button, with a clean, modern look matching your existing theme.
+
+
+---
+
+Let’s handle this step-by-step.
+
+I’ll send you both updated files (keeping your Angular 10 setup — no module.ts, standalone components):
+
+
+---
+
+🟩 travel-details.ts
+
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { TravelService } from '../../travel';
+
+@Component({
+  selector: 'app-travel-details',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './travel-details.html',
+  styleUrls: ['./travel-details.css']
+})
+export class TravelDetailsComponent implements OnInit {
+  travels: any[] = [];
+
+  constructor(private travelService: TravelService) {}
+
+  ngOnInit(): void {
+    this.travels = this.travelService.getTravels();
+  }
+
+  getStatusClass(status: string): string {
+    if (status === 'Approved') return 'status-approved';
+    if (status === 'Rejected') return 'status-rejected';
+    return 'status-pending';
+  }
+}
+
+
+---
+
+🟩 travel-details.html
+
+<div class="details-container">
+  <h2>Travel Details</h2>
+
+  <table class="travel-table" *ngIf="travels.length > 0; else noData">
+    <thead>
+      <tr>
+        <th>UID</th>
+        <th>Name</th>
+        <th>Manager</th>
+        <th>Domain</th>
+        <th>Cluster</th>
+        <th>Origin</th>
+        <th>Destination</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Travel Class</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let t of travels">
+        <td>{{ t.uid }}</td>
+        <td>{{ t.name }}</td>
+        <td>{{ t.manager }}</td>
+        <td>{{ t.domain }}</td>
+        <td>{{ t.cluster }}</td>
+        <td>{{ t.origin }}</td>
+        <td>{{ t.destination }}</td>
+        <td>{{ t.startDate | date }}</td>
+        <td>{{ t.endDate | date }}</td>
+        <td>{{ t.travelClass }}</td>
+        <td>
+          <span [class]="getStatusClass(t.status)">
+            {{ t.status || 'Approval Pending' }}
+          </span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ng-template #noData>
+    <p class="no-data">No travel requests found.</p>
+  </ng-template>
+</div>
+
+
+---
+
+🟩 travel-details.css
+
+.details-container {
+  background: #fff;
+  border-radius: 12px;
+  padding: 40px 60px;
+  margin: 70px auto;
+  max-width: 1100px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  text-align: center;
+  color: #0a7c2e;
+  margin-bottom: 30px;
+  font-weight: 700;
+  font-size: 28px;
+}
+
+.travel-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  font-family: "Poppins", sans-serif;
+}
+
+.travel-table th,
+.travel-table td {
+  border-bottom: 1px solid #ddd;
+  padding: 12px 10px;
+  font-size: 15px;
+}
+
+.travel-table th {
+  background-color: #0a7c2e;
+  color: white;
+}
+
+.status-approved {
+  background: #04a94e;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.status-rejected {
+  background: #d93025;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.status-pending {
+  background: #f6c90e;
+  color: #333;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.no-data {
+  text-align: center;
+  color: #888;
+  font-style: italic;
+  margin-top: 20px;
+}
+
+
+---
+
+🟥 approvals.ts
+
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import Swal from 'sweetalert2';
+import { TravelService } from '../../travel';
+
+@Component({
+  selector: 'app-approvals',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './approvals.html',
+  styleUrls: ['./approvals.css']
+})
+export class ApprovalsComponent implements OnInit {
+  travels: any[] = [];
+
+  constructor(private travelService: TravelService) {}
+
+  ngOnInit(): void {
+    this.travels = this.travelService.getTravels().filter(t => t.status !== 'Approved' && t.status !== 'Rejected');
+  }
+
+  approve(t: any): void {
+    t.status = 'Approved';
+    this.travelService.updateStatus(t.uid, 'Approved');
+    Swal.fire({
+      icon: 'success',
+      title: 'Approved!',
+      text: `${t.name}'s travel request has been approved.`,
+      confirmButtonColor: '#0a7c2e'
+    });
+  }
+
+  reject(t: any): void {
+    t.status = 'Rejected';
+    this.travelService.updateStatus(t.uid, 'Rejected');
+    Swal.fire({
+      icon: 'error',
+      title: 'Rejected!',
+      text: `${t.name}'s travel request has been rejected.`,
+      confirmButtonColor: '#d93025'
+    });
+  }
+}
+
+
+---
+
+🟥 approvals.html
+
+<div class="approval-container">
+  <h2>Travel Approvals</h2>
+
+  <table class="approval-table" *ngIf="travels.length > 0; else noData">
+    <thead>
+      <tr>
+        <th>UID</th>
+        <th>Name</th>
+        <th>Domain</th>
+        <th>Cluster</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let t of travels">
+        <td>{{ t.uid }}</td>
+        <td>{{ t.name }}</td>
+        <td>{{ t.domain }}</td>
+        <td>{{ t.cluster }}</td>
+        <td>{{ t.startDate | date }}</td>
+        <td>{{ t.endDate | date }}</td>
+        <td>
+          <button class="approve-btn" (click)="approve(t)">Approve</button>
+          <button class="reject-btn" (click)="reject(t)">Reject</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ng-template #noData>
+    <p class="no-data">No pending travel requests found.</p>
+  </ng-template>
+</div>
+
+
+---
+
+🟥 approvals.css
+
+.approval-container {
+  background: #fff;
+  border-radius: 12px;
+  padding: 40px 60px;
+  margin: 70px auto;
+  max-width: 1100px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  text-align: center;
+  color: #0a7c2e;
+  margin-bottom: 30px;
+  font-weight: 700;
+  font-size: 28px;
+}
+
+.approval-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  font-family: "Poppins", sans-serif;
+}
+
+.approval-table th,
+.approval-table td {
+  border-bottom: 1px solid #ddd;
+  padding: 12px 10px;
+  font-size: 15px;
+}
+
+.approval-table th {
+  background-color: #0a7c2e;
+  color: white;
+}
+
+/* Buttons */
+.approve-btn,
+.reject-btn {
+  border: none;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.3s ease;
+  margin: 0 4px;
+}
+
+.approve-btn {
+  background-color: #0a7c2e;
+  box-shadow: 0 3px 6px rgba(0, 100, 0, 0.2);
+}
+
+.approve-btn:hover {
+  background-color: #04a94e;
+}
+
+.reject-btn {
+  background-color: #d93025;
+  box-shadow: 0 3px 6px rgba(180, 0, 0, 0.2);
+}
+
+.reject-btn:hover {
+  background-color: #f03a2e;
+}
+
+.no-data {
+  text-align: center;
+  color: #888;
+  font-style: italic;
+  margin-top: 20px;
+}
+
+
+---
+
+🧩 travel.ts (service update)
+
+Add this new method at the end of your existing TravelService:
+
+updateStatus(uid: string, status: string): void {
+  const record = this.travels.find(t => t.uid === uid);
+  if (record) {
+    record.status = status;
+    localStorage.setItem('travels', JSON.stringify(this.travels));
+  }
+}
+
+
+---
+
+✅ Now behavior:
+
+When a new request is added → it automatically shows Approval Pending.
+
+When approved/rejected → updates status everywhere.
+
+Approve button is green, Reject is red with hover glow.
+
+SweetAlert messages work as before.
+
+
+
+---
+
+Would you like me to also make the status column show icons (🟢🟡🔴) beside text for extra clarity and style?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Perfect ✅ — here’s the fully updated travell component — that’s
 travell.ts, travell.html, and travell.css — all together, matching your Angular 10.9.2 structure and styling, with the premium look, accessibility fixes, and all your new travel fields.
