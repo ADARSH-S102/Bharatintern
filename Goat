@@ -1,3 +1,24 @@
+package com.example.travel;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class TravelApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(TravelApplication.class, args);
+        System.out.println("✅ Travel backend is running...");
+    }
+}
+
+
+
+
+
+
+
+
+
 Absolutely 👍 — below is the complete, attractive, properly spaced and accessible travell.css (for Angular 10.9.2), matching your design theme, plus the rest of the updated code set you requested:
 
 
