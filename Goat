@@ -1,3 +1,72 @@
+
+import { Injectable } from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class TravelService {
+  private travels: any[] = [];
+  private travelSubject = new BehaviorSubject<any[]>([]);
+  travels$ = this.travelSubject.asObservable();
+
+  constructor() {
+    // Load existing travels from localStorage (optional persistence)
+    const saved = localStorage.getItem('travels');
+    if (saved) {
+      this.travels = JSON.parse(saved);
+      this.travelSubject.next(this.travels);
+    }
+  }
+
+  /**
+   * Add new travel record
+   */
+  addTravel(data: any): void {
+    const record = { ...data, status: 'Approval Pending' }; // Default status
+    this.travels.push(record);
+    this.travelSubject.next(this.travels);
+    localStorage.setItem('travels', JSON.stringify(this.travels)); // persist
+  }
+
+  /**
+   * Update approval status (Approved / Rejected)
+   */
+  updateStatus(uid: string, status: string): void {
+    const record = this.travels.find(t => t.uid === uid);
+    if (record) {
+      record.status = status;
+      this.travelSubject.next(this.travels);
+      localStorage.setItem('travels', JSON.stringify(this.travels)); // persist change
+    }
+  }
+
+  /**
+   * Get all travels
+   */
+  getTravels(): any[] {
+    return this.travels;
+  }
+
+  /**
+   * Clear all travel data (for testing/debug)
+   */
+  clearAll(): void {
+    this.travels = [];
+    this.travelSubject.next(this.travels);
+    localStorage.removeItem('travels');
+  }
+}
+
+
+
+
+
+
+
+
+
+
 Perfect 👌 got it — you want two UI updates now:
 
 1️⃣ Travel Details Page → add a Status column that:
