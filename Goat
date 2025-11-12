@@ -1,3 +1,206 @@
+Perfect — you caught that at exactly the right point 👏
+
+Since your Angular app is standalone (no AppModule), each component must import its own dependencies, even if other components already did.
+So, just like we fixed it in travell.ts, we’ll fix it in both travel-details.ts and approvals.ts by importing CommonModule.
+
+Let’s correct both files 👇
+
+
+---
+
+✅ travel-details.ts
+
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { TravelService } from '../travel';
+
+@Component({
+  selector: 'app-travel-details',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './travel-details.html',
+  styleUrls: ['./travel-details.css']
+})
+export class TravelDetailsComponent {
+  travels: any[] = [];
+
+  constructor(private travelService: TravelService) {}
+
+  ngOnInit() {
+    this.travels = this.travelService.getTravels();
+  }
+}
+
+
+---
+
+✅ travel-details.html
+
+<div class="details-container">
+  <h2>Travel Details</h2>
+
+  <table *ngIf="travels.length > 0; else noData">
+    <thead>
+      <tr>
+        <th>UID</th>
+        <th>Name</th>
+        <th>Line Manager</th>
+        <th>Domain</th>
+        <th>Cluster</th>
+        <th>Subcluster</th>
+        <th>Cluster-1</th>
+        <th>HOD</th>
+        <th>Origin City</th>
+        <th>Destination City</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Travel Type</th>
+        <th>Travel Class</th>
+        <th>Type</th>
+        <th>Purpose</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let travel of travels">
+        <td>{{ travel.uid }}</td>
+        <td>{{ travel.name }}</td>
+        <td>{{ travel.lineManager }}</td>
+        <td>{{ travel.domain }}</td>
+        <td>{{ travel.cluster }}</td>
+        <td>{{ travel.subcluster }}</td>
+        <td>{{ travel.cluster1 }}</td>
+        <td>{{ travel.hod }}</td>
+        <td>{{ travel.originCity }}</td>
+        <td>{{ travel.destinationCity }}</td>
+        <td>{{ travel.startDate }}</td>
+        <td>{{ travel.endDate }}</td>
+        <td>{{ travel.travelType }}</td>
+        <td>{{ travel.travelClass }}</td>
+        <td>{{ travel.type }}</td>
+        <td>{{ travel.purpose }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ng-template #noData>
+    <p>No travel records found.</p>
+  </ng-template>
+</div>
+
+
+---
+
+✅ approvals.ts
+
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { TravelService } from '../travel';
+
+@Component({
+  selector: 'app-approvals',
+  standalone: true,
+  imports: [CommonModule],
+  templateUrl: './approvals.html',
+  styleUrls: ['./approvals.css']
+})
+export class ApprovalsComponent {
+  travels: any[] = [];
+
+  constructor(private travelService: TravelService) {}
+
+  ngOnInit() {
+    this.travels = this.travelService.getTravels();
+  }
+
+  approve(uid: string) {
+    this.travelService.updateStatus(uid, 'Approved');
+    alert('Travel approved!');
+  }
+
+  reject(uid: string) {
+    this.travelService.updateStatus(uid, 'Rejected');
+    alert('Travel rejected!');
+  }
+}
+
+
+---
+
+✅ approvals.html
+
+<div class="approvals-container">
+  <h2>Approvals</h2>
+
+  <table *ngIf="travels.length > 0; else noData">
+    <thead>
+      <tr>
+        <th>UID</th>
+        <th>Name</th>
+        <th>Domain</th>
+        <th>Cluster</th>
+        <th>Travel Type</th>
+        <th>Travel Class</th>
+        <th>Type</th>
+        <th>Purpose</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let travel of travels">
+        <td>{{ travel.uid }}</td>
+        <td>{{ travel.name }}</td>
+        <td>{{ travel.domain }}</td>
+        <td>{{ travel.cluster }}</td>
+        <td>{{ travel.travelType }}</td>
+        <td>{{ travel.travelClass }}</td>
+        <td>{{ travel.type }}</td>
+        <td>{{ travel.purpose }}</td>
+        <td>{{ travel.status || 'Pending' }}</td>
+        <td>
+          <button (click)="approve(travel.uid)">Approve</button>
+          <button (click)="reject(travel.uid)">Reject</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ng-template #noData>
+    <p>No travel records available for approval.</p>
+  </ng-template>
+</div>
+
+
+---
+
+✅ Now all components import CommonModule, which fixes
+
+*ngFor / *ngIf errors
+
+“CommonModule not imported” errors
+
+
+Everything will render perfectly without app.module.ts.
+
+
+---
+
+Would you like me to now connect these dropdowns and radio buttons to the Spring Boot backend with YAML-driven values (the main.yml + multiple field YAMLs setup)?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 You’re absolutely right ✅ — you don’t have an app.module.ts, because your app is standalone (Angular 10.9.2 standalone setup using AppComponent + ApplicationConfig).
 Thanks for catching that — we’ll fix it without adding a module file.
 
