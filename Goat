@@ -1,3 +1,399 @@
+Absolutely 👍 — below is the complete, attractive, properly spaced and accessible travell.css (for Angular 10.9.2), matching your design theme, plus the rest of the updated code set you requested:
+
+
+---
+
+🧩 Updated Files for Dropdown Integration
+
+src/app/travell/travell.ts
+
+src/app/travell/travell.html
+
+src/app/travell/travell.css ✅
+
+src/app/services/dropdown.ts ✅
+
+src/app/services/dropdown.spec.ts ✅
+
+
+
+---
+
+✅ travell.ts
+
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import Swal from 'sweetalert2';
+import { TravelService } from '../services/travel';
+import { DropdownService } from '../services/dropdown';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule } from '@angular/forms';
+
+@Component({
+  selector: 'app-travell',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './travell.html',
+  styleUrls: ['./travell.css']
+})
+export class TravellComponent implements OnInit {
+
+  travelForm!: FormGroup;
+
+  domains: string[] = [];
+  clusters: string[] = [];
+  subclusters: string[] = [];
+  cluster1s: string[] = [];
+  hods: string[] = [];
+  cities: string[] = [];
+  travelTypes: string[] = [];
+  travelClasses: string[] = [];
+  types: string[] = [];
+
+  constructor(
+    private fb: FormBuilder,
+    private travelService: TravelService,
+    private dropdownService: DropdownService
+  ) {}
+
+  ngOnInit(): void {
+    this.travelForm = this.fb.group({
+      uid: ['', Validators.required],
+      name: ['', Validators.required],
+      lineManager: ['', Validators.required],
+      domain: ['', Validators.required],
+      cluster: ['', Validators.required],
+      subcluster: ['', Validators.required],
+      cluster1: ['', Validators.required],
+      hod: ['', Validators.required],
+      originCity: ['', Validators.required],
+      destinationCity: ['', Validators.required],
+      startDate: ['', Validators.required],
+      endDate: ['', Validators.required],
+      travelType: ['', Validators.required],
+      travelClass: ['', Validators.required],
+      type: ['', Validators.required],
+      purpose: ['', Validators.required]
+    });
+
+    this.loadDropdownData();
+  }
+
+  loadDropdownData(): void {
+    this.dropdownService.getDomains().subscribe(data => this.domains = data);
+    this.dropdownService.getClusters().subscribe(data => this.clusters = data);
+    this.dropdownService.getSubclusters().subscribe(data => this.subclusters = data);
+    this.dropdownService.getCluster1().subscribe(data => this.cluster1s = data);
+    this.dropdownService.getHods().subscribe(data => this.hods = data);
+    this.dropdownService.getCities().subscribe(data => this.cities = data);
+    this.dropdownService.getTravelTypes().subscribe(data => this.travelTypes = data);
+    this.dropdownService.getTravelClasses().subscribe(data => this.travelClasses = data);
+    this.dropdownService.getTypes().subscribe(data => this.types = data);
+  }
+
+  onSubmit(): void {
+    if (this.travelForm.invalid) {
+      Swal.fire('Error', 'Please fill all required fields.', 'error');
+      return;
+    }
+
+    this.travelService.addTravel(this.travelForm.value);
+    Swal.fire('Success', 'Travel request submitted successfully!', 'success');
+    this.travelForm.reset();
+  }
+}
+
+
+---
+
+✅ travell.html
+
+<div class="form-container">
+  <h2>Add Your Travel Details</h2>
+
+  <form [formGroup]="travelForm" (ngSubmit)="onSubmit()">
+    <div class="form-grid">
+
+      <label>UID</label>
+      <input formControlName="uid" type="text" placeholder="Enter UID" />
+
+      <label>Name</label>
+      <input formControlName="name" type="text" placeholder="Enter Name" />
+
+      <label>Line Manager</label>
+      <input formControlName="lineManager" type="text" placeholder="Enter Line Manager" />
+
+      <label>Domain</label>
+      <select formControlName="domain">
+        <option value="">Select Domain</option>
+        <option *ngFor="let d of domains" [value]="d">{{ d }}</option>
+      </select>
+
+      <label>Cluster</label>
+      <select formControlName="cluster">
+        <option value="">Select Cluster</option>
+        <option *ngFor="let c of clusters" [value]="c">{{ c }}</option>
+      </select>
+
+      <label>Subcluster</label>
+      <select formControlName="subcluster">
+        <option value="">Select Subcluster</option>
+        <option *ngFor="let s of subclusters" [value]="s">{{ s }}</option>
+      </select>
+
+      <label>Cluster-1</label>
+      <select formControlName="cluster1">
+        <option value="">Select Cluster-1</option>
+        <option *ngFor="let c of cluster1s" [value]="c">{{ c }}</option>
+      </select>
+
+      <label>HOD</label>
+      <select formControlName="hod">
+        <option value="">Select HOD</option>
+        <option *ngFor="let h of hods" [value]="h">{{ h }}</option>
+      </select>
+
+      <label>Origin City</label>
+      <select formControlName="originCity">
+        <option value="">Select Origin</option>
+        <option *ngFor="let o of cities" [value]="o">{{ o }}</option>
+      </select>
+
+      <label>Destination City</label>
+      <select formControlName="destinationCity">
+        <option value="">Select Destination</option>
+        <option *ngFor="let d of cities" [value]="d">{{ d }}</option>
+      </select>
+
+      <label>Start Date</label>
+      <input formControlName="startDate" type="date" />
+
+      <label>End Date</label>
+      <input formControlName="endDate" type="date" />
+
+      <label>Travel Type</label>
+      <div class="radio-group">
+        <label *ngFor="let t of travelTypes">
+          <input type="radio" formControlName="travelType" [value]="t" /> {{ t }}
+        </label>
+      </div>
+
+      <label>Travel Class</label>
+      <select formControlName="travelClass">
+        <option value="">Select Class</option>
+        <option *ngFor="let c of travelClasses" [value]="c">{{ c }}</option>
+      </select>
+
+      <label>Type</label>
+      <div class="radio-group">
+        <label *ngFor="let t of types">
+          <input type="radio" formControlName="type" [value]="t" /> {{ t }}
+        </label>
+      </div>
+
+      <label>Purpose of Travel</label>
+      <textarea formControlName="purpose" placeholder="Enter purpose of travel"></textarea>
+    </div>
+
+    <button type="submit" class="submit-btn">Submit</button>
+  </form>
+</div>
+
+
+---
+
+✅ travell.css
+
+.form-container {
+  max-width: 1000px;
+  margin: 30px auto;
+  padding: 30px 40px;
+  background: #f9f9fb;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-family: "Segoe UI", sans-serif;
+}
+
+h2 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 25px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 30px;
+}
+
+label {
+  font-weight: 600;
+  color: #444;
+}
+
+input[type="text"],
+input[type="date"],
+select,
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: all 0.3s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #0078d7;
+  box-shadow: 0 0 5px rgba(0, 120, 215, 0.3);
+  outline: none;
+}
+
+textarea {
+  grid-column: span 2;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.radio-group label {
+  font-weight: 500;
+  color: #555;
+}
+
+.submit-btn {
+  margin-top: 30px;
+  display: block;
+  width: 200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 12px 20px;
+  background-color: #0078d7;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.submit-btn:hover {
+  background-color: #005a9e;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+---
+
+✅ dropdown.ts
+
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class DropdownService {
+  private baseUrl = 'http://localhost:8080/api/dropdowns';
+
+  constructor(private http: HttpClient) {}
+
+  getOptions(fieldName: string): Observable<string[]> {
+    return this.http.get<string[]>(`${this.baseUrl}/${fieldName}`);
+  }
+
+  getDomains() { return this.getOptions('domain'); }
+  getClusters() { return this.getOptions('cluster'); }
+  getSubclusters() { return this.getOptions('subcluster'); }
+  getCluster1() { return this.getOptions('cluster1'); }
+  getHods() { return this.getOptions('hod'); }
+  getCities() { return this.getOptions('city'); }
+  getTravelTypes() { return this.getOptions('travelType'); }
+  getTravelClasses() { return this.getOptions('travelClass'); }
+  getTypes() { return this.getOptions('type'); }
+}
+
+
+---
+
+✅ dropdown.spec.ts
+
+import { TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { DropdownService } from './dropdown';
+
+describe('DropdownService', () => {
+  let service: DropdownService;
+  let httpMock: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [DropdownService]
+    });
+    service = TestBed.inject(DropdownService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => httpMock.verify());
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  it('should fetch domain options', () => {
+    const mockDomains = ['Finance', 'HR'];
+    service.getDomains().subscribe(data => {
+      expect(data).toEqual(mockDomains);
+    });
+
+    const req = httpMock.expectOne('http://localhost:8080/api/dropdowns/domain');
+    expect(req.request.method).toBe('GET');
+    req.flush(mockDomains);
+  });
+});
+
+
+---
+
+Would you like me to send updated travel-details.ts and approvals.ts next, with:
+
+A “Status” column showing “Approval Pending”, “Approved”, or “Rejected”
+
+Buttons styled green/red accordingly in the Approvals page?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
