@@ -1,3 +1,325 @@
+Perfect 🔥 — since you just added dropdown.ts and your goal is to integrate backend-powered dropdowns + radio buttons (via YAML), here are only the updated Angular files that need modifications to work with it.
+
+I’ve carefully tailored everything for your setup:
+
+Angular 10.9.2
+
+No app.module.ts (you’re using app.ts as a standalone component)
+
+Service names without .service.ts (so we’re keeping dropdown.ts)
+
+Your existing color theme and structure are preserved
+
+
+
+---
+
+🟢 1️⃣ travel.ts (Service) – ✅ No Change Needed
+
+Keep your existing logic; dropdowns don’t affect this file.
+So skip this one.
+
+
+---
+
+🟦 2️⃣ travell.ts — ✅ UPDATED
+
+Added the dropdown and radio options integration using the new DropdownService.
+
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import Swal from 'sweetalert2';
+import { TravelService } from '../travel/travel';
+import { DropdownService } from '../travel/dropdown';
+
+@Component({
+  selector: 'app-travell',
+  templateUrl: './travell.html',
+  styleUrls: ['./travell.css']
+})
+export class TravellComponent implements OnInit {
+
+  travelForm: FormGroup;
+  submitted = false;
+
+  // dropdown & radio data arrays
+  domains: string[] = [];
+  clusters: string[] = [];
+  subclusters: string[] = [];
+  cluster1s: string[] = [];
+  hods: string[] = [];
+  cities: string[] = [];
+  travelTypes: string[] = [];
+  travelClasses: string[] = [];
+  types: string[] = [];
+
+  constructor(
+    private fb: FormBuilder,
+    private travelService: TravelService,
+    private dropdownService: DropdownService
+  ) {
+    this.travelForm = this.fb.group({
+      uid: ['', Validators.required],
+      name: ['', Validators.required],
+      lineManager: ['', Validators.required],
+      domain: ['', Validators.required],
+      cluster: ['', Validators.required],
+      subcluster: ['', Validators.required],
+      cluster1: ['', Validators.required],
+      hod: ['', Validators.required],
+      originCity: ['', Validators.required],
+      destinationCity: ['', Validators.required],
+      startDate: ['', Validators.required],
+      endDate: ['', Validators.required],
+      travelType: ['', Validators.required],
+      travelClass: ['', Validators.required],
+      type: ['', Validators.required],
+      purpose: ['', [Validators.required, Validators.minLength(5)]]
+    });
+  }
+
+  ngOnInit(): void {
+    this.loadDropdowns();
+  }
+
+  loadDropdowns() {
+    this.dropdownService.getDomains().subscribe(data => this.domains = data);
+    this.dropdownService.getClusters().subscribe(data => this.clusters = data);
+    this.dropdownService.getSubclusters().subscribe(data => this.subclusters = data);
+    this.dropdownService.getCluster1().subscribe(data => this.cluster1s = data);
+    this.dropdownService.getHods().subscribe(data => this.hods = data);
+    this.dropdownService.getCities().subscribe(data => this.cities = data);
+    this.dropdownService.getTravelTypes().subscribe(data => this.travelTypes = data);
+    this.dropdownService.getTravelClasses().subscribe(data => this.travelClasses = data);
+    this.dropdownService.getTypes().subscribe(data => this.types = data);
+  }
+
+  onSubmit() {
+    this.submitted = true;
+    if (this.travelForm.invalid) {
+      Swal.fire('Error', 'Please fill all required fields', 'error');
+      return;
+    }
+
+    this.travelService.addTravel(this.travelForm.value);
+    Swal.fire('Success', 'Travel request submitted successfully', 'success');
+    this.travelForm.reset();
+    this.submitted = false;
+  }
+}
+
+
+---
+
+🟦 3️⃣ travell.html — ✅ UPDATED
+
+Integrated dropdowns and radios using your backend-driven values.
+
+<div class="form-container">
+  <h2>Add Your Travel Details</h2>
+
+  <form [formGroup]="travelForm" (ngSubmit)="onSubmit()">
+    <div class="form-grid">
+
+      <label>UID:</label>
+      <input type="text" formControlName="uid" placeholder="Enter UID" required>
+
+      <label>Name:</label>
+      <input type="text" formControlName="name" placeholder="Enter Name" required>
+
+      <label>Line Manager:</label>
+      <input type="text" formControlName="lineManager" placeholder="Enter Line Manager" required>
+
+      <label>Domain:</label>
+      <select formControlName="domain" required>
+        <option value="" disabled selected>Select Domain</option>
+        <option *ngFor="let d of domains" [value]="d">{{ d }}</option>
+      </select>
+
+      <label>Cluster:</label>
+      <select formControlName="cluster" required>
+        <option value="" disabled selected>Select Cluster</option>
+        <option *ngFor="let c of clusters" [value]="c">{{ c }}</option>
+      </select>
+
+      <label>Subcluster:</label>
+      <select formControlName="subcluster" required>
+        <option value="" disabled selected>Select Subcluster</option>
+        <option *ngFor="let sc of subclusters" [value]="sc">{{ sc }}</option>
+      </select>
+
+      <label>Cluster-1:</label>
+      <select formControlName="cluster1" required>
+        <option value="" disabled selected>Select Cluster-1</option>
+        <option *ngFor="let cl1 of cluster1s" [value]="cl1">{{ cl1 }}</option>
+      </select>
+
+      <label>HOD:</label>
+      <select formControlName="hod" required>
+        <option value="" disabled selected>Select HOD</option>
+        <option *ngFor="let h of hods" [value]="h">{{ h }}</option>
+      </select>
+
+      <label>Origin City:</label>
+      <select formControlName="originCity" required>
+        <option value="" disabled selected>Select Origin City</option>
+        <option *ngFor="let city of cities" [value]="city">{{ city }}</option>
+      </select>
+
+      <label>Destination City:</label>
+      <select formControlName="destinationCity" required>
+        <option value="" disabled selected>Select Destination City</option>
+        <option *ngFor="let city of cities" [value]="city">{{ city }}</option>
+      </select>
+
+      <label>Start Date:</label>
+      <input type="date" formControlName="startDate" required>
+
+      <label>End Date:</label>
+      <input type="date" formControlName="endDate" required>
+
+      <label>Travel Type:</label>
+      <div class="radio-group">
+        <label *ngFor="let type of travelTypes">
+          <input type="radio" formControlName="travelType" [value]="type">{{ type }}
+        </label>
+      </div>
+
+      <label>Travel Class:</label>
+      <select formControlName="travelClass" required>
+        <option value="" disabled selected>Select Travel Class</option>
+        <option *ngFor="let cls of travelClasses" [value]="cls">{{ cls }}</option>
+      </select>
+
+      <label>Type:</label>
+      <div class="radio-group">
+        <label *ngFor="let t of types">
+          <input type="radio" formControlName="type" [value]="t">{{ t }}
+        </label>
+      </div>
+
+      <label>Purpose of Travel:</label>
+      <textarea formControlName="purpose" rows="3" placeholder="Enter purpose"></textarea>
+
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="submit-btn">Submit</button>
+    </div>
+  </form>
+</div>
+
+
+---
+
+🟦 4️⃣ travell.css — ✅ Minor Adjustments
+
+Make sure spacing and dropdown/radio layout align beautifully.
+
+.form-container {
+  max-width: 1000px;
+  margin: 20px auto;
+  background-color: #fff;
+  padding: 30px 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  text-align: center;
+  color: #0066cc;
+  margin-bottom: 25px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px 30px;
+}
+
+label {
+  font-weight: 600;
+  color: #333;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+textarea {
+  grid-column: span 2;
+}
+
+.form-actions {
+  text-align: center;
+  margin-top: 25px;
+}
+
+.submit-btn {
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  padding: 10px 25px;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.submit-btn:hover {
+  background-color: #004d99;
+}
+
+
+---
+
+✅ Summary — Updated Files Only
+
+File	Status	Description
+
+travell.ts	✅ Updated	Loads dropdown & radio data from backend
+travell.html	✅ Updated	Displays new fields dynamically
+travell.css	✅ Updated	Improved spacing, visuals
+dropdown.ts	✅ Added	Connects Angular to backend YAML-based data
+
+
+
+---
+
+Would you like me to now send the updated travel-details.ts and approvals.ts files too (so that they display the new fields, including status)?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect 👍— now that your Angular frontend is fully ready and consistent,
 let’s build the Spring Boot backend that dynamically serves dropdowns / radio button values from YAMLs exactly as you described.
 
