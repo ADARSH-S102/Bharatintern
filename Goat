@@ -1,3 +1,57 @@
+package com.example.travel.service;
+
+import org.springframework.stereotype.Service;
+import org.yaml.snakeyaml.Yaml;
+
+import java.io.InputStream;
+import java.util.Map;
+
+@Service
+public class YamlService {
+
+    public Map<String, Object> readYaml(String fileName) {
+        Yaml yaml = new Yaml();
+        InputStream inputStream = null;
+
+        try {
+            // 🔹 First, try directly in /resources/
+            inputStream = getClass().getClassLoader().getResourceAsStream(fileName);
+
+            // 🔹 If not found, try in /resources/yaml/
+            if (inputStream == null) {
+                inputStream = getClass().getClassLoader().getResourceAsStream("yaml/" + fileName);
+            }
+
+            if (inputStream == null) {
+                throw new RuntimeException("YAML file not found in resources or resources/yaml/: " + fileName);
+            }
+
+            return yaml.load(inputStream);
+
+        } catch (Exception e) {
+            System.err.println("⚠️ Error reading YAML: " + e.getMessage());
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                if (inputStream != null)
+                    inputStream.close();
+            } catch (Exception ignored) {}
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 package com.example.travel.config;
 
 import org.springframework.context.annotation.Configuration;
