@@ -1,3 +1,434 @@
+Perfect 👌 — here’s a fully updated and polished CSS set for your existing Angular components (travell, travel-details, approvals, welcome, and app), all aligned with your original green-white theme 🌿 and upgraded to look clean, modern, and professional — no structural changes required, so it’ll drop right into your existing setup.
+
+
+---
+
+🟩 app.css
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f9fdf9;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Header */
+header {
+  display: flex;
+  align-items: center;
+  background-color: #006400;
+  color: white;
+  padding: 10px 20px;
+  font-size: 20px;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Menu Icon */
+.menu-icon {
+  font-size: 26px;
+  margin-right: 20px;
+  cursor: pointer;
+}
+
+/* Side Menu */
+.side-menu {
+  position: fixed;
+  top: 60px;
+  left: -230px;
+  width: 230px;
+  height: 100%;
+  background-color: #017a38;
+  color: white;
+  padding-top: 30px;
+  transition: left 0.3s ease;
+  z-index: 999;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.side-menu.open {
+  left: 0;
+}
+
+.side-menu ul {
+  list-style: none;
+  padding: 0;
+}
+
+.side-menu li {
+  padding: 15px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.side-menu li:hover {
+  background-color: #049e4c;
+}
+
+
+---
+
+🟩 travell.css
+
+.travel-container {
+  background: #f5fff7;
+  border: 2px solid #0a7c2e;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  max-width: 750px;
+  margin: 60px auto;
+  padding: 40px 50px;
+  font-family: "Poppins", sans-serif;
+}
+
+.travel-container h2 {
+  text-align: center;
+  color: #0a7c2e;
+  margin-bottom: 30px;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.travel-form .form-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 18px;
+}
+
+.travel-form label {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.travel-form input,
+.travel-form select,
+.travel-form textarea {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+  transition: all 0.3s ease;
+}
+
+.travel-form input:focus,
+.travel-form select:focus,
+.travel-form textarea:focus {
+  outline: none;
+  border-color: #0a7c2e;
+  box-shadow: 0 0 6px rgba(10, 124, 46, 0.4);
+}
+
+textarea {
+  resize: none;
+  height: 100px;
+}
+
+/* Radio Button Group */
+.radio-group {
+  display: flex;
+  gap: 15px;
+  margin-top: 5px;
+  color: #333;
+}
+
+.submit-btn {
+  width: 100%;
+  background-color: #0a7c2e;
+  color: white;
+  font-size: 18px;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 100, 0, 0.3);
+}
+
+.submit-btn:hover {
+  background-color: #04a94e;
+  transform: scale(1.03);
+  box-shadow: 0 6px 16px rgba(0, 100, 0, 0.45);
+}
+
+
+---
+
+🟩 travel-details.css
+
+:host {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, #ffffff, #e8f5e9);
+  padding: 50px 0;
+  font-family: "Poppins", sans-serif;
+}
+
+.table-container {
+  width: 90%;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  padding: 20px;
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+h2 {
+  text-align: center;
+  color: #0a7c2e;
+  margin-bottom: 20px;
+  font-size: 28px;
+  letter-spacing: 1px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+  border-radius: 10px;
+}
+
+th {
+  background: #0a7c2e;
+  color: #fff;
+  padding: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+td {
+  padding: 14px;
+  color: #333;
+  text-align: center;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+tr:hover {
+  background-color: #e8f5e9;
+  transition: 0.3s ease;
+}
+
+.status {
+  padding: 6px 12px;
+  border-radius: 20px;
+  color: #fff;
+  font-weight: 600;
+}
+
+.status.pending {
+  background-color: #ffb300;
+}
+.status.approved {
+  background-color: #43a047;
+}
+.status.rejected {
+  background-color: #e53935;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+---
+
+🟩 approvals.css
+
+:host {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, #ffffff, #e8f5e9);
+  padding: 50px 0;
+  font-family: "Poppins", sans-serif;
+}
+
+.table-container {
+  width: 90%;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  padding: 20px;
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+h2 {
+  text-align: center;
+  color: #0a7c2e;
+  margin-bottom: 20px;
+  font-size: 28px;
+  letter-spacing: 1px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+}
+
+th {
+  background: #0a7c2e;
+  color: #fff;
+  padding: 14px;
+  text-transform: uppercase;
+}
+
+td {
+  padding: 14px;
+  color: #333;
+  text-align: center;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+tr:hover {
+  background-color: #e8f5e9;
+  transition: 0.3s ease;
+}
+
+button {
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+button.approve {
+  background-color: #43a047;
+  color: white;
+}
+
+button.reject {
+  background-color: #e53935;
+  color: white;
+  margin-left: 8px;
+}
+
+button.approve:hover {
+  background-color: #2e7d32;
+  transform: scale(1.05);
+}
+
+button.reject:hover {
+  background-color: #c62828;
+  transform: scale(1.05);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+---
+
+🟩 welcome.css
+
+.welcome-container {
+  text-align: center;
+  margin-top: 120px;
+  color: #004d1a;
+  animation: fadeIn 0.7s ease-in;
+}
+
+h1 {
+  font-size: 42px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #006400;
+}
+
+p {
+  font-size: 18px;
+  color: #444;
+  margin-bottom: 50px;
+}
+
+.options {
+  display: flex;
+  justify-content: center;
+  gap: 50px;
+  flex-wrap: wrap;
+}
+
+.button-box {
+  position: relative;
+  width: 260px;
+  height: 120px;
+  background-color: #008000;
+  border-radius: 15px;
+  color: white;
+  font-size: 22px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 100, 0, 0.3);
+  transition: all 0.4s ease;
+}
+
+.button-box:hover {
+  background-color: #04a94e;
+  transform: scale(1.07);
+  box-shadow: 0 12px 30px rgba(0, 100, 0, 0.45);
+}
+
+.hover-text {
+  position: absolute;
+  bottom: 15px;
+  opacity: 0;
+  font-size: 14px;
+  transition: opacity 0.4s ease, bottom 0.4s ease;
+}
+
+.button-box:hover .hover-text {
+  bottom: 25px;
+  opacity: 1;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+---
+
+✅ Consistent theme — elegant green and white palette (#0a7c2e, #017a38, #f5fff7, #e8f5e9)
+✅ Material-like softness — rounded corners, drop shadows, hover animations
+✅ Modern readability — Poppins font, clear spacing, centered layout
+✅ High usability — focus glow, hover transitions, mobile-friendly widths
+
+
+---
+
+Would you like me to now send the updated HTML templates for travell, travel-details, and approvals next — adjusted to match the new fields (UID, domain, cluster, etc.)?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect catch again 👏 — you were using SweetAlert popups in your earlier working code, not plain alert() boxes.
 Since Angular 10.9.2 and your setup are standalone (no module file), we’ll integrate SweetAlert correctly without touching your module structure.
 
