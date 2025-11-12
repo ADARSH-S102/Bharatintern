@@ -1,3 +1,164 @@
+Perfect 👏 — that tells us you’re almost there, but your DropdownController is still calling an old method name (getValuesFromYaml) that doesn’t exist in the updated YamlService.
+
+Let’s fix that completely and make everything consistent 💪
+
+
+---
+
+🧩 Step 1: Correct, Final YamlService.java
+
+Keep this exact version 👇
+It defines a clean single method called readYaml(String fileName) — this loads any YAML by filename.
+
+package com.example.travel.service;
+
+import org.springframework.stereotype.Service;
+import org.yaml.snakeyaml.Yaml;
+
+import java.io.InputStream;
+import java.util.Map;
+
+@Service
+public class YamlService {
+
+    public Map<String, Object> readYaml(String fileName) {
+        Yaml yaml = new Yaml();
+        InputStream inputStream = null;
+
+        try {
+            // Try directly from /resources/
+            inputStream = getClass().getClassLoader().getResourceAsStream(fileName);
+
+            // Try /resources/yaml/ if not found
+            if (inputStream == null) {
+                inputStream = getClass().getClassLoader().getResourceAsStream("yaml/" + fileName);
+            }
+
+            if (inputStream == null) {
+                throw new RuntimeException("YAML file not found in resources or resources/yaml/: " + fileName);
+            }
+
+            return yaml.load(inputStream);
+
+        } catch (Exception e) {
+            System.err.println("⚠️ Error reading YAML: " + e.getMessage());
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                if (inputStream != null)
+                    inputStream.close();
+            } catch (Exception ignored) {}
+        }
+    }
+}
+
+
+---
+
+🧩 Step 2: Correct, Final DropdownController.java
+
+Now replace your existing one with this updated version 👇
+It properly uses the new readYaml method and reads all dropdown + radio data from main.yml.
+
+package com.example.travel.controller;
+
+import com.example.travel.service.YamlService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/dropdowns")
+@CrossOrigin(origins = "*")
+public class DropdownController {
+
+    @Autowired
+    private YamlService yamlService;
+
+    @GetMapping("/{key}")
+    public Map<String, Object> getDropdownValues(@PathVariable String key) {
+        try {
+            // Load main.yml to know which sub-YAML to load
+            Map<String, Object> mainYaml = yamlService.readYaml("main.yml");
+
+            if (mainYaml == null || !mainYaml.containsKey(key)) {
+                throw new RuntimeException("Key not found in main.yml: " + key);
+            }
+
+            // Extract YAML filename for that key
+            String yamlFileName = mainYaml.get(key).toString();
+
+            // Load the sub-YAML file (like cluster.yml, domain.yml, etc.)
+            Map<String, Object> data = yamlService.readYaml(yamlFileName);
+
+            return data;
+
+        } catch (Exception e) {
+            return Map.of("error", e.getMessage());
+        }
+    }
+}
+
+
+---
+
+🧠 How It Works
+
+1. You call →
+GET http://localhost:8080/api/dropdowns/cluster
+
+
+2. The backend reads main.yml →
+finds: cluster: cluster.yml
+
+
+3. Then loads cluster.yml and returns its contents as JSON 🎯
+
+
+
+
+---
+
+✅ After replacing both files:
+
+1. Save both classes (YamlService.java and DropdownController.java).
+
+
+2. Rebuild and run:
+
+mvn clean spring-boot:run
+
+
+3. Visit:
+
+http://localhost:8080/api/dropdowns/cluster
+
+You should now get your cluster list in JSON format ✅
+
+
+
+
+---
+
+Would you like me to send an example of what your main.yml and cluster.yml should look like (for reference)?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 package com.example.travel.service;
 
 import org.springframework.stereotype.Service;
