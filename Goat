@@ -1,3 +1,333 @@
+Perfect 👍— now that your Angular frontend is fully ready and consistent,
+let’s build the Spring Boot backend that dynamically serves dropdowns / radio button values from YAMLs exactly as you described.
+
+
+---
+
+🏗️ Overall Design
+
+🎯 Goal
+
+The backend will:
+
+Read main.yml to understand which YAML file corresponds to each dropdown/radio.
+
+Load values dynamically from those YAML files (domain.yml, cluster.yml, etc.).
+
+Provide REST APIs so Angular can populate dropdowns and radio buttons.
+
+
+
+---
+
+📂 Project Structure
+
+travel-backend/
+├── src/
+│   ├── main/
+│   │   ├── java/com/example/travel/
+│   │   │   ├── TravelApplication.java
+│   │   │   ├── controller/
+│   │   │   │   └── DropdownController.java
+│   │   │   ├── service/
+│   │   │   │   └── YamlService.java
+│   │   │   └── config/
+│   │   │       └── YamlConfig.java
+│   │   └── resources/
+│   │       ├── application.yml
+│   │       ├── yaml/
+│   │       │   ├── main.yml
+│   │       │   ├── domain.yml
+│   │       │   ├── cluster.yml
+│   │       │   ├── subcluster.yml
+│   │       │   ├── cluster1.yml
+│   │       │   ├── hod.yml
+│   │       │   ├── originCity.yml
+│   │       │   ├── destinationCity.yml
+│   │       │   ├── travelType.yml
+│   │       │   ├── travelClass.yml
+│   │       │   └── type.yml
+│   │       └── logback-spring.xml
+└── pom.xml
+
+
+---
+
+🧩 1. pom.xml
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example</groupId>
+    <artifactId>travel-backend</artifactId>
+    <version>1.0.0</version>
+    <name>Travel Backend</name>
+    <packaging>jar</packaging>
+
+    <properties>
+        <java.version>17</java.version>
+        <spring.boot.version>3.3.2</spring.boot.version>
+    </properties>
+
+    <dependencies>
+        <!-- Spring Boot Web -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- YAML Parsing -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- DevTools (Optional for live reload) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+
+
+---
+
+🧠 2. TravelApplication.java
+
+package com.example.travel;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class TravelApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(TravelApplication.class, args);
+    }
+}
+
+
+---
+
+⚙️ 3. YamlConfig.java
+
+package com.example.travel.config;
+
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class YamlConfig {
+    // Reserved for future configs (like caching)
+}
+
+
+---
+
+🧩 4. YamlService.java
+
+package com.example.travel.service;
+
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Service;
+import org.yaml.snakeyaml.Yaml;
+
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class YamlService {
+
+    public Map<String, Object> readYaml(String path) {
+        try (InputStream inputStream = new ClassPathResource(path).getInputStream()) {
+            Yaml yaml = new Yaml();
+            return yaml.load(inputStream);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to read YAML: " + path, e);
+        }
+    }
+
+    public List<String> getValuesFromYaml(String yamlPath) {
+        Map<String, Object> map = readYaml(yamlPath);
+        return (List<String>) map.get("values");
+    }
+}
+
+
+---
+
+🎮 5. DropdownController.java
+
+package com.example.travel.controller;
+
+import com.example.travel.service.YamlService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/dropdowns")
+@CrossOrigin(origins = "*")
+public class DropdownController {
+
+    @Autowired
+    private YamlService yamlService;
+
+    @GetMapping("/{field}")
+    public List<String> getDropdownValues(@PathVariable String field) {
+        Map<String, Object> mainYaml = yamlService.readYaml("yaml/main.yml");
+        String fileName = (String) mainYaml.get(field);
+        if (fileName == null) {
+            throw new RuntimeException("No YAML mapping found for field: " + field);
+        }
+        return yamlService.getValuesFromYaml("yaml/" + fileName);
+    }
+}
+
+
+---
+
+🧾 6. Example YAML Files
+
+🟨 yaml/main.yml
+
+domain: domain.yml
+cluster: cluster.yml
+subcluster: subcluster.yml
+cluster1: cluster1.yml
+hod: hod.yml
+originCity: originCity.yml
+destinationCity: destinationCity.yml
+travelType: travelType.yml
+travelClass: travelClass.yml
+type: type.yml
+
+
+---
+
+🟩 yaml/domain.yml
+
+values:
+  - Technology
+  - Finance
+  - HR
+  - Operations
+
+🟦 yaml/cluster.yml
+
+values:
+  - Cluster A
+  - Cluster B
+  - Cluster C
+
+🟪 yaml/travelType.yml
+
+values:
+  - Domestic
+  - International
+
+🟫 yaml/travelClass.yml
+
+values:
+  - Economy
+  - Business
+  - First Class
+
+…and similarly for all others like hod.yml, originCity.yml, etc.
+
+
+---
+
+⚙️ 7. application.yml
+
+server:
+  port: 8081
+
+spring:
+  application:
+    name: travel-backend
+
+
+---
+
+✅ How It Works
+
+1. Angular calls:
+
+GET http://localhost:8081/api/dropdowns/cluster
+
+
+2. Spring Boot:
+
+Reads main.yml
+
+Finds that cluster → cluster.yml
+
+Loads the list from cluster.yml
+
+
+
+3. Responds with:
+
+["Cluster A", "Cluster B", "Cluster C"]
+
+
+
+Angular then fills the dropdown dynamically 🎉
+
+
+---
+
+Would you like me to also send you the Angular service (dropdown.service.ts) that will consume this backend and bind it to your form fields?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
