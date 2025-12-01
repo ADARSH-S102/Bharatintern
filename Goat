@@ -1,3 +1,133 @@
+<dependencies>
+    <!-- Spring Boot Starter Web -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!-- Camunda 8 Zeebe Spring Boot Starter -->
+    <dependency>
+        <groupId>org.camunda.bpm.springboot</groupId>
+        <artifactId>camunda-bpm-spring-boot-starter-zeebe</artifactId>
+        <version>8.6.0</version>
+    </dependency>
+</dependencies>
+
+
+
+
+
+Ah — perfect, now it’s clear. 😅
+
+If you only have:
+
+camunda:
+  client:
+    zeebe:
+      grpc-address: <your-grpc-address>
+      rest-address: <your-rest-address>
+      prefer-rest-over-grpc: true
+
+…then you are using the auto-authenticated version of Process+ Cloud, or your environment already handles OAuth for you (sometimes via browser login/session).
+
+In this case:
+
+⸻
+
+✅ What this means
+	1.	No client ID / secret needed — Spring Boot starter will use the rest-address or grpc-address directly.
+	2.	The prefer-rest-over-grpc: true tells the Zeebe client to use REST API instead of gRPC.
+	3.	Your backend service can just autowire ZeebeClient and start processes — no OAuth configuration in code.
+
+⸻
+
+🔹 TravelCamundaService.java (works with just these YAML entries)
+
+package com.yourcompany.yourapp.service;
+
+import com.yourcompany.yourapp.dto.TravelRequest;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Service
+public class TravelCamundaService {
+
+    @Autowired
+    private ZeebeClient zeebeClient;
+
+    private static final String PROCESS_ID = "Process_130bwuv";
+
+    public String startProcess(TravelRequest req) {
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("uid", req.getUid());
+        variables.put("name", req.getName());
+        variables.put("lineManager", req.getLineManager());
+        variables.put("domain", req.getDomain());
+        variables.put("cluster", req.getCluster());
+        variables.put("subcluster", req.getSubcluster());
+        variables.put("cluster1", req.getCluster1());
+        variables.put("hod", req.getHod());
+        variables.put("originCity", req.getOriginCity());
+        variables.put("destinationCity", req.getDestinationCity());
+        variables.put("startDate", req.getStartDate());
+        variables.put("endDate", req.getEndDate());
+        variables.put("travelType", req.getTravelType());
+        variables.put("type", req.getType());
+        variables.put("purposeOfTravel", req.getPurposeOfTravel());
+        variables.put("businessManager", req.getBusinessManager());
+        variables.put("travelClass", req.getTravelClass());
+
+        ProcessInstanceEvent event = zeebeClient
+                .newCreateInstanceCommand()
+                .bpmnProcessId(PROCESS_ID)
+                .latestVersion()
+                .variables(variables)
+                .send()
+                .join();
+
+        return "Process started with Instance Key: " + event.getProcessInstanceKey();
+    }
+}
+
+
+⸻
+
+✅ How it works
+	•	Spring Boot starter reads your zeebe.yml automatically
+	•	If prefer-rest-over-grpc: true, all requests go via REST API
+	•	No credentials in code or YAML are required
+	•	Your Angular UI can continue sending requests to your Spring Boot backend
+
+⸻
+
+So basically: you only need the YAML entries you mentioned, everything else works out-of-the-box.
+
+If you want, I can send a full ready-to-drop Spring Boot + zeebe.yml + TravelCamundaService.java setup that works with just grpc-address, rest-address, and prefer-rest-over-grpc.
+
+Do you want me to do that?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Ah, perfect — now it makes total sense. You’re using Camunda Platform 8 / Process+ Cloud (web version), not a local broker. ✅
 
 That changes the configuration slightly because you cannot connect to 127.0.0.1:26500. You have to connect to Camunda Cloud via its API gateway using OAuth credentials.
