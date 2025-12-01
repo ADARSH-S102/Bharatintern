@@ -1,3 +1,20 @@
+this.travelService.addTravel(travelData).subscribe({
+  next: () => {
+    Swal.fire("Success", "Travel Request Submitted", "success");
+    this.travelForm.reset();
+  },
+  error: () => {
+    Swal.fire("Error", "Failed to Start Process", "error");
+  }
+});
+
+
+
+
+
+
+
+
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject } from 'rxjs';
