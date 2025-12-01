@@ -1,3 +1,122 @@
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import Swal from 'sweetalert2';
+import { DropdownService } from '../dropdown/dropdown.service';
+import { TravelService } from '../services/travel.service';
+import { endAfterStartValidator } from '../date-range.validator';
+
+@Component({
+  selector: 'app-travel',
+  standalone: true,
+  templateUrl: './travel.html',
+  styleUrls: ['./travel.css'],
+  imports: [CommonModule, ReactiveFormsModule]
+})
+export class TravelComponent implements OnInit {
+
+  travelForm!: FormGroup;
+
+  domains: string[] = [];
+  clusters: string[] = [];
+  subclusters: string[] = [];
+  cluster1List: string[] = [];
+  hods: string[] = [];
+  originCities: string[] = [];
+  destinationCities: string[] = [];
+  travelTypes: string[] = [];
+  travelClasses: string[] = [];
+  types: string[] = [];
+  businessManager: string[] = [];
+
+  constructor(
+    private fb: FormBuilder,
+    private dropdownService: DropdownService,
+    private travelService: TravelService
+  ) {}
+
+  ngOnInit(): void {
+    this.travelForm = this.fb.group({
+      uid: ['', Validators.required],
+      name: ['', Validators.required],
+      lineManager: ['', Validators.required],
+      domain: ['', Validators.required],
+      cluster: ['', Validators.required],
+      subcluster: ['', Validators.required],
+      cluster1: ['', Validators.required],
+      hod: ['', Validators.required],
+      originCity: ['', Validators.required],
+      destinationCity: ['', Validators.required],
+      startDate: ['', Validators.required],
+      endDate: ['', Validators.required],
+      travelType: ['', Validators.required],
+      travelClass: ['', Validators.required],
+      type: ['', Validators.required],
+      purposeOfTravel: ['', Validators.required],
+      businessManager: ['', Validators.required]
+    }, {
+      validators: endAfterStartValidator('startDate', 'endDate')
+    });
+
+    this.loadDropdowns();
+  }
+
+  loadDropdowns(): void {
+
+    const mappings: { [key: string]: (data: string[]) => void } = {
+      domain: data => this.domains = data,
+      cluster: data => this.clusters = data,
+      subcluster: data => this.subclusters = data,
+      cluster1: data => this.cluster1List = data,
+      hod: data => this.hods = data,
+      originCity: data => this.originCities = data,
+      destinationCity: data => this.destinationCities = data,
+      travelType: data => this.travelTypes = data,
+      travelClass: data => this.travelClasses = data,
+      type: data => this.types = data,
+      businessManager: data => this.businessManager = data
+    };
+
+    Object.keys(mappings).forEach(key => {
+      this.dropdownService.getOptions(key).subscribe({
+        next: (data) => mappings[key](Array.isArray(data) ? data : []),
+        error: (err) => console.error(`Failed to fetch ${key} options`, err)
+      });
+    });
+  }
+
+  onSubmit(): void {
+
+    if (this.travelForm.invalid) {
+      Swal.fire("Error", "Please complete all required fields", "error");
+      return;
+    }
+
+    const travelData = this.travelForm.value;
+
+    // ⬇️⬇️⬇️ THIS IS THE ONLY LINE YOU MUST UPDATE ⬇️⬇️⬇️
+    this.travelService.startTravelProcess(travelData).subscribe({
+      next: (res) => {
+        Swal.fire("Success", "Travel request submitted!", "success");
+        this.travelForm.reset();
+      },
+      error: (err) => {
+        console.error(err);
+        Swal.fire("Error", "Failed to submit form", "error");
+      }
+    });
+    // ⬆️⬆️⬆️ ONLY THIS NEW LINE CHANGES ⬆️⬆️⬆️
+  }
+}
+
+
+
+
+
+
+
+
+
 Perfect — I’ll give you clean, production-ready Spring Boot files with exact filenames so you can copy–paste them directly into:
 
 src/main/java/com/yourcompany/yourapp/controller/
