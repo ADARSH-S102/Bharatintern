@@ -1,3 +1,62 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class TravelService {
+
+  private travels: any[] = [];
+  private travelSubject = new BehaviorSubject<any[]>([]);
+  travels$ = this.travelSubject.asObservable();
+
+  constructor(private http: HttpClient) {
+    const saved = localStorage.getItem('travels');
+    if (saved) {
+      this.travels = JSON.parse(saved);
+      this.travelSubject.next(this.travels);
+    }
+  }
+
+  // ⭐ REPLACE OLD addTravel() WITH THIS ONE
+  addTravel(data: any) {
+    return this.http.post("http://localhost:8081/travel/start", data);
+  }
+
+  // ⭐ You keep this — used by your UI
+  updateStatus(uid: string, status: string): void {
+    const record = this.travels.find(t => t.uid === uid);
+    if (record) {
+      record.status = status;
+      this.travelSubject.next(this.travels);
+      localStorage.setItem('travels', JSON.stringify(this.travels));
+    }
+  }
+
+  getTravels(): any[] {
+    return this.travels;
+  }
+
+  clearAll(): void {
+    this.travels = [];
+    this.travelSubject.next(this.travels);
+    localStorage.removeItem('travels');
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
