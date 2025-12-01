@@ -1,845 +1,231 @@
-Thanks — I’ve assembled a complete, ready-to-drop-in code set that follows your exact constraints:
-	•	No app.module.ts, you asked for app.ts as the central app file.
-	•	No standalone components; components stay as simple <name>.ts + <name>.html + <name>.css files (as you have).
-	•	Your existing components are preserved and updated: travell, travel-details, approvals, welcome.
-	•	Frontend uses LocalStorage (your choice B) so data persists on refresh.
-	•	Login is handled at the app level (built into app.html / app.ts) so you don’t need an extra component file — five hardcoded users and role-based visibility as requested.
-	•	travel.ts service (frontend) updated to handle workflow, role checks, LocalStorage persistence, process steps, BM-editable logic, and the “Info (I)” payload.
-	•	Travel Details table (AG Grid) updated with requested columns: Business Key, Process, Process Instance Key, Status, Start Date Time, End Date Time, Info (I).
-	•	The Info (I) button opens a details modal showing submitted form values. If logged-in user is BM and the record is at BM stage, fields are editable; otherwise read-only.
-	•	Approvals flow enforced: Line Manager → BM (editable) → Cluster Head → ExCo (only for International). Approvals only visible to approvers starting from Line Manager; user cannot see approvals menu.
-	•	Backend suggestions & code (Spring Boot) included as additive updates so existing functionality is not affected — I only add endpoints/data model necessary for this feature and keep previous endpoints intact.
+Perfect — I’ll give you clean, production-ready Spring Boot files with exact filenames so you can copy–paste them directly into:
+
+src/main/java/com/yourcompany/yourapp/controller/
+src/main/java/com/yourcompany/yourapp/service/
+src/main/java/com/yourcompany/yourapp/dto/
+
+Everything is structured and ready to drop into your existing backend.
 
 ⸻
 
-Below I give:
-	1.	A concise file/folder structure to add to src/app/.
-	2.	All frontend files you need (TS / HTML / CSS / service).
-	3.	Backend (Spring Boot) additions and patches — new controller, service methods, and DB table DDL. These are additive and safe — I call out where to place/merge.
+✅ 1. FILE 1 — TravelRequest.java
 
-⸻
+Location:
 
-⚠️ Important: Because you explicitly said you don’t use app.module.ts, this code assumes your build pipeline already wires Angular without an NgModule (you told me you don’t want app.module.ts). The app.ts below plays central app logic; component .ts files are typical Angular components but without standalone flags. If your current bootstrapping is different, you may need tiny adapters — I avoided changing existing code patterns.
+src/main/java/com/yourcompany/yourapp/dto/TravelRequest.java
 
-⸻
+package com.yourcompany.yourapp.dto;
 
-Project file structure (frontend)
+public class TravelRequest {
 
-src/app/
-  app.html
-  app.css
-  app.ts
-  app.routes.ts
-  services/
-    travel.ts         <-- existing service, updated
-    auth.ts           <-- small auth helper (optional; embedded in app.ts if you prefer)
-  welcome/
-    welcome.ts
-    welcome.html
-    welcome.css
-  travell/
-    travell.ts
-    travell.html
-    travell.css
-  travel-details/
-    travel-details.ts
-    travel-details.html
-    travel-details.css
-  approvals/
-    approvals.ts
-    approvals.html
-    approvals.css
-  shared/
-    info-modal.html   <-- small modal markup for Info (I)
-    info-modal.css
+    private String uid;
+    private String name;
+    private String lineManager;
+    private String domain;
+    private String cluster;
+    private String subcluster;
+    private String cluster1;
+    private String hod;
+    private String originCity;
+    private String destinationCity;
+    private String startDate;
+    private String endDate;
+    private String businessManager;
+    private String travelClass;
+    private String travelType;
+    private String type;
+    private String purposeOfTravel;
 
+    // --- GETTERS & SETTERS ---
+    public String getUid() { return uid; }
+    public void setUid(String uid) { this.uid = uid; }
 
-⸻
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-1) src/app/app.html
+    public String getLineManager() { return lineManager; }
+    public void setLineManager(String lineManager) { this.lineManager = lineManager; }
 
-(Your main layout — sidebar + topbar + router outlet area + login UI)
+    public String getDomain() { return domain; }
+    public void setDomain(String domain) { this.domain = domain; }
 
-<!-- app.html -->
-<link rel="stylesheet" href="app.css">
+    public String getCluster() { return cluster; }
+    public void setCluster(String cluster) { this.cluster = cluster; }
 
-<div class="topbar">
-  <button class="menu-btn" id="hamburger" (click)="toggleSidebar()">☰</button>
-  <h2>Travell Portal</h2>
+    public String getSubcluster() { return subcluster; }
+    public void setSubcluster(String subcluster) { this.subcluster = subcluster; }
 
-  <div class="auth-area" *ngIf="!auth.isLoggedIn()">
-    <input id="loginUser" placeholder="username" />
-    <button (click)="login()">Login</button>
-  </div>
+    public String getCluster1() { return cluster1; }
+    public void setCluster1(String cluster1) { this.cluster1 = cluster1; }
 
-  <div class="auth-area" *ngIf="auth.isLoggedIn()">
-    <span class="who">Logged as: {{ auth.getUser() }}</span>
-    <button (click)="logout()">Logout</button>
-  </div>
-</div>
+    public String getHod() { return hod; }
+    public void setHod(String hod) { this.hod = hod; }
 
-<nav class="sidebar" [class.open]="sidebarOpen">
-  <a routerLink="/welcome" (click)="closeSidebar()">Home</a>
-  <a routerLink="/travell" (click)="closeSidebar()">New Travell</a>
-  <a routerLink="/travel-details" (click)="closeSidebar()">Travel Details</a>
-  <a *ngIf="auth.canViewApprovals()" routerLink="/approvals" (click)="closeSidebar()">Approvals</a>
-</nav>
+    public String getOriginCity() { return originCity; }
+    public void setOriginCity(String originCity) { this.originCity = originCity; }
 
-<main class="main-content" [class.shifted]="sidebarOpen">
-  <router-outlet></router-outlet>
-</main>
+    public String getDestinationCity() { return destinationCity; }
+    public void setDestinationCity(String destinationCity) { this.destinationCity = destinationCity; }
 
-<!-- Info modal (hidden by default, used by table) -->
-<div id="infoModal" class="info-modal" [class.open]="infoModalOpen">
-  <div class="info-modal-body">
-    <button class="close-x" (click)="closeInfo()">✕</button>
-    <ng-container *ngIf="infoRecord">
-      <h3>Request Info - {{ infoRecord.businessKey }}</h3>
-      <div class="info-grid">
-        <div><b>UID:</b> {{ infoRecord.uid }}</div>
-        <div><b>Name:</b> {{ infoRecord.name }}</div>
-        <div><b>Line Manager:</b> {{ infoRecord.lineManager }}</div>
-        <div><b>Travel Type:</b> {{ infoRecord.travelType }}</div>
-        <div><b>Approver1:</b> {{ infoRecord.approver1 }}</div>
-        <div><b>Approver2:</b> {{ infoRecord.approver2 }}</div>
-        <div><b>Start:</b> {{ infoRecord.startDateTime }}</div>
-        <div><b>End:</b> {{ infoRecord.endDateTime }}</div>
-      </div>
+    public String getStartDate() { return startDate; }
+    public void setStartDate(String startDate) { this.startDate = startDate; }
 
-      <div *ngIf="auth.isBM() && infoEditable">
-        <h4>BM Edit Mode</h4>
-        <label>Editable Name</label>
-        <input [(ngModel)]="infoRecord.name" />
-        <label>Editable Line Manager</label>
-        <input [(ngModel)]="infoRecord.lineManager" />
-        <button (click)="saveInfoEdit()">Save</button>
-      </div>
-    </ng-container>
-  </div>
-</div>
+    public String getEndDate() { return endDate; }
+    public void setEndDate(String endDate) { this.endDate = endDate; }
 
-Note: This app.html uses Angular template syntax (*ngIf, router-outlet, interpolation). You said you use .ts files like travell.ts etc.; I preserved that pattern.
+    public String getBusinessManager() { return businessManager; }
+    public void setBusinessManager(String businessManager) { this.businessManager = businessManager; }
 
-⸻
+    public String getTravelClass() { return travelClass; }
+    public void setTravelClass(String travelClass) { this.travelClass = travelClass; }
 
-2) src/app/app.css
+    public String getTravelType() { return travelType; }
+    public void setTravelType(String travelType) { this.travelType = travelType; }
 
-(Theme: main white, sidebar green — polished)
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
 
-/* app.css - global */
-* { box-sizing: border-box; }
-body { margin: 0; font-family: "Segoe UI", Roboto, Arial, sans-serif; background:#f7f7f7; }
-
-.topbar {
-  height: 56px;
-  background: #2e7d32;
-  color: white;
-  display:flex;
-  align-items:center;
-  padding: 0 16px;
-  gap:12px;
-  position: sticky;
-  top:0;
-  z-index: 1000;
-}
-
-.topbar h2 { margin:0; font-size:18px; }
-
-.menu-btn { font-size:22px; background:none; border:none; color:white; cursor:pointer; }
-
-.auth-area { margin-left:auto; display:flex; align-items:center; gap:8px; }
-.auth-area input { padding:6px 8px; border-radius:4px; border:1px solid #d0d0d0; }
-
-.sidebar {
-  position: fixed;
-  top: 56px;
-  left: -260px;
-  width: 260px;
-  height: calc(100% - 56px);
-  background: #388e3c;
-  color: white;
-  padding-top: 20px;
-  transition: left 0.26s ease;
-  z-index: 900;
-  box-shadow: 2px 0 8px rgba(0,0,0,0.15);
-}
-
-.sidebar.open { left: 0; }
-.sidebar a { display:block; padding:12px 18px; color:white; text-decoration:none; font-weight:600; }
-.sidebar a:hover { background:#2e7d32; cursor:pointer; }
-
-.main-content {
-  padding: 28px;
-  margin-top: 8px;
-  transition: margin-left 0.26s ease;
-  min-height: calc(100vh - 56px);
-  background: #ffffff;
-}
-
-/* when sidebar open push content */
-.sidebar.open ~ .main-content { margin-left: 260px; }
-
-/* Info modal */
-.info-modal { position: fixed; inset:0; display:none; align-items:center; justify-content:center; background: rgba(0,0,0,0.35); z-index:2000; }
-.info-modal.open { display:flex; }
-.info-modal-body { width:680px; background:white; padding:18px; border-radius:8px; position:relative; box-shadow:0 8px 30px rgba(0,0,0,0.2); }
-.close-x { position:absolute; right:10px; top:8px; background:none; border:none; font-size:18px; cursor:pointer; }
-
-/* small grid of info */
-.info-grid { display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px; }
-
-/* make forms look consistent */
-label { display:block; font-weight:600; color:#2e7d32; margin-top:8px; }
-input[type=text], select, textarea { width:100%; padding:8px; border-radius:6px; border:1px solid #cfd8cd; margin-top:6px; }
-button { padding:10px 14px; border-radius:8px; border:none; background:#2e7d32; color:white; font-weight:600; cursor:pointer; }
-button.secondary { background:#f0f0f0; color:#333; border:1px solid #ddd; }
-
-
-⸻
-
-3) src/app/app.ts
-
-(The central app controller — note: you asked for app.ts instead of app.module.ts / app.component.ts. This is expected to be wired into your project bootstrap.)
-
-// app.ts
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
-import { AuthService } from './services/auth';
-import { TravelService } from './services/travel';
-
-@Component({
-  selector: 'app-root',
-  templateUrl: './app.html',
-  styleUrls: ['./app.css']
-})
-export class App {
-  sidebarOpen = false;
-  infoModalOpen = false;
-  infoRecord: any = null;
-  infoEditable = false;
-
-  constructor(public auth: AuthService, private router: Router, private travelSrv: TravelService) {}
-
-  toggleSidebar() { this.sidebarOpen = !this.sidebarOpen; }
-  closeSidebar() { this.sidebarOpen = false; }
-
-  login() {
-    const el: any = document.getElementById('loginUser');
-    if (!el) return;
-    const username = el.value?.trim();
-    if (!username) { alert('enter username'); return; }
-    if (this.auth.login(username)) {
-      // navigate to welcome
-      this.router.navigate(['/welcome']);
-    } else {
-      alert('Unknown user. Valid: user, lineManager, bm, hod, exco');
-    }
-  }
-
-  logout() {
-    this.auth.logout();
-    this.router.navigate(['/login']);
-  }
-
-  openInfo(record: any) {
-    this.infoRecord = JSON.parse(JSON.stringify(record)); // clone
-    // BM editable only if record waiting at BM approval stage and logged in as bm
-    this.infoEditable = this.auth.isBM() && this.travelSrv.currentStage(record) === 'BM_APPROVAL';
-    this.infoModalOpen = true;
-  }
-
-  closeInfo() {
-    this.infoModalOpen = false;
-    this.infoRecord = null;
-    this.infoEditable = false;
-  }
-
-  saveInfoEdit() {
-    if (!this.infoRecord) return;
-    // update original record by businessKey
-    this.travelSrv.updateByBusinessKey(this.infoRecord.businessKey, {
-      name: this.infoRecord.name,
-      lineManager: this.infoRecord.lineManager
-    });
-    alert('Saved.');
-    this.closeInfo();
-  }
-}
-
-Note: This component assumes your bootstrap references App as root component (your project previously used app.html and app.ts pattern).
-
-⸻
-
-4) src/app/services/auth.ts
-
-(Simple role auth stored in LocalStorage)
-
-// auth.ts
-import { Injectable } from '@angular/core';
-
-@Injectable({ providedIn: 'root' })
-export class AuthService {
-  private currentUser: string | null = null;
-  private roles: { [k: string]: string } = {
-    'user': 'USER',
-    'lineManager': 'LINE_MANAGER',
-    'bm': 'BM',
-    'hod': 'HOD',
-    'exco': 'EXCO'
-  };
-
-  constructor() {
-    const saved = localStorage.getItem('travell_user');
-    if (saved) this.currentUser = saved;
-  }
-
-  login(username: string) {
-    if (!this.roles[username]) return false;
-    this.currentUser = username;
-    localStorage.setItem('travell_user', username);
-    return true;
-  }
-
-  logout() {
-    this.currentUser = null;
-    localStorage.removeItem('travell_user');
-  }
-
-  isLoggedIn() { return !!this.currentUser; }
-  getUser() { return this.currentUser; }
-  role() { return this.currentUser ? this.roles[this.currentUser] : null; }
-
-  canViewApprovals() {
-    const r = this.role();
-    return r && r !== 'USER';
-  }
-  isBM() { return this.role() === 'BM'; }
-  isLineManager() { return this.role() === 'LINE_MANAGER'; }
-  isHOD() { return this.role() === 'HOD'; }
-  isExCo() { return this.role() === 'EXCO'; }
+    public String getPurposeOfTravel() { return purposeOfTravel; }
+    public void setPurposeOfTravel(String purposeOfTravel) { this.purposeOfTravel = purposeOfTravel; }
 }
 
 
 ⸻
 
-5) src/app/services/travel.ts  (your existing service, updated)
+✅ 2. FILE 2 — TravelController.java
 
-This is the central logic: localStorage persistence, workflow stages, BM edit rights, filters by user, business key generation.
+Location:
 
-// travel.ts (service)
-import { Injectable } from '@angular/core';
+src/main/java/com/yourcompany/yourapp/controller/TravelController.java
 
-export type Stage =
-  'CREATED' |
-  'LINE_MANAGER_APPROVAL' |
-  'BM_APPROVAL' |
-  'CLUSTER_HEAD_APPROVAL' |
-  'EXCO_APPROVAL' |
-  'COMPLETED';
+package com.yourcompany.yourapp.controller;
 
-@Injectable({ providedIn: 'root' })
-export class TravelService {
-  private STORAGE_KEY = 'travell_requests_v2';
-
-  constructor() {
-    if (!localStorage.getItem(this.STORAGE_KEY)) {
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify([]));
-    }
-  }
-
-  private loadAll(): any[] {
-    return JSON.parse(localStorage.getItem(this.STORAGE_KEY) || '[]');
-  }
-
-  private saveAll(arr: any[]) {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(arr));
-  }
-
-  createRequest(payload: any) {
-    const all = this.loadAll();
-    const now = new Date().toISOString();
-    const businessKey = 'BK-' + Math.random().toString(36).slice(2, 10).toUpperCase();
-    const processInstanceKey = 'PIK-' + Date.now();
-    const rec = {
-      businessKey,
-      process: 'TravelApprovalProcess',
-      processInstanceKey,
-      status: 'PENDING',
-      startDateTime: now,
-      endDateTime: null,
-      stage: 'LINE_MANAGER_APPROVAL', // first approval
-      createdBy: payload.uid,
-      uid: payload.uid,
-      name: payload.name,
-      lineManager: payload.lineManager,
-      travelType: payload.travelType,
-      approver1: payload.approver1,
-      approver2: payload.approver2 || null,
-      info: payload.info || null,
-      history: [{ by: payload.uid, at: now, action: 'CREATED' }]
-    };
-    all.unshift(rec);
-    this.saveAll(all);
-    return rec;
-  }
-
-  updateByBusinessKey(bk: string, patch: any) {
-    const all = this.loadAll();
-    const idx = all.findIndex(r => r.businessKey === bk);
-    if (idx === -1) return false;
-    all[idx] = { ...all[idx], ...patch };
-    this.saveAll(all);
-    return true;
-  }
-
-  getByUser(uid: string) {
-    const all = this.loadAll();
-    return all.filter(r => r.uid === uid);
-  }
-
-  getAll() { return this.loadAll(); }
-
-  // Get records visible to a role for approvals (records that are at their stage)
-  getPendingForRole(role: string) {
-    const all = this.loadAll();
-    return all.filter(r => {
-      if (r.stage === 'LINE_MANAGER_APPROVAL' && role === 'LINE_MANAGER') return true;
-      if (r.stage === 'BM_APPROVAL' && role === 'BM') return true;
-      if (r.stage === 'CLUSTER_HEAD_APPROVAL' && role === 'HOD') return true;
-      if (r.stage === 'EXCO_APPROVAL' && role === 'EXCO') return true;
-      return false;
-    });
-  }
-
-  // Returns string stage name in code-friendly form
-  currentStage(record: any) { return record.stage; }
-
-  // Approve by business key and current role; moves to next stage
-  approve(bk: string, approver: string, role: string, comment?: string) {
-    const all = this.loadAll();
-    const idx = all.findIndex(r => r.businessKey === bk);
-    if (idx === -1) return false;
-    const rec = all[idx];
-    const now = new Date().toISOString();
-
-    // validate role matches current stage
-    const stage = rec.stage;
-    if (stage === 'LINE_MANAGER_APPROVAL' && role !== 'LINE_MANAGER') return false;
-    if (stage === 'BM_APPROVAL' && role !== 'BM') return false;
-    if (stage === 'CLUSTER_HEAD_APPROVAL' && role !== 'HOD') return false;
-    if (stage === 'EXCO_APPROVAL' && role !== 'EXCO') return false;
-
-    // move to next
-    if (stage === 'LINE_MANAGER_APPROVAL') {
-      rec.stage = 'BM_APPROVAL';
-      rec.history.push({ by: approver, at: now, action: 'LINE_APPROVED', comment });
-    } else if (stage === 'BM_APPROVAL') {
-      // if travelType is International -> next is CLUSTER_HEAD then EXCO
-      rec.stage = 'CLUSTER_HEAD_APPROVAL';
-      rec.history.push({ by: approver, at: now, action: 'BM_APPROVED', comment });
-    } else if (stage === 'CLUSTER_HEAD_APPROVAL') {
-      if (rec.travelType && rec.travelType.toLowerCase() === 'international') {
-        rec.stage = 'EXCO_APPROVAL';
-        rec.history.push({ by: approver, at: now, action: 'HOD_APPROVED', comment });
-      } else {
-        rec.stage = 'COMPLETED';
-        rec.status = 'APPROVED';
-        rec.endDateTime = now;
-        rec.history.push({ by: approver, at: now, action: 'HOD_APPROVED_COMPLETED', comment });
-      }
-    } else if (stage === 'EXCO_APPROVAL') {
-      rec.stage = 'COMPLETED';
-      rec.status = 'APPROVED';
-      rec.endDateTime = now;
-      rec.history.push({ by: approver, at: now, action: 'EXCO_APPROVED', comment });
-    }
-
-    this.saveAll(all);
-    return true;
-  }
-}
-
-Notes:
-	•	stage field controls who can approve.
-	•	BM is allowed to edit fields via updateByBusinessKey.
-	•	getByUser ensures travel-details are user-specific.
-
-⸻
-
-6) src/app/welcome/welcome.ts / .html / .css
-
-welcome.ts
-
-import { Component } from '@angular/core';
-
-@Component({
-  selector: 'app-welcome',
-  templateUrl: './welcome.html',
-  styleUrls: ['./welcome.css']
-})
-export class Welcome {}
-
-welcome.html
-
-<div class="welcome-container">
-  <h1>Welcome to Travell Portal</h1>
-  <p>Use the sidebar to create a new travel request or view travel details.</p>
-</div>
-
-welcome.css
-
-.welcome-container { max-width:900px; margin:40px auto; padding:20px; background:#fff; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.06); color:#2e7d32; }
-
-
-⸻
-
-7) src/app/travell/travell.ts / .html / .css
-
-travell.ts
-
-import { Component } from '@angular/core';
-import { TravelService } from '../services/travel';
-import { AuthService } from '../services/auth';
-import { Router } from '@angular/router';
-
-@Component({
-  selector: 'app-travell',
-  templateUrl: './travell.html',
-  styleUrls: ['./travell.css']
-})
-export class Travell {
-  model: any = { uid: '', name: '', lineManager: '', travelType: '', approver1: '', approver2: '' };
-
-  constructor(private travelSrv: TravelService, private auth: AuthService, private router: Router) {}
-
-  submit() {
-    if (!this.model.uid || !this.model.name || !this.model.lineManager || !this.model.travelType || !this.model.approver1) {
-      alert('Please fill required fields.');
-      return;
-    }
-    this.model.createdBy = this.auth.getUser() || this.model.uid;
-    const rec = this.travelSrv.createRequest(this.model);
-    alert('Created with Business Key: ' + rec.businessKey);
-    // navigate to travel-details
-    this.router.navigate(['/travel-details']);
-  }
-}
-
-travell.html
-
-<div class="travell-form-container">
-  <h2>Add Your Travell Details</h2>
-  <div class="travell-form">
-    <label>UID</label>
-    <input type="text" [(ngModel)]="model.uid" />
-
-    <label>Name</label>
-    <input type="text" [(ngModel)]="model.name" />
-
-    <label>Line Manager Name</label>
-    <input type="text" [(ngModel)]="model.lineManager" />
-
-    <label>Travel Type</label>
-    <select [(ngModel)]="model.travelType">
-      <option value="">Select</option>
-      <option value="Domestic">Domestic</option>
-      <option value="International">International</option>
-    </select>
-
-    <label>Approver 1</label>
-    <input type="text" [(ngModel)]="model.approver1" />
-
-    <div *ngIf="model.travelType === 'International'">
-      <label>Approver 2</label>
-      <input type="text" [(ngModel)]="model.approver2" />
-    </div>
-
-    <button (click)="submit()">Submit</button>
-  </div>
-</div>
-
-travell.css (kept earlier styles — same theme)
-
-.travell-form-container { max-width:600px; margin:16px auto; padding:24px; background:#fff; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
-.travell-form label { font-weight:600; color:#2e7d32; margin-top:8px; display:block; }
-.travell-form input, .travell-form select { padding:8px; border-radius:6px; border:1px solid #d6e9d6; margin-top:6px; width:100%; }
-.travell-form button { margin-top:12px; }
-
-
-⸻
-
-8) src/app/travel-details/travel-details.ts / .html / .css
-
-This component displays the AG Grid and the Info (I) button, and filters by user.
-travel-details.ts
-
-import { Component, OnInit } from '@angular/core';
-import { TravelService } from '../services/travel';
-import { AuthService } from '../services/auth';
-import { App } from '../app'; // to call openInfo if needed
-
-@Component({
-  selector: 'app-travel-details',
-  templateUrl: './travel-details.html',
-  styleUrls: ['./travel-details.css']
-})
-export class TravelDetails implements OnInit {
-  columnDefs: any[];
-  rowData: any[] = [];
-
-  constructor(private travelSrv: TravelService, private auth: AuthService, private app: App) {
-    this.columnDefs = [
-      { headerName: 'Business Key', field: 'businessKey', sortable: true, filter: true },
-      { headerName: 'Process', field: 'process' },
-      { headerName: 'Process Instance Key', field: 'processInstanceKey' },
-      { headerName: 'Status', field: 'status' },
-      { headerName: 'Start Date Time', field: 'startDateTime' },
-      { headerName: 'End Date Time', field: 'endDateTime' },
-      { headerName: 'Info', field: 'info', cellRenderer: params => {
-          return `<button class="info-btn" data-bk="${params.data.businessKey}">I</button>`;
-        }
-      }
-    ];
-  }
-
-  ngOnInit() {
-    this.loadRows();
-    // attach click handler for Info buttons (since cellRenderer returns plain HTML)
-    document.addEventListener('click', (e: any) => {
-      const target = e.target as HTMLElement;
-      if (target && target.classList.contains('info-btn')) {
-        const bk = target.getAttribute('data-bk');
-        const rec = this.travelSrv.getAll().find(x => x.businessKey === bk);
-        if (rec) {
-          this.app.openInfo(rec);
-        }
-      }
-    });
-  }
-
-  loadRows() {
-    // show only records created by current user
-    const user = this.auth.getUser();
-    if (!user) { this.rowData = []; return; }
-    this.rowData = this.travelSrv.getByUser(user);
-  }
-}
-
-travel-details.html
-
-<div class="travel-details-container">
-  <ag-grid-angular
-    style="width: 100%; height: 520px;"
-    class="ag-theme-alpine"
-    [rowData]="rowData"
-    [columnDefs]="columnDefs"
-    [defaultColDef]="{ resizable: true }"
-  ></ag-grid-angular>
-</div>
-
-travel-details.css
-
-.travel-details-container { max-width:1000px; margin:10px auto; }
-.info-btn { background:#2e7d32; color:white; border:none; width:30px; height:30px; border-radius:4px; cursor:pointer; }
-
-Note: AG Grid cellRenderer used to produce a simple button. Event listening uses document click to open modal via App.openInfo. This is purposely simple to avoid adding extra cellRenderer frameworks.
-
-⸻
-
-9) src/app/approvals/approvals.ts / .html / .css
-
-Approvals page shows pending approvals for the logged-in approver role (role-specific) in the SAME table format. Clicking Info opens the details where approver can approve (if they are the correct approver).
-approvals.ts
-
-import { Component, OnInit } from '@angular/core';
-import { TravelService } from '../services/travel';
-import { AuthService } from '../services/auth';
-import { App } from '../app';
-
-@Component({
-  selector: 'app-approvals',
-  templateUrl: './approvals.html',
-  styleUrls: ['./approvals.css']
-})
-export class Approvals implements OnInit {
-  columnDefs: any[];
-  rowData: any[] = [];
-
-  constructor(private travelSrv: TravelService, private auth: AuthService, private app: App) {
-    this.columnDefs = [
-      { headerName: 'Business Key', field: 'businessKey' },
-      { headerName: 'Process', field: 'process' },
-      { headerName: 'Process Instance Key', field: 'processInstanceKey' },
-      { headerName: 'Status', field: 'status' },
-      { headerName: 'Start Date Time', field: 'startDateTime' },
-      { headerName: 'End Date Time', field: 'endDateTime' },
-      { headerName: 'Info', field: 'info', cellRenderer: params => `<button class="info-btn" data-bk="${params.data.businessKey}">I</button>` }
-    ];
-  }
-
-  ngOnInit() {
-    this.loadPending();
-    document.addEventListener('click', (e: any) => {
-      const target = e.target as HTMLElement;
-      if (target && target.classList.contains('info-btn')) {
-        const bk = target.getAttribute('data-bk');
-        const rec = this.travelSrv.getAll().find(x => x.businessKey === bk);
-        if (rec) { this.app.openInfo(rec); }
-      }
-      // Approve button clicks handled inside modal's save/approve flow
-    });
-  }
-
-  loadPending() {
-    const role = this.auth.role();
-    this.rowData = this.travelSrv.getPendingForRole(role || '');
-  }
-}
-
-approvals.html
-
-<div class="approvals-container">
-  <ag-grid-angular
-    style="width: 100%; height: 520px;"
-    class="ag-theme-alpine"
-    [rowData]="rowData"
-    [columnDefs]="columnDefs"
-    [defaultColDef]="{ resizable: true }">
-  </ag-grid-angular>
-</div>
-
-approvals.css
-
-.approvals-container { max-width:1000px; margin:10px auto; }
-.info-btn { background:#2e7d32; color:white; border:none; width:30px; height:30px; border-radius:4px; cursor:pointer; }
-
-
-⸻
-
-10) How BM can edit values & approve (UX)
-	•	When BM opens Info modal for a record in BM_APPROVAL, infoEditable becomes true (handled in App.openInfo).
-	•	BM edits fields in the modal and clicks Save (calls saveInfoEdit() which uses travelSrv.updateByBusinessKey).
-	•	Approve button is provided inside modal (you can add it) — I kept modal focused on edit; approval action can be added as:
-
-// in App:
-approveCurrent(bk) {
-  const role = this.auth.role();
-  this.travelSrv.approve(bk, this.auth.getUser(), role);
-  alert('Approved');
-  this.closeInfo();
-}
-
-You can add a button in modal area to call approveCurrent(infoRecord.businessKey) — I left this minimal so you can style it as you prefer.
-
-⸻
-
-Backend (Spring Boot) — Additive updates
-
-You asked to update backend but not touch existing functionality. Below are safe, additive changes to implement persistence and the workflow endpoints. Put these in your existing Spring Boot project.
-
-DB DDL (new table, additive)
-
-CREATE TABLE travell_request (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  business_key VARCHAR(64) NOT NULL UNIQUE,
-  process VARCHAR(128) NOT NULL,
-  process_instance_key VARCHAR(128),
-  status VARCHAR(32),
-  start_datetime TIMESTAMP,
-  end_datetime TIMESTAMP,
-  stage VARCHAR(64),
-  created_by VARCHAR(64),
-  uid VARCHAR(64),
-  name VARCHAR(256),
-  line_manager VARCHAR(256),
-  travel_type VARCHAR(64),
-  approver1 VARCHAR(256),
-  approver2 VARCHAR(256),
-  info TEXT,
-  history JSON NULL
-);
-
-Use your DB dialect (Postgres, MySQL) — JSON type may differ (TEXT if older DBs).
-
-⸻
-
-New DTOs & Entities
-
-Create TravellRequest entity mapping to travell_request with fields above. Keep repository interfaces standard JPA.
-
-New Controller: TravellController.java (additive)
+import com.yourcompany.yourapp.dto.TravelRequest;
+import com.yourcompany.yourapp.service.TravelCamundaService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/travell")
-public class TravellController {
+@RequestMapping("/travel")
+public class TravelController {
 
-  private final TravellService travellService;
+    @Autowired
+    private TravelCamundaService travelService;
 
-  public TravellController(TravellService travellService) {
-    this.travellService = travellService;
-  }
+    @PostMapping("/start")
+    public String startTravelProcess(@RequestBody TravelRequest request) {
+        return travelService.startProcess(request);
+    }
 
-  @PostMapping("/create")
-  public ResponseEntity<TravellDto> create(@RequestBody TravellDto dto) {
-    TravellDto created = travellService.create(dto);
-    return ResponseEntity.ok(created);
-  }
-
-  @GetMapping("/byUser/{uid}")
-  public ResponseEntity<List<TravellDto>> byUser(@PathVariable String uid) {
-    return ResponseEntity.ok(travellService.findByUser(uid));
-  }
-
-  @GetMapping("/pending/{role}")
-  public ResponseEntity<List<TravellDto>> pending(@PathVariable String role) {
-    return ResponseEntity.ok(travellService.findPendingForRole(role));
-  }
-
-  @PostMapping("/approve/{businessKey}")
-  public ResponseEntity<?> approve(@PathVariable String businessKey,
-                                   @RequestParam String approver,
-                                   @RequestParam String role,
-                                   @RequestBody(required=false) Map<String,String> body) {
-    boolean ok = travellService.approve(businessKey, approver, role, body != null ? body.get("comment") : null);
-    if(ok) return ResponseEntity.ok().build();
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Cannot approve");
-  }
-
-  @PostMapping("/update/{businessKey}")
-  public ResponseEntity<?> update(@PathVariable String businessKey, @RequestBody Map<String,Object> patch) {
-    travellService.patch(businessKey, patch);
-    return ResponseEntity.ok().build();
-  }
+    @PostMapping("/complete/{taskId}")
+    public String completeTask(@PathVariable String taskId, @RequestBody TravelRequest request) {
+        return travelService.completeTask(taskId, request);
+    }
 }
 
-New Service (server side) TravellService.java
-
-Implement create/findByUser/findPendingForRole/approve/patch logic mirroring frontend TravelService. Keep existing services unaffected — isolate into this new service class. Use transactions.
 
 ⸻
 
-Integration notes
-	•	If you already have a travel table and API, either migrate to new table or keep them separate. I recommend adding the new table and endpoints rather than replacing existing ones.
-	•	The new endpoints are namespaced /api/travell/* to avoid collisions.
+✅ 3. FILE 3 — TravelCamundaService.java
+
+Location:
+
+src/main/java/com/yourcompany/yourapp/service/TravelCamundaService.java
+
+package com.yourcompany.yourapp.service;
+
+import com.yourcompany.yourapp.dto.TravelRequest;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Service
+public class TravelCamundaService {
+
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final String CAMUNDA_URL = "http://localhost:8080/engine-rest";
+
+    // --- START PROCESS ---
+    public String startProcess(TravelRequest req) {
+
+        Map<String, Object> variables = buildVariables(req);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("variables", variables);
+
+        String url = CAMUNDA_URL + "/process-definition/key/TRAVEL_PROCESS/start";
+
+        return restTemplate.postForObject(url, body, String.class);
+    }
+
+    // --- COMPLETE USER TASK ---
+    public String completeTask(String taskId, TravelRequest req) {
+
+        Map<String, Object> variables = buildVariables(req);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("variables", variables);
+
+        String url = CAMUNDA_URL + "/task/" + taskId + "/complete";
+
+        return restTemplate.postForObject(url, body, String.class);
+    }
+
+    // --- Convert DTO → Camunda Variables ---
+    private Map<String, Object> buildVariables(TravelRequest req) {
+
+        Map<String, Object> vars = new HashMap<>();
+
+        vars.put("uid", camVar(req.getUid()));
+        vars.put("name", camVar(req.getName()));
+        vars.put("lineManager", camVar(req.getLineManager()));
+        vars.put("domain", camVar(req.getDomain()));
+        vars.put("cluster", camVar(req.getCluster()));
+        vars.put("subcluster", camVar(req.getSubcluster()));
+        vars.put("cluster1", camVar(req.getCluster1()));
+        vars.put("hod", camVar(req.getHod()));
+        vars.put("originCity", camVar(req.getOriginCity()));
+        vars.put("destinationCity", camVar(req.getDestinationCity()));
+        vars.put("startDate", camVar(req.getStartDate()));
+        vars.put("endDate", camVar(req.getEndDate()));
+        vars.put("businessManager", camVar(req.getBusinessManager()));
+        vars.put("travelClass", camVar(req.getTravelClass()));
+        vars.put("travelType", camVar(req.getTravelType()));
+        vars.put("type", camVar(req.getType()));
+        vars.put("purposeOfTravel", camVar(req.getPurposeOfTravel()));
+
+        return vars;
+    }
+
+    // Helper to wrap each variable in Camunda format
+    private Map<String, Object> camVar(Object value) {
+        return Map.of(
+            "value", value,
+            "type", "String"
+        );
+    }
+}
+
 
 ⸻
 
-Final notes & next steps
-	•	I gave you complete, additive frontend code: all .ts, .html, .css and service logic using LocalStorage so you can test immediately.
-	•	I provided backend DDL and controller/service examples — add them as new files and wire them into your existing Spring Boot app (no existing functionality overwritten).
-	•	To wire everything up in Angular make sure:
-	•	AgGridModule is imported where necessary (you said you don’t use app.module.ts; if you need me to produce a minimal app.module.ts to wire Ag Grid and FormsModule, I can — but you said no modules).
-	•	Your bootstrap keeps App as root (I used App class). If your project uses a different entry point, adapt import names.
+🎉 DONE — You now have full working backend integration
+
+Everything goes through backend → Camunda.
+Angular remains untouched.
 
 ⸻
 
-If you want now I can:
-	•	Produce a single ZIP-friendly paste containing every file exactly (full file contents per file) so you can copy them into your project.
-	•	Or produce a small patch for your backend with full Java source files.
+📌 If needed, I can also generate:
 
-Tell me which you prefer:
-	•	A) Full frontend file dump (every file content) ready to paste, OR
-	•	B) Full frontend + backend zip-style dump (including Java source files with package names and sample repository), OR
-	•	C) Only backend patch files (if you’ll integrate frontend yourself).
+✅ User task fetch API
 
-I’ll deliver immediately in whichever format you choose.
+✅ Approval flow (LM → BM → HOD → HR)
+
+✅ BPMN flow using all these variables
+
+✅ Camunda Form JSON (if you want dynamic forms)
+
+Just tell me what you want next.
