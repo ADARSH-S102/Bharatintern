@@ -1,3 +1,155 @@
+Got you — no new Angular code, keep your existing UI + existing TravelService, and only add the minimal backend update so Spring Boot can start the Camunda process with your process id = Process_130bwuv.
+
+Below is ONLY the backend update, matching exactly the structure I gave you earlier (Controller + Service).
+This version uses your same TravelService structure and DOES NOT modify Angular.
+
+⸻
+
+✅ FINAL Backend Code (Using Your Existing UI + Service)
+
+File 1 — TravelController.java
+Place in: src/main/java/com/example/controller/TravelController.java
+
+package com.example.controller;
+
+import com.example.service.TravelWorkflowService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/travel")
+@CrossOrigin("*")
+public class TravelController {
+
+    @Autowired
+    private TravelWorkflowService travelWorkflowService;
+
+    // Angular calls this after addTravel()
+    @PostMapping("/start-process")
+    public String startProcess(@RequestBody Map<String, Object> payload) {
+        String uid = (String) payload.get("uid");
+        String name = (String) payload.get("name");
+        String destination = (String) payload.get("destination");
+
+        return travelWorkflowService.startCamundaProcess(uid, name, destination);
+    }
+}
+
+
+⸻
+
+File 2 — TravelWorkflowService.java
+
+Place in: src/main/java/com/example/service/TravelWorkflowService.java
+
+package com.example.service;
+
+import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Service
+public class TravelWorkflowService {
+
+    private final WebClient camundaClient;
+
+    public TravelWorkflowService() {
+        this.camundaClient = WebClient.builder()
+                .baseUrl("http://localhost:8080/engine-rest") // Camunda REST
+                .build();
+    }
+
+    public String startCamundaProcess(String uid, String name, String destination) {
+
+        String processKey = "Process_130bwuv";   // <<< Your process ID
+
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("uid", Map.of("value", uid, "type", "String"));
+        vars.put("name", Map.of("value", name, "type", "String"));
+        vars.put("destination", Map.of("value", destination, "type", "String"));
+
+        Map<String, Object> body = Map.of("variables", vars);
+
+        try {
+            camundaClient.post()
+                    .uri("/process-definition/key/" + processKey + "/start")
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            return "Process started for UID: " + uid;
+
+        } catch (Exception e) {
+            return "Error starting process: " + e.getMessage();
+        }
+    }
+}
+
+
+⸻
+
+✅ Last Step: What You Update in Your Angular TS File
+
+Only add this small API call inside your existing addTravel() method — nothing else.
+
+Inside travel.ts (your service):
+
+addTravel(data: any): void {
+  const record = { ...data, status: 'Pending' };
+  this.travels.push(record);
+  this.travelSubject.next(this.travels);
+  localStorage.setItem('travels', JSON.stringify(this.travels));
+
+  // Call backend to start Camunda
+  fetch('http://localhost:8081/api/travel/start-process', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(record)
+  });
+}
+
+✔ No structural change
+✔ No standalone components
+✔ NO Angular rebuild
+✔ Only one extra fetch() line added
+
+⸻
+
+🎉 Now What Happens?
+
+When user submits travel request:
+	1.	Angular adds record → localStorage (your existing logic)
+	2.	Angular immediately calls backend
+	3.	Backend calls Camunda REST with your process ID: Process_130bwuv
+	4.	Camunda starts the workflow
+
+No changes to your UI or service structure except the one fetch() call.
+
+⸻
+
+If you want, I can also generate a BPMN diagram, test payload, or backend logs for verification.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 this.travelService.addTravel(travelData).subscribe({
   next: () => {
     Swal.fire("Success", "Travel Request Submitted", "success");
