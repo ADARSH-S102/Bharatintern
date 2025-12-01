@@ -1,3 +1,177 @@
+package com.example.travel.dto;
+
+public class TravelRequest {
+
+    private String uid;
+    private String name;
+    private String lineManager;
+    private String domain;
+    private String cluster;
+    private String subcluster;
+    private String cluster1;
+    private String hod;
+    private String originCity;
+    private String destinationCity;
+    private String startDate;
+    private String endDate;
+    private String businessManager;
+    private String travelClass;
+    private String travelType;
+    private String type;
+    private String purposeOfTravel;
+
+    // -------------------
+    // Getters & Setters
+    // -------------------
+
+    public String getUid() {
+        return uid;
+    }
+
+    public void setUid(String uid) {
+        this.uid = uid;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getLineManager() {
+        return lineManager;
+    }
+
+    public void setLineManager(String lineManager) {
+            this.lineManager = lineManager;
+    }
+
+    public String getDomain() {
+        return domain;
+    }
+
+    public void setDomain(String domain) {
+        this.domain = domain;
+    }
+
+    public String getCluster() {
+        return cluster;
+    }
+
+    public void setCluster(String cluster) {
+        this.cluster = cluster;
+    }
+
+    public String getSubcluster() {
+        return subcluster;
+    }
+
+    public void setSubcluster(String subcluster) {
+        this.subcluster = subcluster;
+    }
+
+    public String getCluster1() {
+        return cluster1;
+    }
+
+    public void setCluster1(String cluster1) {
+        this.cluster1 = cluster1;
+    }
+
+    public String getHod() {
+        return hod;
+    }
+
+    public void setHod(String hod) {
+        this.hod = hod;
+    }
+
+    public String getOriginCity() {
+        return originCity;
+    }
+
+    public void setOriginCity(String originCity) {
+        this.originCity = originCity;
+    }
+
+    public String getDestinationCity() {
+        return destinationCity;
+    }
+
+    public void setDestinationCity(String destinationCity) {
+        this.destinationCity = destinationCity;
+    }
+
+    public String getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(String startDate) {
+        this.startDate = startDate;
+    }
+
+    public String getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(String endDate) {
+        this.endDate = endDate;
+    }
+
+    public String getBusinessManager() {
+        return businessManager;
+    }
+
+    public void setBusinessManager(String businessManager) {
+        this.businessManager = businessManager;
+    }
+
+    public String getTravelClass() {
+        return travelClass;
+    }
+
+    public void setTravelClass(String travelClass) {
+        this.travelClass = travelClass;
+    }
+
+    public String getTravelType() {
+        return travelType;
+    }
+
+    public void setTravelType(String travelType) {
+        this.travelType = travelType;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getPurposeOfTravel() {
+        return purposeOfTravel;
+    }
+
+    public void setPurposeOfTravel(String purposeOfTravel) {
+        this.purposeOfTravel = purposeOfTravel;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
 Got it — you do NOT want:
 	•	ZeebeClient
 	•	camunda.client.*
