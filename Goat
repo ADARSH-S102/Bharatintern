@@ -1,3 +1,167 @@
+Ah, perfect — now it makes total sense. You’re using Camunda Platform 8 / Process+ Cloud (web version), not a local broker. ✅
+
+That changes the configuration slightly because you cannot connect to 127.0.0.1:26500. You have to connect to Camunda Cloud via its API gateway using OAuth credentials.
+
+Here’s how to fully configure your backend in code, no YAML, for Camunda Cloud:
+
+⸻
+
+1️⃣ Add Zeebe Client Dependency (if not already in pom.xml)
+
+<dependency>
+    <groupId>io.camunda.zeebe</groupId>
+    <artifactId>zeebe-client-java</artifactId>
+    <version>8.6.0</version> <!-- check latest -->
+</dependency>
+
+
+⸻
+
+2️⃣ Zeebe Client Configuration (Cloud)
+
+Create ZeebeConfig.java in src/main/java/com/yourcompany/yourapp/config/:
+
+package com.yourcompany.yourapp.config;
+
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class ZeebeConfig {
+
+    @Bean
+    public ZeebeClient zeebeClient() {
+
+        // Replace these values with your Camunda Cloud cluster info
+        String gatewayAddress = "YOUR_CLUSTER_GATEWAY"; // e.g., xyz123.camunda.io:443
+        String clientId = "YOUR_CLIENT_ID";
+        String clientSecret = "YOUR_CLIENT_SECRET";
+        String audience = "YOUR_AUDIENCE"; // typically from cloud cluster
+        String authServerUrl = "https://login.cloud.camunda.io/oauth/token";
+
+        return ZeebeClient.newClientBuilder()
+                .gatewayAddress(gatewayAddress)
+                .credentialsProvider(
+                        OAuthCredentialsProvider.newCredentials()
+                                .clientId(clientId)
+                                .clientSecret(clientSecret)
+                                .audience(audience)
+                                .authorizationServerUrl(authServerUrl)
+                                .build()
+                )
+                .build();
+    }
+}
+
+✅ This fully configures Zeebe in code for Camunda Cloud / Process+ Web.
+No YAML files, no local broker needed.
+
+⸻
+
+3️⃣ Updated TravelCamundaService.java
+
+package com.yourcompany.yourapp.service;
+
+import com.yourcompany.yourapp.dto.TravelRequest;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Service
+public class TravelCamundaService {
+
+    @Autowired
+    private ZeebeClient zeebeClient;
+
+    private static final String PROCESS_ID = "Process_130bwuv"; // your process ID in Camunda Cloud
+
+    public String startProcess(TravelRequest req) {
+
+        Map<String, Object> variables = new HashMap<>();
+        variables.put("uid", req.getUid());
+        variables.put("name", req.getName());
+        variables.put("lineManager", req.getLineManager());
+        variables.put("domain", req.getDomain());
+        variables.put("cluster", req.getCluster());
+        variables.put("subcluster", req.getSubcluster());
+        variables.put("cluster1", req.getCluster1());
+        variables.put("hod", req.getHod());
+        variables.put("originCity", req.getOriginCity());
+        variables.put("destinationCity", req.getDestinationCity());
+        variables.put("startDate", req.getStartDate());
+        variables.put("endDate", req.getEndDate());
+        variables.put("travelType", req.getTravelType());
+        variables.put("type", req.getType());
+        variables.put("purposeOfTravel", req.getPurposeOfTravel());
+        variables.put("businessManager", req.getBusinessManager());
+        variables.put("travelClass", req.getTravelClass());
+
+        ProcessInstanceEvent event = zeebeClient
+                .newCreateInstanceCommand()
+                .bpmnProcessId(PROCESS_ID)
+                .latestVersion()
+                .variables(variables)
+                .send()
+                .join();
+
+        return "Process started with Instance Key: " + event.getProcessInstanceKey();
+    }
+}
+
+
+⸻
+
+4️⃣ Controller remains unchanged
+
+@PostMapping("/start")
+public String startTravelProcess(@RequestBody TravelRequest request) {
+    return travelCamundaService.startProcess(request);
+}
+
+
+⸻
+
+✅ Notes
+	1.	Angular UI stays 100% the same
+	2.	You only need to replace placeholders in ZeebeConfig.java with your Camunda Cloud credentials:
+
+	•	gatewayAddress → your cluster gateway (from Camunda Cloud web)
+	•	clientId & clientSecret → OAuth credentials
+	•	audience → usually https://<cluster-id>.zeebe.camunda.io
+	•	authorizationServerUrl → https://login.cloud.camunda.io/oauth/token
+
+	3.	No local Camunda 8 required — everything works via web / Process+
+
+⸻
+
+If you want, I can create a fully working Spring Boot + Angular setup for Process+ Cloud, including:
+	•	Travel form submits → backend → Camunda Cloud
+	•	Optional: automatic Job Worker to complete tasks
+
+Do you want me to do that next?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Got you — no new Angular code, keep your existing UI + existing TravelService, and only add the minimal backend update so Spring Boot can start the Camunda process with your process id = Process_130bwuv.
 
 Below is ONLY the backend update, matching exactly the structure I gave you earlier (Controller + Service).
