@@ -1,220 +1,26 @@
-Here you go — FULL WORKING app.html + app.css
-(with fixed header, fixed floating button, scrollable content, correct menu, and updated header layout with icon + title).
+Here you go — FULL UPDATED FILES with only the header enhanced exactly as you asked:
+
+✔ Travel Icon | Travel Portal
+✔ Nothing else changed
+✔ Floating button works same
+✔ Scrolling behavior remains same
+✔ Side menu untouched
 
 
 ---
 
-✅ app.html (FULL FILE)
-
-<header class="header">
-  <div class="header-left">
-    <img src="assets/travel-icon.png" alt="Travel Portal" class="portal-icon" />
-    <span class="portal-title">Travel Portal</span>
-  </div>
-
-  <button class="floating-menu-btn" (click)="toggleMenu()">
-    ☰
-  </button>
-</header>
-
-<!-- SIDE MENU -->
-<div class="side-menu" [class.open]="menuOpen">
-  <button class="close-btn" (click)="toggleMenu()">✕</button>
-
-  <nav>
-    <a (click)="navigateTo('welcome')">Welcome</a>
-    <a (click)="navigateTo('travell')">Travell</a>
-    <a (click)="navigateTo('travel-details')">Travel Details</a>
-    <a (click)="navigateTo('approvals')">Approvals</a>
-  </nav>
-</div>
-
-<!-- CONTENT -->
-<div class="content-wrapper">
-  <router-outlet></router-outlet>
-</div>
-
-
----
-
-✅ app.css (FULL FILE)
-
-/* === HEADER === */
-.header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 60px;
-  background: #1976d2;
-  color: white;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 15px;
-  z-index: 1000;
-  box-sizing: border-box;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.portal-icon {
-  height: 32px;
-  width: 32px;
-}
-
-.portal-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: white;
-}
-
-/* === FLOATING MENU BUTTON === */
-.floating-menu-btn {
-  position: fixed;
-  top: 12px;
-  right: 15px;
-  font-size: 24px;
-  background: white;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  z-index: 1500;
-}
-
-/* === SIDE MENU === */
-.side-menu {
-  position: fixed;
-  top: 0;
-  right: -260px;
-  width: 260px;
-  height: 100%;
-  background: white;
-  box-shadow: -2px 0 10px rgba(0,0,0,0.2);
-  padding: 20px;
-  transition: 0.3s ease;
-  z-index: 2000;
-}
-
-.side-menu.open {
-  right: 0;
-}
-
-.side-menu nav a {
-  display: block;
-  padding: 12px 0;
-  font-size: 18px;
-  color: #333;
-  text-decoration: none;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  float: right;
-  cursor: pointer;
-}
-
-/* === CONTENT WRAPPER === */
-.content-wrapper {
-  margin-top: 60px; /* same as header height */
-  padding: 15px;
-  box-sizing: border-box;
-  overflow-y: auto;
-  height: calc(100vh - 60px);
-}
-
-/* Optional scroll styling */
-.content-wrapper::-webkit-scrollbar {
-  width: 6px;
-}
-
-.content-wrapper::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-.content-wrapper::-webkit-scrollbar-thumb {
-  background: #888;
-}
-
-
----
-
-✅ This layout ensures:
-
-✔ Header stays fixed
-✔ Floating button stays fixed
-✔ Content scrolls under the floating button
-✔ Content does NOT scroll under the header
-✔ Side menu slides in properly
-✔ Travel icon + “Travel Portal” displayed correctly
-
-
----
-
-If you want the header more stylish (bigger, shadow, gradient, rounded, etc.), just tell me — I’ll enhance it.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Got it — now the rule is very specific:
-
-🎯 FINAL BEHAVIOR YOU WANT
-
-✅ Content should NOT be visible when it scrolls under the header
-
-(because header is solid + fixed)
-
-✅ BUT content should remain visible when it scrolls under the floating button
-
-(floating button should NOT hide content under it)
-
-So the header must cover content.
-
-The floating button must not cover content.
-
-This is easy:
-
-👉 The header stays on top with a real opaque background
-👉 The floating button must not block content, so it must have pointer-events: none EXCEPT the button itself.
-👉 The floating button must have transparent background or small size so content shows behind it.
-
-I will now send your updated working files.
-
-
----
-
-✅ UPDATED app.html
+✅ FULL UPDATED app.html
 
 <div class="container">
 
   <!-- HEADER -->
   <div class="header">
     <div class="header-left">
-      <h1>Travel Portal</h1>
-    </div>
-
-    <div class="image-container">
       <img [src]="imageurl" alt="Travel Portal Icon" class="header-icon"/>
+
+      <span class="divider">|</span>
+
+      <h1>Travel Portal</h1>
     </div>
   </div>
 
@@ -248,7 +54,7 @@ I will now send your updated working files.
 
 ---
 
-✅ UPDATED app.css (THIS FIXES EVERYTHING)
+✅ FULL UPDATED app.css
 
 /* APP CONTAINER */
 .container {
@@ -259,37 +65,54 @@ I will now send your updated working files.
   font-family: "Poppins", sans-serif;
 }
 
-/* FIXED HEADER - hides content under it */
+/* FIXED HEADER */
 .header {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 80px;
-  background-color: #008e5c;  /* solid background = hides content */
+  background-color: #008e5c;
   color: white;
   display: flex;
-  justify-content: space-between;
   align-items: center;
   padding: 10px 20px;
   z-index: 1000;
 }
 
-/* FLOATING BUTTON WRAPPER — allows pass-through scrolling */
-.floating-menu-button-wrapper {
-  position: fixed;
-  top: 90px;      /* below header */
-  left: 15px;
-  z-index: 2000;
-  pointer-events: none;   /* important: content visible underneath */
+/* UPDATED HEADER LAYOUT */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-/* This element captures the click, NOT the wrapper */
+.header-icon {
+  height: 40px;
+  width: 40px;
+}
+
+/* vertical bar */
+.divider {
+  font-size: 26px;
+  font-weight: 300;
+  color: white;
+}
+
+/* FLOATING BUTTON WRAPPER — allows scrolling under it */
+.floating-menu-button-wrapper {
+  position: fixed;
+  top: 90px;
+  left: 15px;
+  z-index: 2000;
+  pointer-events: none;
+}
+
 .floating-menu-button {
-  pointer-events: auto;   /* makes button clickable again */
+  pointer-events: auto;
   width: 45px;
   height: 40px;
-  background-color: rgba(0, 142, 92, 0.8); /* semi-transparent so content can be seen */
+  background-color: rgba(0, 142, 92, 0.8);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -298,7 +121,6 @@ I will now send your updated working files.
   cursor: pointer;
 }
 
-/* Button lines */
 .floating-menu-button .line {
   width: 100%;
   height: 5px;
@@ -310,7 +132,7 @@ I will now send your updated working files.
 /* SIDE MENU */
 .side-menu {
   position: fixed;
-  top: 80px; /* aligns exactly under header */
+  top: 80px;
   left: -230px;
   width: 230px;
   height: calc(100vh - 80px);
@@ -344,7 +166,7 @@ I will now send your updated working files.
 
 /* CONTENT */
 .content {
-  margin-top: 80px;          /* pushed below header */
+  margin-top: 80px;
   padding: 20px;
   height: calc(100vh - 80px);
   overflow-y: auto;
@@ -353,41 +175,5 @@ I will now send your updated working files.
 
 ---
 
-💯 WHAT THIS NOW ACHIEVES
-
-✔ HEADER hides content when content goes under it
-
-(because it's fixed + solid background)
-
-✔ FLOATING BUTTON does not block scrolling
-
-because:
-
-wrapper = pointer-events: none
-
-only the button = clickable
-
-
-✔ CONTENT SCROLLS behind the floating button
-
-and stays visible because:
-
-floating button is semi-transparent
-
-it is not a scroll blocker
-
-
-✔ Absolutely smooth behavior
-
-
----
-
-If you want the floating button transparent or different shape, tell me.
-
-
-
-
-
-
-
+If you want the “|” to be bold / thinner / bigger / closer to the icon, I can adjust it.
 
