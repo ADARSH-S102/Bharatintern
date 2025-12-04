@@ -1,3 +1,181 @@
+Here you go — FULL WORKING app.html + app.css
+(with fixed header, fixed floating button, scrollable content, correct menu, and updated header layout with icon + title).
+
+
+---
+
+✅ app.html (FULL FILE)
+
+<header class="header">
+  <div class="header-left">
+    <img src="assets/travel-icon.png" alt="Travel Portal" class="portal-icon" />
+    <span class="portal-title">Travel Portal</span>
+  </div>
+
+  <button class="floating-menu-btn" (click)="toggleMenu()">
+    ☰
+  </button>
+</header>
+
+<!-- SIDE MENU -->
+<div class="side-menu" [class.open]="menuOpen">
+  <button class="close-btn" (click)="toggleMenu()">✕</button>
+
+  <nav>
+    <a (click)="navigateTo('welcome')">Welcome</a>
+    <a (click)="navigateTo('travell')">Travell</a>
+    <a (click)="navigateTo('travel-details')">Travel Details</a>
+    <a (click)="navigateTo('approvals')">Approvals</a>
+  </nav>
+</div>
+
+<!-- CONTENT -->
+<div class="content-wrapper">
+  <router-outlet></router-outlet>
+</div>
+
+
+---
+
+✅ app.css (FULL FILE)
+
+/* === HEADER === */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  background: #1976d2;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 15px;
+  z-index: 1000;
+  box-sizing: border-box;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.portal-icon {
+  height: 32px;
+  width: 32px;
+}
+
+.portal-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+}
+
+/* === FLOATING MENU BUTTON === */
+.floating-menu-btn {
+  position: fixed;
+  top: 12px;
+  right: 15px;
+  font-size: 24px;
+  background: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  z-index: 1500;
+}
+
+/* === SIDE MENU === */
+.side-menu {
+  position: fixed;
+  top: 0;
+  right: -260px;
+  width: 260px;
+  height: 100%;
+  background: white;
+  box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+  padding: 20px;
+  transition: 0.3s ease;
+  z-index: 2000;
+}
+
+.side-menu.open {
+  right: 0;
+}
+
+.side-menu nav a {
+  display: block;
+  padding: 12px 0;
+  font-size: 18px;
+  color: #333;
+  text-decoration: none;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  float: right;
+  cursor: pointer;
+}
+
+/* === CONTENT WRAPPER === */
+.content-wrapper {
+  margin-top: 60px; /* same as header height */
+  padding: 15px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  height: calc(100vh - 60px);
+}
+
+/* Optional scroll styling */
+.content-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.content-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.content-wrapper::-webkit-scrollbar-thumb {
+  background: #888;
+}
+
+
+---
+
+✅ This layout ensures:
+
+✔ Header stays fixed
+✔ Floating button stays fixed
+✔ Content scrolls under the floating button
+✔ Content does NOT scroll under the header
+✔ Side menu slides in properly
+✔ Travel icon + “Travel Portal” displayed correctly
+
+
+---
+
+If you want the header more stylish (bigger, shadow, gradient, rounded, etc.), just tell me — I’ll enhance it.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Got it — now the rule is very specific:
 
 🎯 FINAL BEHAVIOR YOU WANT
