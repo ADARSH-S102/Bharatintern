@@ -1,3 +1,102 @@
+/* CONTENT should scroll under header */
+.content {
+  margin-top: 125px;            /* below header */
+  padding: 30px;
+  overflow-y: auto;
+  height: calc(100vh - 125px);  /* full remaining height */
+}
+
+/* FIXED FLOATING MENU BUTTON */
+.floating-menu-button {
+  position: fixed;
+  top: 90px;       /* just below header */
+  left: 15px;
+  width: 45px;
+  height: 40px;
+  background-color: #008e5c;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 6px;
+  cursor: pointer;
+  z-index: 1200;   /* above everything */
+}
+
+.floating-menu-button .line {
+  width: 100%;
+  height: 5px;
+  background: white;
+  margin: 3px 0;
+  border-radius: 4px;
+}
+
+/* SIDE MENU */
+.side-menu {
+  position: fixed;
+  top: 125px;
+  left: -230px;
+  width: 230px;
+  height: calc(100vh - 125px);
+  background-color: #008e5c;
+  color: white;
+  transition: left 0.3s ease;
+  z-index: 1300;
+}
+.side-menu.open {
+  left: 0;
+}
+
+
+
+
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <h1>Travel Portal</h1>
+    </div>
+
+    <div class="image-container">
+      <img [src]="imageurl" alt="Travel Portal Icon" class="header-icon"/>
+    </div>
+  </div>
+
+  <!-- FLOATING MENU BUTTON (FIXED) -->
+  <div class="floating-menu-button" (click)="toggleMenu()">
+    <div class="line"></div>
+    <div class="line"></div>
+    <div class="line"></div>
+  </div>
+
+  <!-- SIDE MENU -->
+  <div class="side-menu" [class.open]="menuOpen">
+    <ul>
+      <li class="back-btn" (click)="toggleMenu()">← Back</li>
+      <li (click)="navigateTo('')">Home</li>
+      <li (click)="navigateTo('new-travel')">New Travel</li>
+      <li (click)="navigateTo('travel-details')">Travel Details</li>
+      <li (click)="navigateTo('approvals')">Approvals</li>
+    </ul>
+  </div>
+
+  <!-- SCROLLABLE CONTENT -->
+  <div class="content">
+    <router-outlet></router-outlet>
+  </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
 Below are your corrected and fully working Angular files:
 
 ✔ app.html (your template)
