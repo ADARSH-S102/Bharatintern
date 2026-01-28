@@ -1,3 +1,173 @@
+Perfect — this clears it up 👍
+You want the INITIAL (main) sidebar in app.html to look exactly like the left strip in the screenshot:
+
+Light background
+
+Centered icon
+
+Label below icon
+
+“Requisition” highlighted
+
+Vertical, minimal, no extra chrome
+
+
+Below is pixel-faithful HTML + CSS you can paste directly into app.html and app.css.
+
+
+---
+
+✅ app.html (INITIAL / MAIN SIDEBAR ONLY)
+
+<div class="main-sidebar">
+
+  <!-- MENU ITEM -->
+  <div class="sidebar-item">
+    <div class="icon-wrapper">
+      <img src="assets/icons/travel.svg" alt="Travel" />
+    </div>
+    <span class="label">Travel</span>
+  </div>
+
+  <!-- ACTIVE MENU ITEM -->
+  <div class="sidebar-item active" (click)="showSubSidebar = true">
+    <div class="icon-wrapper">
+      <img src="assets/icons/requisition.svg" alt="Requisition" />
+    </div>
+    <span class="label">Requisition</span>
+  </div>
+
+</div>
+
+<!-- SUB SIDEBAR -->
+<app-sub-sidebar
+  *ngIf="showSubSidebar"
+  (back)="showSubSidebar = false">
+</app-sub-sidebar>
+
+> 🔹 Icons are SVGs (best for sharp UI).
+🔹 You can replace assets/icons/*.svg with PNG if needed.
+
+
+
+
+---
+
+✅ app.css
+
+.main-sidebar {
+  width: 96px;
+  background: #f8faf8;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 24px;
+  gap: 20px;
+}
+
+/* SIDEBAR ITEM */
+.sidebar-item {
+  width: 100%;
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+/* ICON CONTAINER */
+.icon-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-wrapper img {
+  width: 28px;
+  height: 28px;
+}
+
+/* LABEL */
+.label {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+/* ACTIVE STATE (Requisition) */
+.sidebar-item.active {
+  background: #eef4ef;
+}
+
+.sidebar-item.active .label {
+  color: #2f6f4e;
+  font-weight: 600;
+}
+
+.sidebar-item.active .icon-wrapper {
+  background: #e6f1ea;
+}
+
+
+---
+
+✅ What this matches EXACTLY from your image
+
+✔ Narrow vertical sidebar
+✔ Centered icon + text
+✔ Light grey background
+✔ Green highlight for Requisition
+✔ Rounded icon container
+✔ Clean enterprise look
+
+This is how real production portals do it — simple, readable, scalable.
+
+
+---
+
+🔧 Notes (important)
+
+Use SVG icons for best match (stroke-style icons)
+
+Colors used are neutral + enterprise green (easy to tweak)
+
+Clicking Requisition opens the sub-sidebar you already built
+
+
+
+---
+
+If you want next:
+
+Exact SVG icon code
+
+Hover + focus states
+
+Keyboard accessibility
+
+Smooth slide-in between main ↔ sub sidebar
+
+
+Say the word 👌
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect, thanks for the screenshot 👍
 I’ll replicate this sub-sidebar look as close as possible using plain HTML + CSS (no Material, no icons lib).
 You can drop this straight into your sub-sidebar.html and sub-sidebar.css.
