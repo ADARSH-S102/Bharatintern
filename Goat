@@ -1,3 +1,151 @@
+Haha okay, I get the frustration 😑 — this is 100% a CSS state issue, not Angular.
+
+Below is a clean, complete sidebar CSS where:
+
+❌ Nothing is highlighted by default
+
+✅ Highlight happens only on hover
+
+✅ Active state is applied only when you explicitly add a class
+
+❌ No accidental background on load
+
+❌ No :focus / :active surprises
+
+
+
+---
+
+✅ sidebar.component.css (FULL & SAFE)
+
+/* ========== SIDEBAR CONTAINER ========== */
+.sidebar {
+  width: 60px;
+  height: 100vh;
+  background-color: #1f2937; /* dark slate */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 20px;
+}
+
+/* ========== SIDEBAR ITEMS ========== */
+.sidebar-item {
+  width: 100%;
+  height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #cbd5e1; /* light gray */
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ❌ NO DEFAULT HIGHLIGHT */
+.sidebar-item {
+  background-color: transparent;
+}
+
+/* ✅ HOVER ONLY */
+.sidebar-item:hover {
+  background-color: #374151; /* gray hover */
+  color: #ffffff;
+}
+
+/* ✅ ACTIVE (ONLY if you add class manually) */
+.sidebar-item.active {
+  background-color: #2563eb; /* blue */
+  color: #ffffff;
+}
+
+/* ========== ICON ========== */
+.sidebar-item i {
+  font-size: 18px;
+}
+
+/* ========== REMOVE UNWANTED STATES ========== */
+.sidebar-item:focus,
+.sidebar-item:active {
+  outline: none;
+  background-color: transparent;
+}
+
+/* ========== OPTIONAL TOOLTIP TEXT ========== */
+.sidebar-label {
+  display: none;
+  position: absolute;
+  left: 70px;
+  background: #111827;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.sidebar-item:hover .sidebar-label {
+  display: block;
+}
+
+
+---
+
+🔍 Why your “Metrics” was highlighted
+
+One of these was happening:
+
+background-color set directly on .sidebar-item
+
+.active class added by default in HTML
+
+:focus or :active styling not cleared
+
+routerLinkActive auto-adding class
+
+
+👉 This CSS neutralizes all of that
+
+
+---
+
+✅ Rule of thumb
+
+Hover → handled by :hover
+
+Selected → YOU add .active
+
+Default → always transparent
+
+
+
+---
+
+If you want, next I can:
+
+Fix routerLinkActive properly
+
+Sync sidebar highlight with sub-sidebar open/close
+
+Add smooth open/close animation
+
+Make it pixel-perfect to your screenshot
+
+
+Just say the word 👌
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* ===== TOP BAR ===== */
 .topbar {
   height: 52px;
