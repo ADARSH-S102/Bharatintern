@@ -1,3 +1,105 @@
+/* ===== TOP BAR ===== */
+.topbar {
+  height: 52px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.topbar-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2f6f4e;
+}
+
+/* ===== LAYOUT ===== */
+.app-body {
+  display: flex;
+  height: calc(100vh - 52px);
+}
+
+/* ===== MAIN SIDEBAR ===== */
+.main-sidebar {
+  width: 96px;
+  background: #f8faf8;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 24px;
+  gap: 20px;
+}
+
+/* SIDEBAR ITEM */
+.sidebar-item {
+  width: 100%;
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+/* ICON CONTAINER */
+.icon-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* FONT AWESOME ICON */
+.icon-wrapper i {
+  font-size: 22px;
+  color: #4b5563;
+}
+
+/* LABEL */
+.label {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+/* ACTIVE STATE */
+.sidebar-item.active {
+  background: #eef4ef;
+}
+
+.sidebar-item.active .label {
+  color: #2f6f4e;
+  font-weight: 600;
+}
+
+.sidebar-item.active .icon-wrapper {
+  background: #e6f1ea;
+}
+
+.sidebar-item.active .icon-wrapper i {
+  color: #2f6f4e;
+}
+
+/* ===== CONTENT ===== */
+.content {
+  flex: 1;
+  padding: 24px;
+  background: #f9fafb;
+}
+
+
+
+
+
+
+
+
+
+
 Good catch — yes, we must add the top bar, and it should visually match the same enterprise style as the sidebars (clean, light, green accent).
 
 Below is the FINAL, COMPLETE setup for:
