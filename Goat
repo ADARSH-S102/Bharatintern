@@ -1,3 +1,173 @@
+Got it 👍
+This CSS is already clean, we just need to slightly tighten it so:
+
+❌ Nothing is active by default
+
+✅ Highlight happens only on hover
+
+✅ Active highlight appears only when .active is explicitly added
+
+❌ No “sticky” highlight because of focus / click
+
+✅ Matches your existing design (colors & spacing unchanged)
+
+
+Below is your edited + safe version, not a rewrite.
+
+
+---
+
+✅ UPDATED sub-sidebar CSS (edited version)
+
+.sub-sidebar {
+  width: 260px;
+  height: 100%;
+  background: #f8faf8;
+  border-right: 1px solid #e5e7eb;
+  font-family: Arial, sans-serif;
+  padding: 12px 0;
+}
+
+/* HEADER */
+.sub-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2f6f4e;
+}
+
+.back-btn {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* SECTIONS */
+.section {
+  padding: 8px 0;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  padding: 8px 16px;
+}
+
+/* MENU ITEMS */
+.menu-item {
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  background: transparent;        /* ✅ IMPORTANT */
+  transition: background 0.2s;
+}
+
+/* HOVER ONLY */
+.menu-item:hover {
+  background: #eef2ee;
+}
+
+/* ACTIVE (ONLY IF CLASS IS ADDED) */
+.menu-item.active {
+  background: #e6f1ea;
+  color: #2f6f4e;
+  font-weight: 600;
+}
+
+/* REMOVE UNWANTED CLICK / FOCUS STATES */
+.menu-item:focus,
+.menu-item:active {
+  outline: none;
+  background: transparent;
+}
+
+/* DIVIDER */
+.divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 8px 0;
+}
+
+
+---
+
+🔍 What I fixed (important)
+
+1. Explicit background: transparent
+
+Prevents default highlight
+
+
+
+2. Removed focus / active side-effects
+
+Click won’t “stick” highlight
+
+
+
+3. Hover and active clearly separated
+
+Hover ≠ selected
+
+
+
+
+
+---
+
+✅ Final behavior
+
+Action	Result
+
+Page load	No highlight
+Mouse hover	Light grey
+Click (no .active)	No highlight
+.active class added	Green highlight
+Sidebar reopen	Clean state
+
+
+
+---
+
+If you want next:
+
+Auto-remove .active when sidebar closes
+
+Sync active state with routes
+
+Keyboard-accessible version
+
+Animation when sub-sidebar opens
+
+
+Just say 👍
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Haha okay, I get the frustration 😑 — this is 100% a CSS state issue, not Angular.
 
 Below is a clean, complete sidebar CSS where:
