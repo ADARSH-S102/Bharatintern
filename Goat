@@ -1,3 +1,163 @@
+Perfect, thanks for the screenshot 👍
+I’ll replicate this sub-sidebar look as close as possible using plain HTML + CSS (no Material, no icons lib).
+You can drop this straight into your sub-sidebar.html and sub-sidebar.css.
+
+I’ll explain nothing extra — just the code you asked for.
+
+
+---
+
+✅ sub-sidebar.html
+
+<div class="sub-sidebar">
+
+  <!-- HEADER -->
+  <div class="sub-header">
+    <span class="title">Requisition</span>
+
+    <button class="back-btn" (click)="back.emit()">
+      ←
+    </button>
+  </div>
+
+  <!-- SECTION -->
+  <div class="section">
+    <div class="section-title">Operations</div>
+
+    <div class="menu-item active">My Metrics</div>
+    <div class="menu-item">All Requests</div>
+    <div class="menu-item">New Request</div>
+    <div class="menu-item">Reports</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION -->
+  <div class="section">
+    <div class="section-title">Insights</div>
+
+    <div class="menu-item">Dashboard</div>
+    <div class="menu-item">Hierarchy View</div>
+  </div>
+
+</div>
+
+
+---
+
+✅ sub-sidebar.css
+
+.sub-sidebar {
+  width: 260px;
+  height: 100%;
+  background: #f8faf8;
+  border-right: 1px solid #e5e7eb;
+  font-family: Arial, sans-serif;
+  padding: 12px 0;
+}
+
+/* HEADER */
+.sub-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2f6f4e;
+}
+
+.back-btn {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* SECTIONS */
+.section {
+  padding: 8px 0;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  padding: 8px 16px;
+}
+
+/* MENU ITEMS */
+.menu-item {
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.menu-item:hover {
+  background: #eef2ee;
+}
+
+/* ACTIVE ITEM */
+.menu-item.active {
+  background: #e6f1ea;
+  color: #2f6f4e;
+  font-weight: 600;
+}
+
+/* DIVIDER */
+.divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 8px 0;
+}
+
+
+---
+
+✅ What this matches from your image
+
+✔ Section titles (Operations / Insights)
+✔ Green highlight for My Metrics
+✔ Divider line
+✔ Soft background
+✔ Back arrow button top-right
+✔ Font weight & spacing similar to screenshot
+
+
+---
+
+If you want next:
+
+Click handling + routing
+
+Icons beside menu items
+
+Collapse animation
+
+Exact color tuning (if you share brand hex)
+
+
+Say it and I’ll adjust 🔧
+
+
+
+
+
+
+
+
+
+
+
+
+
 Ahh 👍 got it — you’re using the Angular 17+ “short filename” standalone style
 (app.ts, sub-sidebar.ts, no .component suffix). Totally fine.
 
