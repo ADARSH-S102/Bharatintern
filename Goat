@@ -1,52 +1,147 @@
-Here you go — FULL UPDATED FILES with only the header enhanced exactly as you asked:
+Got it 👍 — that makes sense, and it’s actually the simplest + cleanest approach for what you want.
 
-✔ Travel Icon | Travel Portal
-✔ Nothing else changed
-✔ Floating button works same
-✔ Scrolling behavior remains same
-✔ Side menu untouched
+So the rule is:
+
+> AppComponent owns everything
+Only ONE separate component → Sub Sidebar
+
+
+
+No layout, no topbar component, no main sidebar component.
 
 
 ---
 
-✅ FULL UPDATED app.html
+✅ Final minimal plan
+
+Components needed
+
+✔ app.component → top bar + main sidebar + logic
+✔ SubSidebarComponent → only the secondary sidebar
+
+That’s it.
+
+
+---
+
+📁 Folder structure (very minimal)
+
+src/
+└── app/
+    │
+    ├── sub-sidebar/
+    │   ├── sub-sidebar.component.ts
+    │   ├── sub-sidebar.component.html
+    │   └── sub-sidebar.component.css
+    │
+    ├── app.component.ts
+    ├── app.component.html
+    └── app.component.css
+
+
+---
+
+1️⃣ Generate ONLY sub sidebar
+
+ng g c sub-sidebar --skip-tests
+
+
+---
+
+2️⃣ sub-sidebar.component.ts
+
+import { Component, EventEmitter, Output } from '@angular/core';
+
+@Component({
+  selector: 'app-sub-sidebar',
+  standalone: true,
+  templateUrl: './sub-sidebar.component.html',
+  styleUrls: ['./sub-sidebar.component.css']
+})
+export class SubSidebarComponent {
+  @Output() back = new EventEmitter<void>();
+}
+
+
+---
+
+3️⃣ sub-sidebar.component.html
+
+<div class="sub-sidebar">
+  <button class="back-btn" (click)="back.emit()">← Back</button>
+
+  <ul>
+    <li>Option 1</li>
+    <li>Option 2</li>
+    <li>Option 3</li>
+  </ul>
+</div>
+
+
+---
+
+4️⃣ sub-sidebar.component.css
+
+.sub-sidebar {
+  width: 220px;
+  height: 100%;
+  background: #111827;
+  color: white;
+  padding: 16px;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  margin-bottom: 16px;
+}
+
+
+---
+
+5️⃣ app.component.ts (controls everything)
+
+import { Component } from '@angular/core';
+import { SubSidebarComponent } from './sub-sidebar/sub-sidebar.component';
+import { NgIf } from '@angular/common';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [NgIf, SubSidebarComponent],
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent {
+  showSubSidebar = false;
+}
+
+
+---
+
+6️⃣ app.component.html (top bar + main sidebar inline)
+
+<!-- TOP BAR -->
+<div class="topbar">My App</div>
 
 <div class="container">
 
-  <!-- HEADER -->
-  <div class="header">
-    <div class="header-left">
-      <img [src]="imageurl" alt="Travel Portal Icon" class="header-icon"/>
-
-      <span class="divider">|</span>
-
-      <h1>Travel Portal</h1>
-    </div>
+  <!-- MAIN SIDEBAR -->
+  <div class="main-sidebar">
+    <div class="icon" (click)="showSubSidebar = true">☰</div>
   </div>
 
-  <!-- FLOATING BUTTON -->
-  <div class="floating-menu-button-wrapper">
-    <div class="floating-menu-button" (click)="toggleMenu()">
-      <div class="line"></div>
-      <div class="line"></div>
-      <div class="line"></div>
-    </div>
-  </div>
+  <!-- SUB SIDEBAR COMPONENT -->
+  <app-sub-sidebar
+    *ngIf="showSubSidebar"
+    (back)="showSubSidebar = false">
+  </app-sub-sidebar>
 
-  <!-- SIDE MENU -->
-  <div class="side-menu" [class.open]="menuOpen">
-    <ul>
-      <li class="back-btn" (click)="toggleMenu()">← Back</li>
-      <li (click)="navigateTo('')">Home</li>
-      <li (click)="navigateTo('new-travel')">New Travel</li>
-      <li (click)="navigateTo('travel-details')">Travel Details</li>
-      <li (click)="navigateTo('approvals')">Approvals</li>
-    </ul>
-  </div>
-
-  <!-- SCROLLABLE CONTENT -->
+  <!-- CONTENT -->
   <div class="content">
-    <router-outlet></router-outlet>
+    Main content here
   </div>
 
 </div>
@@ -54,126 +149,24 @@ Here you go — FULL UPDATED FILES with only the header enhanced exactly as you 
 
 ---
 
-✅ FULL UPDATED app.css
+🎯 Why this is perfect
 
-/* APP CONTAINER */
-.container {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: #f9fdf9;
-  font-family: "Poppins", sans-serif;
-}
-
-/* FIXED HEADER */
-.header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 80px;
-  background-color: #008e5c;
-  color: white;
-  display: flex;
-  align-items: center;
-  padding: 10px 20px;
-  z-index: 1000;
-}
-
-/* UPDATED HEADER LAYOUT */
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.header-icon {
-  height: 40px;
-  width: 40px;
-}
-
-/* vertical bar */
-.divider {
-  font-size: 26px;
-  font-weight: 300;
-  color: white;
-}
-
-/* FLOATING BUTTON WRAPPER — allows scrolling under it */
-.floating-menu-button-wrapper {
-  position: fixed;
-  top: 90px;
-  left: 15px;
-  z-index: 2000;
-  pointer-events: none;
-}
-
-.floating-menu-button {
-  pointer-events: auto;
-  width: 45px;
-  height: 40px;
-  background-color: rgba(0, 142, 92, 0.8);
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 6px;
-  cursor: pointer;
-}
-
-.floating-menu-button .line {
-  width: 100%;
-  height: 5px;
-  background: white;
-  margin: 3px 0;
-  border-radius: 4px;
-}
-
-/* SIDE MENU */
-.side-menu {
-  position: fixed;
-  top: 80px;
-  left: -230px;
-  width: 230px;
-  height: calc(100vh - 80px);
-  background-color: #008e5c;
-  color: white;
-  transition: left 0.3s ease;
-  padding-top: 20px;
-  z-index: 3000;
-}
-
-.side-menu.open { left: 0; }
-
-.side-menu ul {
-  list-style: none;
-  padding: 0;
-}
-
-.side-menu li {
-  padding: 15px 20px;
-  cursor: pointer;
-}
-
-.side-menu li:hover {
-  background-color: #066e4a;
-}
-
-.back-btn {
-  background-color: rgba(255, 255, 255, 0.2);
-  font-weight: bold;
-}
-
-/* CONTENT */
-.content {
-  margin-top: 80px;
-  padding: 20px;
-  height: calc(100vh - 80px);
-  overflow-y: auto;
-}
+✔ Minimal components
+✔ AppComponent controls layout
+✔ Sub sidebar is reusable
+✔ No over-engineering
+✔ Easy to understand & maintain
 
 
 ---
 
-If you want the “|” to be bold / thinner / bigger / closer to the icon, I can adjust it.
+If you want next:
 
+Slide-in animation for sub sidebar
+
+Auto-close on route change
+
+Overlay + click outside to close
+
+
+Just tell me 😄
