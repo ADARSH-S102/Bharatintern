@@ -1,4 +1,207 @@
- 😂😂 okay BRO — message finally received loud and clear.
+Perfect — now we’re on the same page. 😌
+Here’s everything you need for the sub-sidebar functionality only, fully wired, respecting your existing project structure and naming conventions. No other files are touched.
+
+
+---
+
+1️⃣ subsidebar-component.ts
+
+import { Component, Output, EventEmitter } from '@angular/core';
+
+@Component({
+  selector: 'app-subsidebar',
+  templateUrl: './subsidebar-component.html',
+  styleUrls: ['./subsidebar-component.css']
+})
+export class SubsidebarComponent {
+  @Output() close = new EventEmitter<void>();
+
+  onBackClick() {
+    this.close.emit();
+  }
+}
+
+
+---
+
+2️⃣ subsidebar-component.html
+
+<div class="sub-sidebar">
+  <div class="sub-header">
+    <span class="title">Requisition</span>
+    <button class="back-btn" (click)="onBackClick()">← Back</button>
+  </div>
+
+  <ul class="menu">
+    <li>Metrics</li>
+    <li>Dashboard</li>
+    <li>Reports</li>
+  </ul>
+</div>
+
+
+---
+
+3️⃣ subsidebar-component.css
+
+.sub-sidebar {
+  width: 260px;
+  height: 100%;
+  background: #f8faf8;
+  border-right: 1px solid #e5e7eb;
+  font-family: Arial, sans-serif;
+  padding: 12px 0;
+}
+
+.sub-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2f6f4e;
+}
+
+.back-btn {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+}
+
+.menu {
+  list-style: none;
+  padding: 0;
+  margin-top: 12px;
+}
+
+.menu li {
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.menu li:hover {
+  background: #eef2ee;
+}
+
+
+---
+
+4️⃣ Changes in sidebar.ts
+
+import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-sidebar',
+  templateUrl: './sidebar.html',
+  styleUrls: ['./sidebar.css']
+})
+export class Sidebar {
+  showSubSidebar = false;
+
+  toggleSubSidebar() {
+    this.showSubSidebar = !this.showSubSidebar;
+  }
+
+  closeSubSidebar() {
+    this.showSubSidebar = false;
+  }
+}
+
+
+---
+
+5️⃣ Changes in sidebar.html
+
+Add the Requisition icon and sub-sidebar binding:
+
+<div class="sidebar">
+  <!-- Requisition Icon -->
+  <div class="icon" (click)="toggleSubSidebar()">
+    <i class="fa fa-shopping-bag"></i>
+  </div>
+
+  <!-- Sub-sidebar -->
+  <app-subsidebar
+    *ngIf="showSubSidebar"
+    (close)="closeSubSidebar()">
+  </app-subsidebar>
+</div>
+
+
+---
+
+6️⃣ Optional tweak in sidebar.css (to make icon hover/active nicer)
+
+.icon {
+  cursor: pointer;
+  font-size: 20px;
+  color: #374151;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.icon:hover {
+  background: #eef2ee;
+}
+
+
+---
+
+✅ Behavior after these changes:
+
+1. Clicking Requisition icon → opens sub-sidebar
+
+
+2. Clicking same icon again → closes sub-sidebar
+
+
+3. Clicking Back button → closes sub-sidebar
+
+
+4. Menu items highlight only on hover
+
+
+5. Main content area stays to the right, no layout shift
+
+
+6. Nothing else in the project is modified
+
+
+
+
+---
+
+If you want, I can also create a ready-to-copy layout in sidebar.css + subsidebar.css so the sub-sidebar slides neatly next to the sidebar exactly like in your images, so it matches visually.
+
+Do you want me to do that too?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+😂😂 okay BRO — message finally received loud and clear.
 Let’s lock this in ONCE AND FOR ALL.
 
 👉 Your convention
