@@ -1,3 +1,205 @@
+Gotcha 👍 clean naming, let’s fix it properly.
+Below are ONLY the corrected files, with the component renamed to subsidebar-component everywhere.
+
+
+---
+
+✅ 1. subsidebar-component.ts (RENAMED)
+
+import { Component, EventEmitter, Output } from '@angular/core';
+
+@Component({
+  selector: 'app-subsidebar',
+  standalone: true,
+  templateUrl: './subsidebar-component.html',
+  styleUrl: './subsidebar-component.css'
+})
+export class SubsidebarComponent {
+  @Output() back = new EventEmitter<void>();
+
+  onBack() {
+    this.back.emit();
+  }
+}
+
+
+---
+
+✅ 2. subsidebar-component.html
+
+<div class="sub-sidebar">
+  <div class="sub-header">
+    <span class="title">Requisition</span>
+    <button class="back-btn" (click)="onBack()">←</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Operations</div>
+    <div class="menu-item">Create Request</div>
+    <div class="menu-item">My Requests</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section">
+    <div class="section-title">Approvals</div>
+    <div class="menu-item">Pending</div>
+    <div class="menu-item">History</div>
+  </div>
+</div>
+
+
+---
+
+✅ 3. subsidebar-component.css
+
+.sub-sidebar {
+  width: 260px;
+  height: 100%;
+  background: #f8faf8;
+  border-right: 1px solid #e5e7eb;
+  font-family: Arial, sans-serif;
+  padding: 12px 0;
+}
+
+/* HEADER */
+.sub-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2f6f4e;
+}
+
+.back-btn {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* SECTIONS */
+.section {
+  padding: 8px 0;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  padding: 8px 16px;
+}
+
+/* MENU ITEMS */
+.menu-item {
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.menu-item:hover {
+  background: #eef2ee;
+}
+
+/* DIVIDER */
+.divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 8px 0;
+}
+
+
+---
+
+✅ 4. main-component.ts (IMPORT FIXED)
+
+import { Component } from '@angular/core';
+import { RouterModule } from '@angular/router';
+import { SidebarComponent } from '../sidebar-component/sidebar-component';
+import { SubsidebarComponent } from '../subsidebar-component/subsidebar-component';
+
+@Component({
+  selector: 'main-component',
+  standalone: true,
+  imports: [RouterModule, SidebarComponent, SubsidebarComponent],
+  templateUrl: './main-component.html',
+  styleUrl: './main-component.css'
+})
+export class MainComponent {
+  isSubSidebarOpen = false;
+
+  toggleSubSidebar() {
+    this.isSubSidebarOpen = !this.isSubSidebarOpen;
+  }
+
+  closeSubSidebar() {
+    this.isSubSidebarOpen = false;
+  }
+}
+
+
+---
+
+✅ 5. main-component.html (TAG FIXED)
+
+<div class="layout">
+  <sidebar-component
+    (requisitionClick)="toggleSubSidebar()"
+  ></sidebar-component>
+
+  <app-subsidebar
+    *ngIf="isSubSidebarOpen"
+    (back)="closeSubSidebar()"
+  ></app-subsidebar>
+
+  <div class="body">
+    <router-outlet></router-outlet>
+  </div>
+</div>
+
+
+---
+
+✅ Final sanity checklist
+
+✔ Folder name: subsidebar-component
+✔ Class name: SubsidebarComponent
+✔ Selector: app-subsidebar
+✔ No *.component.ts naming conflict
+✔ Works with your existing standalone setup
+
+If you want:
+
+animation slide-in/out
+
+route-based auto open
+
+reuse same subsidebar for Metrics later
+
+
+Just say the word 😄
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect 👍
 Here are ONLY the files that changed, plus the complete sub-sidebar component.
 Nothing extra, nothing rewritten.
