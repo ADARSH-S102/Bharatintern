@@ -1,3 +1,204 @@
+/* =========================================================
+   TABLE CREATION
+   ========================================================= */
+
+CREATE TABLE travel_request_dn (
+    travel_request_id        VARCHAR(30) PRIMARY KEY,
+
+    employee_id              VARCHAR(20) NOT NULL,
+    employee_name            VARCHAR(100) NOT NULL,
+    department               VARCHAR(50),
+    grade                    VARCHAR(20),
+
+    travel_type              VARCHAR(20) NOT NULL
+                                CHECK (travel_type IN ('DOMESTIC', 'INTERNATIONAL')),
+
+    purpose_of_travel        VARCHAR(255) NOT NULL,
+
+    start_date               DATE NOT NULL,
+    end_date                 DATE NOT NULL
+                                CHECK (end_date >= start_date),
+
+    from_location            VARCHAR(50) NOT NULL,
+    to_location              VARCHAR(50) NOT NULL,
+    destination_country      VARCHAR(50),
+
+    travel_mode              VARCHAR(20)
+                                CHECK (travel_mode IN ('FLIGHT', 'TRAIN', 'CAB')),
+
+    class_of_travel          VARCHAR(20)
+                                CHECK (class_of_travel IN ('ECONOMY', 'BUSINESS')),
+
+    estimated_total_cost     DECIMAL(12,2)
+                                CHECK (estimated_total_cost >= 0),
+
+    currency                 VARCHAR(10) DEFAULT 'INR',
+
+    request_status           VARCHAR(20) NOT NULL
+                                CHECK (request_status IN
+                                ('DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED')),
+
+    approver1_id             VARCHAR(20),
+    approver1_role           VARCHAR(30),
+    approver1_status         VARCHAR(20)
+                                CHECK (approver1_status IN
+                                ('PENDING', 'APPROVED', 'REJECTED')),
+    approver1_action_date    TIMESTAMP,
+    approver1_comments       VARCHAR(255),
+
+    approver2_id             VARCHAR(20),
+    approver2_role           VARCHAR(30),
+    approver2_status         VARCHAR(20)
+                                CHECK (approver2_status IN
+                                ('PENDING', 'APPROVED', 'REJECTED')),
+    approver2_action_date    TIMESTAMP,
+    approver2_comments       VARCHAR(255),
+
+    approver3_id             VARCHAR(20),
+    approver3_role           VARCHAR(30),
+    approver3_status         VARCHAR(20)
+                                CHECK (approver3_status IN
+                                ('PENDING', 'APPROVED', 'REJECTED')),
+    approver3_action_date    TIMESTAMP,
+    approver3_comments       VARCHAR(255),
+
+    created_at               TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    submitted_at             TIMESTAMP,
+    last_updated_at          TIMESTAMP
+);
+
+/* =========================================================
+   SAMPLE DATA INSERTION
+   ========================================================= */
+
+INSERT INTO travel_request_dn VALUES
+(
+    'TRV-1001',
+    'EMP001',
+    'Adarsh S',
+    'Engineering',
+    'G6',
+    'DOMESTIC',
+    'Client meeting and project discussion',
+    DATE '2026-02-10',
+    DATE '2026-02-12',
+    'Bangalore',
+    'Mumbai',
+    'India',
+    'FLIGHT',
+    'ECONOMY',
+    18500.00,
+    'INR',
+    'APPROVED',
+    'MGR001',
+    'MANAGER',
+    'APPROVED',
+    CURRENT_TIMESTAMP - INTERVAL '5' DAY,
+    'Approved by manager',
+    'FIN001',
+    'FINANCE',
+    'APPROVED',
+    CURRENT_TIMESTAMP - INTERVAL '3' DAY,
+    'Budget verified',
+    'CMP001',
+    'COMPLIANCE',
+    'APPROVED',
+    CURRENT_TIMESTAMP - INTERVAL '2' DAY,
+    'Policy compliant',
+    CURRENT_TIMESTAMP - INTERVAL '7' DAY,
+    CURRENT_TIMESTAMP - INTERVAL '6' DAY,
+    CURRENT_TIMESTAMP
+);
+
+INSERT INTO travel_request_dn VALUES
+(
+    'TRV-1002',
+    'EMP002',
+    'Rahul Kumar',
+    'Sales',
+    'G5',
+    'INTERNATIONAL',
+    'Annual sales conference',
+    DATE '2026-03-05',
+    DATE '2026-03-12',
+    'Delhi',
+    'Singapore',
+    'Singapore',
+    'FLIGHT',
+    'BUSINESS',
+    250000.00,
+    'USD',
+    'SUBMITTED',
+    'MGR002',
+    'MANAGER',
+    'PENDING',
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+);
+
+INSERT INTO travel_request_dn VALUES
+(
+    'TRV-1003',
+    'EMP003',
+    'Neha Sharma',
+    'HR',
+    'G4',
+    'DOMESTIC',
+    'Internal HR audit',
+    DATE '2026-02-20',
+    DATE '2026-02-21',
+    'Pune',
+    'Hyderabad',
+    'India',
+    'TRAIN',
+    'ECONOMY',
+    4500.00,
+    'INR',
+    'REJECTED',
+    'MGR003',
+    'MANAGER',
+    'REJECTED',
+    CURRENT_TIMESTAMP - INTERVAL '1' DAY,
+    'Travel not required',
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    CURRENT_TIMESTAMP - INTERVAL '2' DAY,
+    CURRENT_TIMESTAMP - INTERVAL '2' DAY,
+    CURRENT_TIMESTAMP
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect — now we’re on the same page. 😌
 Here’s everything you need for the sub-sidebar functionality only, fully wired, respecting your existing project structure and naming conventions. No other files are touched.
 
