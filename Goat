@@ -1,4 +1,85 @@
 CREATE TABLE travel_request_dn (
+    travel_request_id            VARCHAR(30) PRIMARY KEY,
+
+    requested_by_id              VARCHAR(20) NOT NULL,
+    requested_by_name            VARCHAR(100) NOT NULL,
+
+    traveller_employee_id        VARCHAR(20) NOT NULL,
+    traveller_employee_name      VARCHAR(100) NOT NULL,
+
+    department                   VARCHAR(50) NOT NULL,
+    sub_cluster                  VARCHAR(50) NOT NULL,
+
+    travel_type                  VARCHAR(20) NOT NULL
+                                    CHECK (travel_type IN ('DOMESTIC', 'INTERNATIONAL')),
+
+    from_location                VARCHAR(50) NOT NULL,
+    to_location                  VARCHAR(50) NOT NULL,
+
+    start_date                   DATE NOT NULL,
+    end_date                     DATE NOT NULL
+                                    CHECK (end_date >= start_date),
+
+    number_of_days               INTEGER NOT NULL
+                                    CHECK (number_of_days > 0),
+
+    travel_class                 VARCHAR(20) NOT NULL
+                                    CHECK (travel_class IN ('ECONOMY', 'BUSINESS')),
+
+    approx_cost                  DECIMAL(12,2) NOT NULL
+                                    CHECK (approx_cost >= 0),
+
+    currency                     VARCHAR(10) NOT NULL,
+
+    overall_request_status       VARCHAR(20) NOT NULL
+                                    CHECK (overall_request_status IN
+                                    ('DRAFT', 'SUBMITTED', 'IN_APPROVAL',
+                                     'APPROVED', 'REJECTED', 'CANCELLED')),
+
+    approver1_uid                VARCHAR(20) NOT NULL,
+    approver1_name               VARCHAR(100) NOT NULL,
+    approver1_action_date        TIMESTAMP NOT NULL,
+    approver1_status             VARCHAR(20) NOT NULL
+                                    CHECK (approver1_status IN
+                                    ('PENDING', 'APPROVED', 'REJECTED')),
+
+    approver2_uid                VARCHAR(20) NOT NULL,
+    approver2_name               VARCHAR(100) NOT NULL,
+    approver2_action_date        TIMESTAMP NOT NULL,
+    approver2_status             VARCHAR(20) NOT NULL
+                                    CHECK (approver2_status IN
+                                    ('PENDING', 'APPROVED', 'REJECTED')),
+
+    approver3_uid                VARCHAR(20) NOT NULL,
+    approver3_name               VARCHAR(100) NOT NULL,
+    approver3_action_date        TIMESTAMP NOT NULL,
+    approver3_status             VARCHAR(20) NOT NULL
+                                    CHECK (approver3_status IN
+                                    ('PENDING', 'APPROVED', 'REJECTED')),
+
+    created_at                   TIMESTAMP NOT NULL,
+    last_updated                 TIMESTAMP NOT NULL
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CREATE TABLE travel_request_dn (
     travel_request_id        VARCHAR(30) PRIMARY KEY,
 
     employee_id              VARCHAR(20) NOT NULL,
