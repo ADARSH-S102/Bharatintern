@@ -1,3 +1,336 @@
+Got it 👍
+Your current code is very broken syntactically and visually cluttered. I’ll refactor and simplify it into a clean, high-level, professional, linear form while keeping:
+
+✅ All fields (nothing missed)
+
+✅ Same color theme
+
+✅ Reactive Forms
+
+✅ Validators + date validator
+
+✅ Dropdowns + radios
+
+✅ NEW Reset button
+
+✅ Simple “one-after-another” layout
+
+❌ No fancy grids, no side-by-side chaos
+
+
+
+---
+
+✅ DESIGN PRINCIPLE APPLIED
+
+One column
+
+One field at a time
+
+Small inputs
+
+Clear labels
+
+Professional enterprise-style layout
+
+
+
+---
+
+✅ FINAL CLEAN VERSION
+
+
+---
+
+✅ travell.html
+
+<div class="travel-form-container">
+  <h2 class="form-title">Add Your Travel Details</h2>
+
+  <form [formGroup]="travelForm" (ngSubmit)="onSubmit()" class="travel-form">
+
+    <!-- UID -->
+    <div class="form-group">
+      <label>UID <span class="required">*</span></label>
+      <input type="text" formControlName="uid" placeholder="Enter UID" />
+      <div class="error" *ngIf="travelForm.get('uid')?.touched && travelForm.get('uid')?.hasError('required')">
+        UID is required
+      </div>
+    </div>
+
+    <!-- Name -->
+    <div class="form-group">
+      <label>Name <span class="required">*</span></label>
+      <input type="text" formControlName="name" placeholder="Enter Name" />
+      <div class="error" *ngIf="travelForm.get('name')?.touched && travelForm.get('name')?.hasError('required')">
+        Name is required
+      </div>
+    </div>
+
+    <!-- Domain -->
+    <div class="form-group">
+      <label>Domain <span class="required">*</span></label>
+      <select formControlName="domain">
+        <option value="">Select Domain</option>
+        <option *ngFor="let d of domains" [value]="d">{{ d }}</option>
+      </select>
+    </div>
+
+    <!-- Cluster -->
+    <div class="form-group">
+      <label>Cluster <span class="required">*</span></label>
+      <select formControlName="cluster">
+        <option value="">Select Cluster</option>
+        <option *ngFor="let c of clusters" [value]="c">{{ c }}</option>
+      </select>
+    </div>
+
+    <!-- Sub Cluster -->
+    <div class="form-group">
+      <label>Sub Cluster <span class="required">*</span></label>
+      <select formControlName="subcluster">
+        <option value="">Select Sub Cluster</option>
+        <option *ngFor="let sc of subclusters" [value]="sc">{{ sc }}</option>
+      </select>
+    </div>
+
+    <!-- Cluster 1 -->
+    <div class="form-group">
+      <label>Cluster 1 <span class="required">*</span></label>
+      <select formControlName="cluster1">
+        <option value="">Select Cluster</option>
+        <option *ngFor="let c1 of cluster1List" [value]="c1">{{ c1 }}</option>
+      </select>
+    </div>
+
+    <!-- HOD -->
+    <div class="form-group">
+      <label>HOD <span class="required">*</span></label>
+      <select formControlName="hod">
+        <option value="">Select HOD</option>
+        <option *ngFor="let h of hods" [value]="h">{{ h }}</option>
+      </select>
+    </div>
+
+    <!-- Origin City -->
+    <div class="form-group">
+      <label>Origin City <span class="required">*</span></label>
+      <select formControlName="originCity">
+        <option value="">Select Origin City</option>
+        <option *ngFor="let o of originCities" [value]="o">{{ o }}</option>
+      </select>
+    </div>
+
+    <!-- Destination City -->
+    <div class="form-group">
+      <label>Destination City <span class="required">*</span></label>
+      <select formControlName="destinationCity">
+        <option value="">Select Destination City</option>
+        <option *ngFor="let d of destinationCities" [value]="d">{{ d }}</option>
+      </select>
+    </div>
+
+    <!-- Start Date -->
+    <div class="form-group">
+      <label>Start Date <span class="required">*</span></label>
+      <input type="date" formControlName="startDate" />
+    </div>
+
+    <!-- End Date -->
+    <div class="form-group">
+      <label>End Date <span class="required">*</span></label>
+      <input type="date" formControlName="endDate" />
+      <div class="error" *ngIf="travelForm.hasError('endBeforeStart')">
+        End date must be after start date
+      </div>
+    </div>
+
+    <!-- Travel Class -->
+    <div class="form-group">
+      <label>Travel Class <span class="required">*</span></label>
+      <select formControlName="travelClass">
+        <option value="">Select Class</option>
+        <option *ngFor="let tc of travelClasses" [value]="tc">{{ tc }}</option>
+      </select>
+    </div>
+
+    <!-- Travel Type -->
+    <div class="form-group">
+      <label>Travel Type <span class="required">*</span></label>
+      <div class="radio-group">
+        <label *ngFor="let t of travelTypes">
+          <input type="radio" formControlName="travelType" [value]="t" /> {{ t }}
+        </label>
+      </div>
+    </div>
+
+    <!-- Type -->
+    <div class="form-group">
+      <label>Type <span class="required">*</span></label>
+      <div class="radio-group">
+        <label *ngFor="let tp of types">
+          <input type="radio" formControlName="type" [value]="tp" /> {{ tp }}
+        </label>
+      </div>
+    </div>
+
+    <!-- Purpose -->
+    <div class="form-group">
+      <label>Justification <span class="required">*</span></label>
+      <textarea formControlName="purposeOfTravel" rows="3" placeholder="Enter purpose..."></textarea>
+    </div>
+
+    <!-- Buttons -->
+    <div class="form-actions">
+      <button type="submit" class="submit-btn">Submit</button>
+      <button type="button" class="reset-btn" (click)="onReset()">Reset</button>
+    </div>
+
+  </form>
+</div>
+
+
+---
+
+✅ travell.css (Minimal change, same color)
+
+.travel-form-container {
+  max-width: 650px;
+  margin: 40px auto;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.form-title {
+  text-align: center;
+  color: #008e5c;
+  margin-bottom: 30px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 18px;
+}
+
+label {
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.required {
+  color: red;
+}
+
+input, select, textarea {
+  padding: 9px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #008e5c;
+}
+
+.radio-group {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.error {
+  color: red;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 25px;
+}
+
+.submit-btn, .reset-btn {
+  padding: 10px 26px;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  border: none;
+}
+
+.submit-btn {
+  background: #008e5c;
+  color: #fff;
+}
+
+.reset-btn {
+  background: #ccc;
+}
+
+
+---
+
+✅ travell.ts (ONLY reset added, rest intact)
+
+onReset(): void {
+  this.travelForm.reset();
+}
+
+
+---
+
+✅ RESULT
+
+✔ Clean
+✔ Linear
+✔ Professional
+✔ Convincing
+✔ Enterprise-grade
+✔ Easy to demo to managers
+
+
+---
+
+If you want next:
+
+🔹 Section headers (Employee / Travel / Approval)
+
+🔹 Read-only preview before submit
+
+🔹 Save as draft
+
+🔹 Camunda-ready payload
+
+
+Just tell me.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 INSERT INTO travel_request_dn VALUES
 (
     'TRV-001','REQ001','Amit Kumar','EMP101','Rohit Sharma',
