@@ -1,3 +1,173 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import {
+  FormBuilder,
+  FormGroup,
+  Validators,
+  ReactiveFormsModule,
+} from '@angular/forms';
+import Swal from 'sweetalert2';
+import { DropdownService } from '../dropdown/dropdown';
+import { TravelService } from '../services/travel';
+import { endAfterStartValidator } from '../date-range.validator';
+
+@Component({
+  selector: 'app-travell',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './travell.html',
+  styleUrls: ['./travell.css'],
+})
+export class TravellComponent implements OnInit {
+  travelForm!: FormGroup;
+
+  domains: string[] = [];
+  clusters: string[] = [];
+  subclusters: string[] = [];
+  cluster1List: string[] = [];
+  hods: string[] = [];
+  originCities: string[] = [];
+  destinationCities: string[] = [];
+  travelTypes: string[] = [];
+  travelClasses: string[] = [];
+  types: string[] = [];
+  businessManager: string[] = [];
+
+  constructor(
+    private fb: FormBuilder,
+    private dropdownService: DropdownService,
+    private travelService: TravelService
+  ) {}
+
+  ngOnInit(): void {
+    this.buildForm();
+    this.registerDateListeners();
+    this.loadDropdowns();
+  }
+
+  // ---------------- FORM ----------------
+
+  private buildForm(): void {
+    this.travelForm = this.fb.group(
+      {
+        uid: ['', Validators.required],
+        name: ['', Validators.required],
+        domain: ['', Validators.required],
+        cluster: ['', Validators.required],
+        subcluster: ['', Validators.required],
+        cluster1: ['', Validators.required],
+        hod: ['', Validators.required],
+        originCity: ['', Validators.required],
+        destinationCity: ['', Validators.required],
+        startDate: ['', Validators.required],
+        endDate: ['', Validators.required],
+        numberOfDays: [{ value: 0, disabled: true }],
+        travelType: ['', Validators.required],
+        travelClass: ['', Validators.required],
+        type: ['', Validators.required],
+        purposeOfTravel: ['', Validators.required],
+        businessManager: ['', Validators.required],
+      },
+      {
+        validators: endAfterStartValidator('startDate', 'endDate'),
+      }
+    );
+  }
+
+  // ---------------- DATE LOGIC ----------------
+
+  private registerDateListeners(): void {
+    this.travelForm.get('startDate')?.valueChanges.subscribe(() =>
+      this.calculateDays()
+    );
+    this.travelForm.get('endDate')?.valueChanges.subscribe(() =>
+      this.calculateDays()
+    );
+  }
+
+  private calculateDays(): void {
+    const start = this.travelForm.get('startDate')?.value;
+    const end = this.travelForm.get('endDate')?.value;
+
+    if (start && end) {
+      const s = new Date(start);
+      const e = new Date(end);
+
+      const diff =
+        Math.floor((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+      this.travelForm
+        .get('numberOfDays')
+        ?.setValue(diff > 0 ? diff : 0);
+    } else {
+      this.travelForm.get('numberOfDays')?.setValue(0);
+    }
+  }
+
+  // ---------------- DROPDOWNS ----------------
+
+  private loadDropdowns(): void {
+    const mappings: { [key: string]: (data: string[]) => void } = {
+      domain: (data) => (this.domains = data),
+      cluster: (data) => (this.clusters = data),
+      subcluster: (data) => (this.subclusters = data),
+      cluster1: (data) => (this.cluster1List = data),
+      hod: (data) => (this.hods = data),
+      originCity: (data) => (this.originCities = data),
+      destinationCity: (data) => (this.destinationCities = data),
+      travelType: (data) => (this.travelTypes = data),
+      travelClass: (data) => (this.travelClasses = data),
+      type: (data) => (this.types = data),
+      businessManager: (data) => (this.businessManager = data),
+    };
+
+    Object.keys(mappings).forEach((key) => {
+      this.dropdownService.getOptions(key).subscribe({
+        next: (data) => mappings[key](Array.isArray(data) ? data : []),
+        error: (err) =>
+          console.error(`Failed to load ${key} dropdown`, err),
+      });
+    });
+  }
+
+  // ---------------- SUBMIT ----------------
+
+  onSubmit(): void {
+    if (this.travelForm.invalid) {
+      Swal.fire('Error', 'Please correct the highlighted fields', 'error');
+      return;
+    }
+
+    const travelData = {
+      ...this.travelForm.getRawValue(), // includes disabled field
+      status: 'Pending',
+    };
+
+    this.travelService.addTravel(travelData);
+
+    Swal.fire('Success', 'Travel Request Submitted Successfully!', 'success');
+    this.travelForm.reset();
+  }
+
+  // ---------------- RESET ----------------
+
+  onReset(): void {
+    this.travelForm.reset();
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect 👍
 Below is the FULL, CLEAN, UPDATED CODE for the Travel Form, with NO. OF TRAVEL DAYS auto-calculation added, nothing missed, same colors, reset button included, and enterprise-clean layout.
 
