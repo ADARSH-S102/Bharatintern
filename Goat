@@ -1,3 +1,322 @@
+Perfect, this is a UX-correct requirement 👍
+We’ll do it cleanly and without breaking your existing logic.
+
+✅ Behaviour you want (confirmed)
+
+Cluster dropdown appears only when the Cluster input is focused
+
+Dropdown disappears when cursor moves out
+
+Dropdown does NOT disappear when clicking an option
+
+Works with typing + selection
+
+
+This needs focus + blur handling with a small delay (important).
+
+
+---
+
+✅ WHAT WE WILL ADD (logic)
+
+1. Show dropdown on focus
+
+
+2. Hide dropdown on blur, but with setTimeout so click works
+
+
+3. No CSS hacks, no external libs
+
+
+
+
+---
+
+✅ UPDATED travel-details.ts (ENTIRE FILE)
+
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TravelService } from '../services/travel';
+import { DropdownService } from '../dropdown/dropdown';
+
+type Travel = {
+  uid: string;
+  name: string;
+  cluster: string;
+  cluster1: string;
+  origincity: string;
+  destinationCity: string;
+  startDate: string | Date;
+  endDate: string | Date;
+  travelclass: string;
+  status?: string;
+};
+
+@Component({
+  selector: 'app-travel-details',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './travel-details.html',
+  styleUrls: ['./travel-details.css']
+})
+export class TravelDetailsComponent implements OnInit {
+
+  private travels: Travel[] = [];
+  displayTravels: Travel[] = [];
+
+  uidSearch = '';
+  nameSearch = '';
+  clusterSearch = '';
+  selectedStatus = 'All';
+
+  allClusters: string[] = [];
+  filteredClusters: string[] = [];
+  showClusterDropdown = false;
+
+  constructor(
+    private travelService: TravelService,
+    private dropdownService: DropdownService
+  ) {}
+
+  ngOnInit(): void {
+    this.travels = this.travelService.getTravels();
+    this.displayTravels = [...this.travels];
+
+    this.dropdownService.getOptions('cluster').subscribe({
+      next: (data) => {
+        this.allClusters = Array.isArray(data) ? data : [];
+      },
+      error: (err) => console.error('Failed to load clusters', err)
+    });
+  }
+
+  onClusterFocus(): void {
+    this.filterClusters();
+    this.showClusterDropdown = true;
+  }
+
+  onClusterTyping(): void {
+    this.filterClusters();
+    this.showClusterDropdown = true;
+  }
+
+  onClusterBlur(): void {
+    // delay needed so click event on list works
+    setTimeout(() => {
+      this.showClusterDropdown = false;
+    }, 150);
+  }
+
+  filterClusters(): void {
+    const value = this.clusterSearch.toLowerCase();
+    this.filteredClusters = this.allClusters.filter(c =>
+      c.toLowerCase().includes(value)
+    );
+  }
+
+  selectCluster(cluster: string): void {
+    this.clusterSearch = cluster;
+    this.showClusterDropdown = false;
+  }
+
+  applyFilter(): void {
+    this.displayTravels = this.travels.filter(t => {
+
+      const uidMatch =
+        !this.uidSearch ||
+        t.uid.toLowerCase().includes(this.uidSearch.toLowerCase());
+
+      const nameMatch =
+        !this.nameSearch ||
+        t.name.toLowerCase().includes(this.nameSearch.toLowerCase());
+
+      const clusterMatch =
+        !this.clusterSearch ||
+        t.cluster === this.clusterSearch;
+
+      const statusMatch =
+        this.selectedStatus === 'All' ||
+        (t.status ?? 'Pending') === this.selectedStatus;
+
+      return uidMatch && nameMatch && clusterMatch && statusMatch;
+    });
+  }
+
+  resetFilter(): void {
+    this.uidSearch = '';
+    this.nameSearch = '';
+    this.clusterSearch = '';
+    this.selectedStatus = 'All';
+    this.showClusterDropdown = false;
+    this.displayTravels = [...this.travels];
+  }
+
+  getStatusClass(status: string | undefined): string {
+    if (status === 'Approved') return 'status-approved';
+    if (status === 'Rejected') return 'status-rejected';
+    return 'status-pending';
+  }
+}
+
+
+---
+
+✅ UPDATED travel-details.html (ENTIRE FILE)
+
+<div class="details-container">
+
+  <h2>Travel Details</h2>
+
+  <div class="filter-bar">
+
+    <!-- UID -->
+    <input
+      type="text"
+      placeholder="UID"
+      [(ngModel)]="uidSearch"
+      class="text-input"
+    />
+
+    <!-- NAME -->
+    <input
+      type="text"
+      placeholder="Name"
+      [(ngModel)]="nameSearch"
+      class="text-input"
+    />
+
+    <!-- CLUSTER AUTOCOMPLETE -->
+    <div class="autocomplete">
+      <input
+        type="text"
+        placeholder="Cluster"
+        [(ngModel)]="clusterSearch"
+        (focus)="onClusterFocus()"
+        (input)="onClusterTyping()"
+        (blur)="onClusterBlur()"
+        class="text-input"
+      />
+
+      <ul *ngIf="showClusterDropdown" class="autocomplete-list">
+        <li
+          *ngFor="let c of filteredClusters"
+          (mousedown)="selectCluster(c)"
+        >
+          {{ c }}
+        </li>
+      </ul>
+    </div>
+
+    <!-- STATUS -->
+    <select [(ngModel)]="selectedStatus" class="status-select">
+      <option value="All">All</option>
+      <option value="Approved">Approved</option>
+      <option value="Rejected">Rejected</option>
+      <option value="Pending">Pending</option>
+    </select>
+
+    <button class="btn-search" (click)="applyFilter()">Search</button>
+    <button class="btn-reset" (click)="resetFilter()">Reset</button>
+
+  </div>
+
+  <table class="travel-table" *ngIf="displayTravels.length; else noData">
+    <thead>
+      <tr>
+        <th>UID</th>
+        <th>Name</th>
+        <th>Cluster</th>
+        <th>Sub Cluster</th>
+        <th>Origin City</th>
+        <th>Destination City</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Travel Class</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr *ngFor="let t of displayTravels">
+        <td>{{ t.uid }}</td>
+        <td>{{ t.name }}</td>
+        <td>{{ t.cluster }}</td>
+        <td>{{ t.cluster1 }}</td>
+        <td>{{ t.origincity }}</td>
+        <td>{{ t.destinationCity }}</td>
+        <td>{{ t.startDate | date }}</td>
+        <td>{{ t.endDate | date }}</td>
+        <td>{{ t.travelclass }}</td>
+        <td>
+          <span [class]="getStatusClass(t.status)">
+            {{ t.status || 'Pending' }}
+          </span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ng-template #noData>
+    <div class="no-data">
+      No travel requests found for the selected filter.
+    </div>
+  </ng-template>
+
+</div>
+
+
+---
+
+✅ CSS
+
+No change needed beyond what you already have ✔️
+
+
+---
+
+✅ Final UX result
+
+✔ Dropdown appears only when cursor is in Cluster
+
+✔ Disappears immediately when cursor leaves
+
+✔ Clicking an option works smoothly
+
+✔ Same backend dropdown logic reused
+
+✔ Enterprise-grade behaviour (matches your “Sources” example)
+
+
+If you want next:
+
+keyboard navigation (↑ ↓ Enter)
+
+highlight matching text
+
+debounce for large cluster lists
+
+
+Just say the word 👌
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect 👍 — this makes sense, and you’re right to expect the same “type-ahead” UX as the form.
 
 We’ll NOT use a normal <select> for cluster anymore.
