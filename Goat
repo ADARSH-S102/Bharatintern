@@ -1,3 +1,397 @@
+Perfect — below are the ENTIRE updated files ✅
+I have only added UID & Name search, and reordered the filters exactly as you asked.
+Nothing else is touched or re-implemented.
+
+
+---
+
+✅ FINAL FILTER ORDER (as requested)
+
+UID → Name → Cluster → Status → Search → Reset
+
+
+---
+
+📄 travel-details.component.ts (ENTIRE FILE)
+
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TravelService } from '../services/travel';
+import { DropdownService } from '../dropdown/dropdown';
+
+type Travel = {
+  uid: string;
+  name: string;
+  cluster: string;
+  cluster1: string;
+  origincity: string;
+  destinationCity: string;
+  startDate: string | Date;
+  endDate: string | Date;
+  travelclass: string;
+  status?: string;
+};
+
+@Component({
+  selector: 'app-travel-details',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './travel-details.component.html',
+  styleUrls: ['./travel-details.component.css']
+})
+export class TravelDetailsComponent implements OnInit {
+
+  private travels: Travel[] = [];
+  displayTravels: Travel[] = [];
+
+  /** 🔍 Filters */
+  uidSearch: string = '';
+  nameSearch: string = '';
+  clusterSearch: string = '';
+  selectedStatus: string = 'All';
+
+  /** Dropdown data */
+  clusters: string[] = [];
+
+  constructor(
+    private travelService: TravelService,
+    private dropdownService: DropdownService
+  ) {}
+
+  ngOnInit(): void {
+    this.travels = this.travelService.getTravels();
+    this.displayTravels = [...this.travels];
+
+    /** reuse SAME dropdown logic as form */
+    this.dropdownService.getOptions('cluster').subscribe({
+      next: (data) => this.clusters = Array.isArray(data) ? data : [],
+      error: (err) => console.error('Failed to load clusters', err)
+    });
+  }
+
+  /** 🔎 Search button */
+  applyFilter(): void {
+    this.displayTravels = this.travels.filter(t => {
+
+      const uidMatch =
+        !this.uidSearch ||
+        t.uid?.toLowerCase().includes(this.uidSearch.toLowerCase());
+
+      const nameMatch =
+        !this.nameSearch ||
+        t.name?.toLowerCase().includes(this.nameSearch.toLowerCase());
+
+      const clusterMatch =
+        !this.clusterSearch ||
+        t.cluster === this.clusterSearch;
+
+      const statusMatch =
+        this.selectedStatus === 'All' ||
+        (t.status ?? 'Pending') === this.selectedStatus;
+
+      return uidMatch && nameMatch && clusterMatch && statusMatch;
+    });
+  }
+
+  /** 🔄 Reset button */
+  resetFilter(): void {
+    this.uidSearch = '';
+    this.nameSearch = '';
+    this.clusterSearch = '';
+    this.selectedStatus = 'All';
+    this.displayTravels = [...this.travels];
+  }
+
+  getStatusClass(status: string | undefined): string {
+    if (status === 'Approved') return 'status-approved';
+    if (status === 'Rejected') return 'status-rejected';
+    return 'status-pending';
+  }
+}
+
+
+---
+
+📄 travel-details.component.html (ENTIRE FILE)
+
+<div class="details-container">
+
+  <h2>Travel Details</h2>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+
+    <!-- UID -->
+    <input
+      type="text"
+      placeholder="Search UID"
+      [(ngModel)]="uidSearch"
+      class="text-input"
+    />
+
+    <!-- NAME -->
+    <input
+      type="text"
+      placeholder="Search Name"
+      [(ngModel)]="nameSearch"
+      class="text-input"
+    />
+
+    <!-- CLUSTER -->
+    <select
+      [(ngModel)]="clusterSearch"
+      class="status-select"
+    >
+      <option value="">All Clusters</option>
+      <option *ngFor="let c of clusters" [value]="c">{{ c }}</option>
+    </select>
+
+    <!-- STATUS (unchanged, only moved) -->
+    <select
+      [(ngModel)]="selectedStatus"
+      class="status-select"
+    >
+      <option value="All">All</option>
+      <option value="Approved">Approved</option>
+      <option value="Rejected">Rejected</option>
+      <option value="Pending">Pending</option>
+    </select>
+
+    <!-- ACTIONS -->
+    <button class="btn-search" (click)="applyFilter()">Search</button>
+    <button class="btn-reset" (click)="resetFilter()">Reset</button>
+  </div>
+
+  <!-- TABLE -->
+  <table class="travel-table" *ngIf="displayTravels.length; else noData">
+    <thead>
+      <tr>
+        <th>UID</th>
+        <th>Name</th>
+        <th>Cluster</th>
+        <th>Sub Cluster</th>
+        <th>Origin City</th>
+        <th>Destination City</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Travel Class</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr *ngFor="let t of displayTravels">
+        <td>{{ t.uid }}</td>
+        <td>{{ t.name }}</td>
+        <td>{{ t.cluster }}</td>
+        <td>{{ t.cluster1 }}</td>
+        <td>{{ t.origincity }}</td>
+        <td>{{ t.destinationCity }}</td>
+        <td>{{ t.startDate | date }}</td>
+        <td>{{ t.endDate | date }}</td>
+        <td>{{ t.travelclass }}</td>
+        <td>
+          <span [class]="getStatusClass(t.status)">
+            {{ t.status || 'Pending' }}
+          </span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ng-template #noData>
+    <div class="no-data">
+      No travel requests found for the selected filter.
+    </div>
+  </ng-template>
+
+</div>
+
+
+---
+
+📄 travel-details.component.css (ENTIRE FILE)
+
+.details-container {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 35px 50px;
+  margin: 60px auto;
+  max-width: 1200px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  text-align: center;
+  color: #008e5c;
+  margin-bottom: 25px;
+  font-weight: 700;
+  font-size: 26px;
+}
+
+/* FILTER BAR */
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 30px;
+}
+
+.text-input {
+  padding: 8px 12px;
+  min-width: 150px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-family: "Poppins", sans-serif;
+}
+
+.status-select {
+  min-width: 160px;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.btn-search {
+  padding: 8px 18px;
+  background: #008e5c;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-search:hover {
+  background: #006f48;
+}
+
+.btn-reset {
+  padding: 8px 18px;
+  background: #f1f1f1;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-reset:hover {
+  background: #e0e0e0;
+}
+
+/* TABLE */
+.travel-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  font-family: "Poppins", sans-serif;
+}
+
+.travel-table th {
+  background-color: #008e5c;
+  color: white;
+  padding: 12px;
+}
+
+.travel-table td {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+/* STATUS */
+.status-approved {
+  background: #04a94e;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.status-rejected {
+  background: #d93025;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.status-pending {
+  background: #f6c90e;
+  color: #333;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.no-data {
+  text-align: center;
+  color: #888;
+  font-style: italic;
+  margin-top: 20px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+
+---
+
+✅ Final confirmation
+
+✔ UID & Name added only
+
+✔ Order exactly as requested
+
+✔ Cluster dropdown still uses DropdownService
+
+✔ No status logic touched
+
+✔ No date filter added
+
+✔ No missing properties / no TS errors
+
+
+If you want next:
+
+🔹 Autocomplete cluster (type-to-filter)
+
+🔹 Pagination
+
+🔹 Column sorting
+
+🔹 Export to Excel
+
+
+Just say the word.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect 👍
 Below are the FULL, CLEAN, VERIFIED files — HTML + CSS + TS — with:
 
