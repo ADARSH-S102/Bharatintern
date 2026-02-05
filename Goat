@@ -1,3 +1,313 @@
+Perfect 👍 I got it clearly now.
+
+You want three things, without disturbing existing behavior:
+
+1. Cluster filter values must come from DropdownService (same source as form dropdowns)
+
+
+2. Cluster filter should be searchable (type-ahead)
+
+
+3. Add Search and Reset buttons at the end of the filter bar
+
+
+
+Below I’m giving you entire updated codes (HTML + TS + minimal CSS additions), keeping:
+
+file name as travel-details.ts (not .component.ts)
+
+existing status filter logic intact
+
+no origin / destination filters
+
+
+
+---
+
+✅ Updated travel-details.ts (ENTIRE FILE)
+
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TravelService } from '../services/travel';
+import { DropdownService } from '../services/dropdownservice';
+
+type Travel = {
+  uid: string;
+  name: string;
+  cluster: string;
+  cluster1: string;
+  origincity: string;
+  destinationCity: string;
+  startDate: string | Date;
+  endDate: string | Date;
+  travelclass: string;
+  status?: 'Approved' | 'Rejected' | string;
+};
+
+@Component({
+  selector: 'app-travel-details',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './travel-details.html',
+  styleUrls: ['./travel-details.css']
+})
+export class TravelDetailsComponent implements OnInit {
+
+  private travels: Travel[] = [];
+  displayTravels: Travel[] = [];
+
+  /* Existing */
+  selectedStatus: string = 'All';
+
+  /* NEW – Cluster filter */
+  clusterSearch: string = '';
+  allClusters: string[] = [];
+  filteredClusters: string[] = [];
+
+  constructor(
+    private travelService: TravelService,
+    private dropdownService: DropdownService
+  ) {}
+
+  ngOnInit(): void {
+    this.travels = this.travelService.getTravels();
+    this.displayTravels = [...this.travels];
+
+    /* Fetch cluster dropdown values from DropdownService */
+    this.dropdownService.getClusters().subscribe((clusters: string[]) => {
+      this.allClusters = clusters;
+      this.filteredClusters = clusters;
+    });
+  }
+
+  /* Status badge styling */
+  getStatusClass(status: string | undefined): string {
+    if (status === 'Approved') return 'status-approved';
+    if (status === 'Rejected') return 'status-rejected';
+    return 'status-pending';
+  }
+
+  /* Type-ahead cluster search */
+  onClusterTyping(): void {
+    const value = this.clusterSearch.toLowerCase();
+    this.filteredClusters = this.allClusters.filter(c =>
+      c.toLowerCase().includes(value)
+    );
+  }
+
+  selectCluster(cluster: string): void {
+    this.clusterSearch = cluster;
+    this.filteredClusters = [];
+  }
+
+  /* Apply filters (Search button) */
+  applySearch(): void {
+    this.displayTravels = this.travels.filter(t => {
+
+      const statusMatch =
+        this.selectedStatus === 'All' ||
+        (t.status ?? 'Pending').toLowerCase() === this.selectedStatus.toLowerCase();
+
+      const clusterMatch =
+        !this.clusterSearch ||
+        t.cluster.toLowerCase().includes(this.clusterSearch.toLowerCase());
+
+      return statusMatch && clusterMatch;
+    });
+  }
+
+  /* Reset filters */
+  resetFilters(): void {
+    this.selectedStatus = 'All';
+    this.clusterSearch = '';
+    this.displayTravels = [...this.travels];
+  }
+}
+
+
+---
+
+✅ Updated travel-details.html (FILTER BAR + TABLE)
+
+<div class="details-container">
+  <h2>Travel Details</h2>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+
+    <!-- Status Filter -->
+    <label>Show:</label>
+    <select
+      [(ngModel)]="selectedStatus"
+      class="status-select">
+      <option value="All">All</option>
+      <option value="Approved">Approved</option>
+      <option value="Rejected">Rejected</option>
+      <option value="Pending">Pending</option>
+    </select>
+
+    <!-- Cluster Search -->
+    <div class="cluster-search">
+      <input
+        type="text"
+        placeholder="Search Cluster"
+        [(ngModel)]="clusterSearch"
+        (input)="onClusterTyping()" />
+
+      <ul *ngIf="filteredClusters.length && clusterSearch">
+        <li
+          *ngFor="let c of filteredClusters"
+          (click)="selectCluster(c)">
+          {{ c }}
+        </li>
+      </ul>
+    </div>
+
+    <!-- Buttons -->
+    <button class="btn search-btn" (click)="applySearch()">Search</button>
+    <button class="btn reset-btn" (click)="resetFilters()">Reset</button>
+
+  </div>
+
+  <!-- TABLE -->
+  <table class="travel-table" *ngIf="displayTravels.length; else noData">
+    <thead>
+      <tr>
+        <th>UID</th>
+        <th>Name</th>
+        <th>Cluster</th>
+        <th>Sub Cluster</th>
+        <th>Origin City</th>
+        <th>Destination City</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Travel Class</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr *ngFor="let t of displayTravels">
+        <td>{{ t.uid }}</td>
+        <td>{{ t.name }}</td>
+        <td>{{ t.cluster }}</td>
+        <td>{{ t.cluster1 }}</td>
+        <td>{{ t.origincity }}</td>
+        <td>{{ t.destinationCity }}</td>
+        <td>{{ t.startDate | date }}</td>
+        <td>{{ t.endDate | date }}</td>
+        <td>{{ t.travelclass }}</td>
+        <td>
+          <span [class]="getStatusClass(t.status)">
+            {{ t.status || 'Pending' }}
+          </span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ng-template #noData>
+    <div class="no-data">No travel requests found.</div>
+  </ng-template>
+</div>
+
+
+---
+
+✅ Minimal CSS Additions (append to existing CSS)
+
+.cluster-search {
+  position: relative;
+}
+
+.cluster-search input {
+  padding: 8px 10px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  min-width: 180px;
+}
+
+.cluster-search ul {
+  position: absolute;
+  background: #fff;
+  border: 1px solid #ddd;
+  width: 100%;
+  max-height: 160px;
+  overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+  z-index: 10;
+}
+
+.cluster-search li {
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.cluster-search li:hover {
+  background: #f1f5f9;
+}
+
+.btn {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.search-btn {
+  background: #008e5c;
+  color: white;
+}
+
+.reset-btn {
+  background: #e2e8f0;
+}
+
+
+---
+
+✅ What you now have (final clarity)
+
+✔ Cluster filter uses DropdownService
+✔ Type-ahead search while typing
+✔ Search button (explicit apply)
+✔ Reset button (clears everything)
+✔ Status filter still works exactly as before
+
+If you want next:
+
+auto-search without clicking Search
+
+multi-cluster select
+
+backend-driven filtering
+
+pagination
+
+
+Say the word — we’ll extend it cleanly 💪
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Got it 👍
 I’ll not change any existing behaviour, I’ll only add a Cluster filter with typing/search support, and I’ll send the full updated files so nothing breaks.
 
