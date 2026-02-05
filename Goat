@@ -1,36 +1,8 @@
-Perfect 👍 I got it clearly now.
-
-You want three things, without disturbing existing behavior:
-
-1. Cluster filter values must come from DropdownService (same source as form dropdowns)
-
-
-2. Cluster filter should be searchable (type-ahead)
-
-
-3. Add Search and Reset buttons at the end of the filter bar
-
-
-
-Below I’m giving you entire updated codes (HTML + TS + minimal CSS additions), keeping:
-
-file name as travel-details.ts (not .component.ts)
-
-existing status filter logic intact
-
-no origin / destination filters
-
-
-
----
-
-✅ Updated travel-details.ts (ENTIRE FILE)
-
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TravelService } from '../services/travel';
-import { DropdownService } from '../services/dropdownservice';
+import { DropdownService } from '../dropdown/dropdown';
 
 type Travel = {
   uid: string;
@@ -57,13 +29,13 @@ export class TravelDetailsComponent implements OnInit {
   private travels: Travel[] = [];
   displayTravels: Travel[] = [];
 
-  /* Existing */
+  /* Status filter */
   selectedStatus: string = 'All';
 
-  /* NEW – Cluster filter */
-  clusterSearch: string = '';
-  allClusters: string[] = [];
+  /* Cluster filter */
+  clusters: string[] = [];
   filteredClusters: string[] = [];
+  selectedCluster: string = '';
 
   constructor(
     private travelService: TravelService,
@@ -74,14 +46,16 @@ export class TravelDetailsComponent implements OnInit {
     this.travels = this.travelService.getTravels();
     this.displayTravels = [...this.travels];
 
-    /* Fetch cluster dropdown values from DropdownService */
-    this.dropdownService.getClusters().subscribe((clusters: string[]) => {
-      this.allClusters = clusters;
-      this.filteredClusters = clusters;
+    /* ✅ SAME pattern as travell.ts */
+    this.dropdownService.getOptions('cluster').subscribe({
+      next: (data: string[]) => {
+        this.clusters = Array.isArray(data) ? data : [];
+        this.filteredClusters = [...this.clusters];
+      },
+      error: (err) => console.error('Failed to fetch cluster options', err)
     });
   }
 
-  /* Status badge styling */
   getStatusClass(status: string | undefined): string {
     if (status === 'Approved') return 'status-approved';
     if (status === 'Rejected') return 'status-rejected';
@@ -89,19 +63,19 @@ export class TravelDetailsComponent implements OnInit {
   }
 
   /* Type-ahead cluster search */
-  onClusterTyping(): void {
-    const value = this.clusterSearch.toLowerCase();
-    this.filteredClusters = this.allClusters.filter(c =>
+  onClusterSearch(): void {
+    const value = this.selectedCluster.toLowerCase();
+    this.filteredClusters = this.clusters.filter(c =>
       c.toLowerCase().includes(value)
     );
   }
 
   selectCluster(cluster: string): void {
-    this.clusterSearch = cluster;
+    this.selectedCluster = cluster;
     this.filteredClusters = [];
   }
 
-  /* Apply filters (Search button) */
+  /* Search button */
   applySearch(): void {
     this.displayTravels = this.travels.filter(t => {
 
@@ -110,18 +84,19 @@ export class TravelDetailsComponent implements OnInit {
         (t.status ?? 'Pending').toLowerCase() === this.selectedStatus.toLowerCase();
 
       const clusterMatch =
-        !this.clusterSearch ||
-        t.cluster.toLowerCase().includes(this.clusterSearch.toLowerCase());
+        !this.selectedCluster ||
+        t.cluster.toLowerCase().includes(this.selectedCluster.toLowerCase());
 
       return statusMatch && clusterMatch;
     });
   }
 
-  /* Reset filters */
+  /* Reset button */
   resetFilters(): void {
     this.selectedStatus = 'All';
-    this.clusterSearch = '';
+    this.selectedCluster = '';
     this.displayTravels = [...this.travels];
+    this.filteredClusters = [...this.clusters];
   }
 }
 
