@@ -1,3 +1,224 @@
+Perfect 👍 now we’re finally aligned on scope.
+
+👉 NO logic changes
+👉 NO table changes
+👉 NO filter changes
+👉 ONLY visual alignment
+👉 Heading + existing filter bar moved slightly left
+
+Below are the ENTIRE updated HTML and CSS with minimal, safe changes.
+
+
+---
+
+✅ travel-details.html (structure unchanged)
+
+<div class="details-container">
+
+  <h2 class="page-title">Travel Details</h2>
+
+  <!-- FILTER -->
+  <div class="filter-bar">
+    <label for="statusSelect">Show:</label>
+
+    <select
+      [(ngModel)]="selectedStatus"
+      id="statusSelect"
+      (change)="applyFilter()"
+      class="status-select"
+    >
+      <option value="All">All</option>
+      <option value="Approved">Approved</option>
+      <option value="Rejected">Rejected</option>
+      <option value="Pending">Pending</option>
+    </select>
+  </div>
+
+  <!-- TABLE -->
+  <table class="travel-table" *ngIf="displayTravels.length; else noData">
+    <thead>
+      <tr>
+        <th>UID</th>
+        <th>Name</th>
+        <th>Cluster</th>
+        <th>Sub Cluster</th>
+        <th>Origin City</th>
+        <th>Destination City</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Travel Class</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr *ngFor="let t of displayTravels">
+        <td>{{ t.uid }}</td>
+        <td>{{ t.name }}</td>
+        <td>{{ t.cluster }}</td>
+        <td>{{ t.cluster1 }}</td>
+        <td>{{ t.origincity }}</td>
+        <td>{{ t.destinationCity }}</td>
+        <td>{{ t.startDate | date }}</td>
+        <td>{{ t.endDate | date }}</td>
+        <td>{{ t.travelclass }}</td>
+        <td>
+          <span [class]="getStatusClass(t.status)">
+            {{ t.status || 'Pending' }}
+          </span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <ng-template #noData>
+    <div class="no-data">
+      No travel requests found for the selected filter.
+    </div>
+  </ng-template>
+
+</div>
+
+
+---
+
+✅ travel-details.css (ONLY alignment changes)
+
+.details-container {
+  background: #fff;
+  border-radius: 12px;
+  padding: 40px 60px;
+  margin: 70px auto;
+  max-width: 1200px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+/* 🔹 HEADING MOVED SLIGHTLY LEFT */
+.page-title {
+  text-align: left;
+  color: #008e5c;
+  margin-bottom: 30px;
+  font-weight: 700;
+  font-size: 28px;
+  margin-left: -20px;
+}
+
+/* 🔹 FILTER BAR MOVED SLIGHTLY LEFT */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 25px;
+  margin-left: -20px;
+}
+
+.filter-bar label {
+  font-weight: 600;
+  color: #333;
+}
+
+.status-select {
+  min-width: 150px;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  font-family: "Poppins", sans-serif;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.status-select:focus {
+  outline: none;
+  border-color: #0a7c2e;
+  box-shadow: 0 0 0 2px rgba(10, 124, 46, 0.2);
+}
+
+/* TABLE – UNTOUCHED */
+.travel-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  font-family: "Poppins", sans-serif;
+}
+
+.travel-table th,
+.travel-table td {
+  border-bottom: 1px solid #ddd;
+  padding: 12px 10px;
+  font-size: 15px;
+}
+
+.travel-table th {
+  background-color: #008e5c;
+  color: white;
+}
+
+/* STATUS STYLES */
+.status-approved {
+  background: #04a94e;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.status-rejected {
+  background: #d93025;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.status-pending {
+  background: #f6c90e;
+  color: #333;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.no-data {
+  text-align: center;
+  color: #888;
+  font-style: italic;
+  margin-top: 20px;
+}
+
+
+---
+
+✅ Result
+
+Heading slightly left
+
+Filters slightly left
+
+Table exactly as before
+
+Zero functional risk
+
+
+If you want it 1–2 px more or less, tell me the direction — that’s a 1-line change only.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 You’re right — that one’s on me.
 You asked only for alignment and UI behavior, and I should NOT have touched data fields like noOfDays. Thanks for calling it out 👍
 
