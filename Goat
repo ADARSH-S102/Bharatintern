@@ -1,3 +1,259 @@
+You’re right — that one’s on me.
+You asked only for alignment and UI behavior, and I should NOT have touched data fields like noOfDays. Thanks for calling it out 👍
+
+Let’s reset cleanly and fix this properly.
+
+
+---
+
+❌ What went wrong (clearly)
+
+Your Travel type does NOT have noOfDays
+
+I incorrectly added:
+
+{{ t.noOfDays }}
+
+That caused:
+
+> property no.of days does not exist in type Travel
+
+
+
+You never asked for that change in this step
+
+
+So we will:
+
+❌ Remove noOfDays completely
+
+✅ Only align filters to the left
+
+✅ Keep UID, Name, Cluster (type-ahead), Status
+
+✅ No data-model changes
+
+✅ No logic changes
+
+
+
+---
+
+✅ CORRECTED FILES (ONLY UI, NO EXTRA FIELDS)
+
+travel-details.html (FULL & CLEAN)
+
+<div class="filter-bar">
+
+  <!-- UID -->
+  <input
+    type="text"
+    placeholder="UID"
+    [(ngModel)]="uidSearch"
+  />
+
+  <!-- NAME -->
+  <input
+    type="text"
+    placeholder="Name"
+    [(ngModel)]="nameSearch"
+  />
+
+  <!-- CLUSTER (TYPE-AHEAD) -->
+  <div class="autocomplete">
+    <input
+      type="text"
+      placeholder="Cluster"
+      [(ngModel)]="clusterSearch"
+      (focus)="onClusterFocus()"
+      (input)="onClusterTyping()"
+      (blur)="onClusterBlur()"
+    />
+
+    <ul
+      *ngIf="showClusterDropdown && filteredClusters.length"
+      class="autocomplete-list"
+    >
+      <li
+        *ngFor="let cluster of filteredClusters"
+        (mousedown)="selectCluster(cluster)"
+      >
+        {{ cluster }}
+      </li>
+    </ul>
+  </div>
+
+  <!-- STATUS (EXISTING – JUST MOVED) -->
+  <select [(ngModel)]="selectedStatus">
+    <option value="All">All</option>
+    <option value="Pending">Pending</option>
+    <option value="Approved">Approved</option>
+    <option value="Rejected">Rejected</option>
+  </select>
+
+  <!-- BUTTONS -->
+  <button class="btn-filter" (click)="applyFilter()">Filter</button>
+  <button class="btn-reset" (click)="resetFilter()">Reset</button>
+
+</div>
+
+<table class="travel-table">
+  <thead>
+    <tr>
+      <th>UID</th>
+      <th>Name</th>
+      <th>Cluster</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr *ngFor="let t of displayTravels">
+      <td>{{ t.uid }}</td>
+      <td>{{ t.name }}</td>
+      <td>{{ t.cluster }}</td>
+      <td>{{ t.status || 'Pending' }}</td>
+    </tr>
+  </tbody>
+</table>
+
+
+---
+
+travel-details.css (LEFT-ALIGNED, SIMPLE)
+
+/* FILTER BAR */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #f8f8f8;
+  border-bottom: 1px solid #ddd;
+}
+
+/* INPUTS & SELECT */
+.filter-bar input,
+.filter-bar select {
+  height: 34px;
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid #cfcfcf;
+  border-radius: 4px;
+  min-width: 150px;
+}
+
+/* AUTOCOMPLETE */
+.autocomplete {
+  position: relative;
+}
+
+.autocomplete-list {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #cfcfcf;
+  border-radius: 4px;
+  max-height: 160px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.autocomplete-list li {
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.autocomplete-list li:hover {
+  background: #e6f2ff;
+}
+
+/* BUTTONS */
+.btn-filter {
+  background: #28a745;
+  color: white;
+  border: none;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-reset {
+  background: #e0e0e0;
+  border: none;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* TABLE */
+.travel-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.travel-table th,
+.travel-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  font-size: 13px;
+}
+
+.travel-table th {
+  background: #f2f2f2;
+}
+
+
+---
+
+✅ Final reassurance
+
+✔ No new properties
+
+✔ No Travel model touched
+
+✔ Only alignment + UX
+
+✔ Cluster behaves exactly as requested
+
+✔ Clean, enterprise-style UI
+
+
+You were absolutely right to stop it early — thanks for keeping it tight.
+If you want, next we can:
+
+make UID/Name press Enter to filter
+
+add ❌ clear icons
+
+debounce cluster typing
+
+
+Just tell me one thing at a time, we’ll keep it clean.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect 👍
 Below is the ENTIRE updated files — only HTML and CSS, no .component anywhere, and matching exactly what you asked:
 
