@@ -1,3 +1,188 @@
+Perfect 👍 thanks for clarifying — that’s totally fine.
+We’ll just rename and use auth.ts instead of auth.service.ts.
+Nothing else changes in logic.
+
+Below is the corrected, final version using auth.ts everywhere.
+
+
+---
+
+1️⃣ AUTH FILE (auth.ts)
+
+📁 src/app/auth/auth.ts
+
+import { Injectable } from '@angular/core';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthService {
+
+  private loggedIn = false;
+
+  login(username: string, password: string): boolean {
+    if (password === 'password') {
+      this.loggedIn = true;
+      return true;
+    }
+    return false;
+  }
+
+  logout(): void {
+    this.loggedIn = false;
+  }
+
+  isAuthenticated(): boolean {
+    return this.loggedIn;
+  }
+}
+
+
+---
+
+2️⃣ LOGIN COMPONENT (login.ts)
+
+import { Component } from '@angular/core';
+import { Router } from '@angular/router';
+import { AuthService } from '../auth/auth';
+
+@Component({
+  selector: 'app-login',
+  standalone: true,
+  templateUrl: './login.html',
+  styleUrls: ['./login.css']
+})
+export class LoginComponent {
+
+  username = '';
+  password = '';
+
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
+
+  login(): void {
+    const success = this.authService.login(this.username, this.password);
+
+    if (success) {
+      this.router.navigate(['']);
+    } else {
+      alert('Invalid credentials');
+    }
+  }
+}
+
+
+---
+
+3️⃣ APP COMPONENT (app.ts) — ENTIRE FILE
+
+import { Component } from '@angular/core';
+import { Router, RouterOutlet, NavigationEnd } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { filter } from 'rxjs/operators';
+import { AuthService } from './auth/auth';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [RouterOutlet, CommonModule],
+  templateUrl: './app.html',
+  styleUrls: ['./app.css']
+})
+export class AppComponent {
+
+  isLoginPage = false;
+
+  constructor(
+    private router: Router,
+    private authService: AuthService
+  ) {
+    this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe((event: NavigationEnd) => {
+        this.isLoginPage = event.urlAfterRedirects === '/login';
+
+        if (!this.authService.isAuthenticated() && !this.isLoginPage) {
+          this.router.navigate(['login']);
+        }
+      });
+  }
+
+  navigateTo(path: string): void {
+    this.router.navigate([path]);
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['login']);
+  }
+
+  isLoggedIn(): boolean {
+    return this.authService.isAuthenticated();
+  }
+}
+
+
+---
+
+4️⃣ app.html (ONLY THE CONDITIONS CHANGE)
+
+Sidebar
+
+<div class="side-menu" *ngIf="isLoggedIn()">
+
+Logout button
+
+<button class="logout-btn" *ngIf="isLoggedIn()" (click)="logout()">Logout</button>
+
+
+---
+
+✅ FINAL CONFIRMED BEHAVIOR
+
+✔ Header always visible
+✔ Sidebar only after login
+✔ Login does NOT reappear while logged in
+✔ Logout redirects to login
+✔ No localStorage
+✔ No guards
+✔ Clean & interview-safe
+
+
+---
+
+If you want next:
+
+Route Guards (best practice)
+
+Remember login on refresh
+
+Backend auth
+
+JWT later
+
+
+Just tell me 👍
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Got it 👍 — username must come from what the user types in the login page, not hard-coded.
 We’ll do this cleanly and correctly, without touching unrelated logic.
 
