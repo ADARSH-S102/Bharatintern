@@ -1,3 +1,310 @@
+Perfect, thanks for pasting the real existing app.css 👍
+Now everything is clear. Your sidebar is hidden purely because of this line:
+
+.side-menu {
+  left: -230px;
+}
+
+So even though Angular renders it, CSS pushes it off-screen.
+
+You said clearly:
+
+> “The sidebar should always be open”
+
+
+
+So we will NOT redesign, NOT add new layouts, NOT touch the table or other pages.
+We will only:
+
+1. ✅ Make sidebar always visible (left: 0)
+
+
+2. ✅ Remove dependency on .open
+
+
+3. ✅ Keep header fixed (as you already have)
+
+
+4. ✅ Keep logout logic intact
+
+
+5. ✅ Sidebar visible only after login
+
+
+
+Below are the ENTIRE UPDATED FILES, aligned with your existing structure.
+
+
+---
+
+✅ UPDATED app.css (ENTIRE FILE – cleaned but SAME DESIGN)
+
+.container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f9fdf9;
+  font-family: "Poppins", sans-serif;
+}
+
+/* HEADER */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 50px;
+  background-color: #008e5c;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 1000;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-icon {
+  height: 40px;
+  width: 40px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+/* LOGOUT */
+.logout-btn {
+  border: none;
+  background-color: #d93825;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 16px;
+  transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+  background-color: #b72d1f;
+}
+
+/* SIDEBAR – ALWAYS OPEN */
+.side-menu {
+  position: fixed;
+  top: 50px;
+  left: 0;                     /* 🔑 THIS IS THE FIX */
+  width: 54px;
+  height: calc(100vh - 50px);
+  background-color: #f5faf8;
+  color: #465563;
+  padding-top: 24px;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-right: 1px solid #e5e7eb;
+}
+
+/* REMOVE TRANSITION + OPEN LOGIC */
+.side-menu.open {
+  left: 0;
+}
+
+.side-menu ul {
+  list-style: none;
+  padding: 0;
+  width: 100%;
+}
+
+.side-menu li {
+  width: 100%;
+  padding: 15px 0;
+  display: flex;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.side-menu li:hover {
+  background-color: #e5e7eb;
+}
+
+.menu-icon-container {
+  font-size: 22px;
+}
+
+/* CONTENT */
+.content {
+  margin-top: 50px;
+  margin-left: 54px;          /* 🔑 IMPORTANT */
+  padding: 20px;
+  height: calc(100vh - 50px);
+  overflow-y: auto;
+  background: #f9fafb;
+}
+
+
+---
+
+✅ UPDATED app.ts (ENTIRE FILE)
+
+import { Component } from '@angular/core';
+import { Router, RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { AuthService } from './services/auth';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [RouterOutlet, CommonModule],
+  templateUrl: './app.html',
+  styleUrls: ['./app.css']
+})
+export class AppComponent {
+
+  constructor(
+    private router: Router,
+    private authService: AuthService
+  ) {}
+
+  navigateTo(path: string): void {
+    this.router.navigate([path]);
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
+
+  isLoggedIn(): boolean {
+    return this.authService.isAuthenticated();
+  }
+}
+
+
+---
+
+✅ UPDATED app.html (ENTIRE FILE)
+
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <img class="header-icon" src="abc.png" />
+      <h2>BNP Paribas India Solutions Private Limited</h2>
+    </div>
+
+    <div class="header-right" *ngIf="isLoggedIn()">
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- SIDEBAR (VISIBLE AFTER LOGIN, ALWAYS OPEN) -->
+  <div class="side-menu" *ngIf="isLoggedIn()">
+    <ul>
+      <li (click)="navigateTo('welcome')">
+        <div class="menu-icon-container">
+          <i class="fas fa-home"></i>
+        </div>
+      </li>
+
+      <li (click)="navigateTo('new-travel')">
+        <div class="menu-icon-container">
+          <i class="fas fa-plus"></i>
+        </div>
+      </li>
+
+      <li (click)="navigateTo('travel-details')">
+        <div class="menu-icon-container">
+          <i class="fas fa-money-check"></i>
+        </div>
+      </li>
+
+      <li (click)="navigateTo('approvals')">
+        <div class="menu-icon-container">
+          <i class="fa fa-check"></i>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="content">
+    <router-outlet></router-outlet>
+  </div>
+
+</div>
+
+
+---
+
+✅ FINAL RESULT (THIS WILL HAPPEN)
+
+🔓 After login
+
+Sidebar visible
+
+Sidebar always open
+
+Logout visible
+
+
+🔒 After logout
+
+Sidebar hidden
+
+Back to login
+
+
+❌ No toggles
+
+❌ No animations
+
+❌ No new layout system
+
+
+
+---
+
+You were 100% right to be frustrated — this was not logic, it was CSS fighting you.
+
+If you want next:
+
+active menu highlight
+
+sidebar labels on hover
+
+permissions later
+
+
+Just tell me 👍
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Understood. Below are the fully corrected, minimal, and consistent versions of only these three files:
 
 ✅ login.ts
