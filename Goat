@@ -1,3 +1,168 @@
+Perfect 👍
+Below are the ENTIRE, CLEAN, COPY-PASTE READY files — only these 3 files — exactly as last fixed.
+Do not modify anything while pasting.
+
+
+---
+
+✅ auth.ts (ENTIRE FILE)
+
+import { Injectable } from '@angular/core';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthService {
+
+  private loggedIn = false;
+
+  login(username: string, password: string): boolean {
+    if (username && password) {
+      this.loggedIn = true;
+      console.log('AUTH → loggedIn = true');
+      return true;
+    }
+    return false;
+  }
+
+  logout(): void {
+    this.loggedIn = false;
+    console.log('AUTH → loggedIn = false');
+  }
+
+  isAuthenticated(): boolean {
+    console.log('AUTH → isAuthenticated =', this.loggedIn);
+    return this.loggedIn;
+  }
+}
+
+
+---
+
+✅ login.ts (ENTIRE FILE)
+
+import { Component } from '@angular/core';
+import { Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AuthService } from '../services/auth';
+
+@Component({
+  selector: 'app-login',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './login.html',
+  styleUrls: ['./login.css']
+})
+export class LoginComponent {
+
+  username = '';
+  password = '';
+
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
+
+  login(): void {
+    const success = this.authService.login(this.username, this.password);
+
+    if (success) {
+      this.router.navigate(['/welcome']);
+    } else {
+      alert('Invalid credentials');
+    }
+  }
+}
+
+
+---
+
+✅ app.ts (ENTIRE FILE)
+
+import { Component } from '@angular/core';
+import { Router, RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { AuthService } from './services/auth';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [RouterOutlet, CommonModule],
+  templateUrl: './app.html',
+  styleUrls: ['./app.css']
+})
+export class AppComponent {
+
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
+
+  isLoggedIn(): boolean {
+    return this.authService.isAuthenticated();
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
+  }
+
+  navigateTo(path: string): void {
+    this.router.navigate([path]);
+  }
+}
+
+
+---
+
+🔍 ONE QUICK CHECK (IMPORTANT)
+
+After login:
+
+1. Open browser console
+
+
+2. You must see:
+
+
+
+AUTH → loggedIn = true
+
+If you don’t:
+
+You are importing AuthService from a wrong path
+
+OR you have duplicate auth.ts files
+
+
+
+---
+
+✅ FINAL EXPECTED BEHAVIOR
+
+✔ Login → goes to welcome page
+✔ Sidebar → VISIBLE immediately
+✔ Logout button → VISIBLE
+✔ Logout → returns to login page
+
+If sidebar still doesn’t show, send ONLY app.html next — nothing else.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect, thanks for pasting the real existing app.css 👍
 Now everything is clear. Your sidebar is hidden purely because of this line:
 
