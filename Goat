@@ -1,3 +1,143 @@
+Perfect — thanks for sharing the existing files 👍
+I’ll only update what’s needed, cleanly, without breaking anything.
+
+Your requirement:
+
+Add Login page
+
+Make Welcome page load only after login
+
+Update app.route.ts and welcome.ts accordingly
+
+Keep all existing routes intact
+
+
+
+---
+
+✅ 1️⃣ UPDATED app.route.ts (ENTIRE FILE)
+
+import { Routes } from '@angular/router';
+
+import { TravellComponent } from './travell/travell';
+import { WelcomeComponent } from './welcome/welcome';
+import { TravelDetailsComponent } from './travel-details/travel-details';
+import { Approvals } from './approvals/approvals';
+import { LoginComponent } from './login/login';
+
+export const appRoutes: Routes = [
+
+  // 🔐 Login as default entry
+  { path: '', redirectTo: 'login', pathMatch: 'full' },
+
+  { path: 'login', component: LoginComponent },
+
+  // ✅ Existing routes (UNCHANGED)
+  { path: 'welcome', component: WelcomeComponent },
+  { path: 'new-travel', component: TravellComponent },
+  { path: 'travel-details', component: TravelDetailsComponent },
+  { path: 'approvals', component: Approvals }
+
+];
+
+✔ Nothing removed
+✔ Just added login and default redirect
+✔ All existing navigation still works
+
+
+---
+
+✅ 2️⃣ UPDATED welcome.ts (ENTIRE FILE)
+
+We’ll add a logout option and ensure routing works smoothly.
+
+import { Component } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-welcome',
+  standalone: true,
+  imports: [RouterLink, CommonModule],
+  templateUrl: './welcome.html',
+  styleUrls: ['./welcome.css']
+})
+export class WelcomeComponent {
+
+  constructor(private router: Router) {}
+
+  logout(): void {
+    this.router.navigate(['/login']);
+  }
+}
+
+
+---
+
+🔹 OPTIONAL (BUT RECOMMENDED): Welcome HTML tweak
+
+Add a logout button somewhere in welcome.html:
+
+<button class="logout-btn" (click)="logout()">Logout</button>
+
+This does not affect existing content.
+
+
+---
+
+🧠 WHAT YOU HAVE NOW
+
+✔ App starts at Login page
+✔ Correct password → navigates to Welcome page
+✔ Welcome page → routes to:
+
+New Travel
+
+Travel Details
+
+Approvals
+✔ Logout → back to Login
+
+
+No backend touched
+No table / form logic touched
+No naming changed (travell.ts, not .component.ts) ✅
+
+
+---
+
+🚀 NEXT (WHEN YOU WANT)
+
+We can add (cleanly):
+
+1. Route Guard (block URLs without login)
+
+
+2. Remember login using localStorage
+
+
+3. Backend authentication later
+
+
+4. Role-based access (Approvals only for managers)
+
+
+
+Just say what’s next — we’ll do one thing at a time, properly 👌
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect 👍
 We’ll do this cleanly and minimally, without touching your existing Travel code.
 
