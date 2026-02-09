@@ -1,3 +1,160 @@
+Perfect 👍 — that actually makes things simpler and cleaner.
+
+✅ FINAL BEHAVIOUR (as you want)
+
+Header → ✅ visible on ALL pages (including Login)
+
+Sidebar → ❌ hidden on Login, ✅ visible after login
+
+Logout button → stays in header (top-right)
+
+No other logic touched
+
+
+
+---
+
+✅ UPDATED app.html (ENTIRE FILE)
+
+Only sidebar visibility is controlled now.
+Header is always rendered.
+
+<div class="container">
+
+  <!-- HEADER (always visible, including login) -->
+  <div class="header">
+    <div class="header-left">
+      <img class="header-icon" src="abc.png">
+      <h2>BNP Paribas India Solutions Private Limited</h2>
+    </div>
+
+    <div class="header-right">
+      <button class="logout-btn" *ngIf="!isLoginPage" (click)="logout()">
+        Logout
+      </button>
+    </div>
+  </div>
+
+  <!-- SIDEBAR (hidden only on login) -->
+  <div class="side-menu" *ngIf="!isLoginPage" [class.open]="menuOpen">
+    <ul>
+      <li (click)="navigateTo('welcome')">
+        <div class="menu-icon-container">
+          <i class="fas fa-home"></i>
+        </div>
+      </li>
+
+      <li (click)="navigateTo('new-travel')">
+        <div class="menu-icon-container">
+          <i class="fas fa-plus"></i>
+        </div>
+      </li>
+
+      <li (click)="navigateTo('travel-details')">
+        <div class="menu-icon-container">
+          <i class="fas fa-money-check"></i>
+        </div>
+      </li>
+
+      <li (click)="navigateTo('approvals')">
+        <div class="menu-icon-container">
+          <i class="fa fa-check"></i>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="content">
+    <router-outlet></router-outlet>
+  </div>
+
+</div>
+
+
+---
+
+✅ UPDATED app.ts (ENTIRE FILE)
+
+No change in logic — just route detection.
+
+import { Component } from '@angular/core';
+import { Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.html',
+  styleUrls: ['./app.css']
+})
+export class AppComponent {
+
+  menuOpen = true;
+  isLoginPage = false;
+
+  constructor(private router: Router) {
+    this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe((event: any) => {
+        this.isLoginPage = event.urlAfterRedirects === '/login';
+      });
+  }
+
+  navigateTo(path: string): void {
+    this.router.navigate([path]);
+  }
+
+  logout(): void {
+    this.router.navigate(['/login']);
+  }
+}
+
+
+---
+
+🧠 WHY THIS IS CORRECT
+
+Header branding stays consistent (enterprise-style)
+
+Sidebar is contextual (only after login)
+
+Logout only appears when it makes sense
+
+No hacks, no CSS hiding, no broken routes
+
+
+
+---
+
+If you want next:
+
+Disable sidebar clicks unless logged in
+
+Add route guards
+
+Persist login using localStorage
+
+Backend auth later
+
+
+Just tell me 👍
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Perfect — thanks for sharing the existing files 👍
 I’ll only update what’s needed, cleanly, without breaking anything.
 
