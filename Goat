@@ -1,3 +1,234 @@
+Got it 👍
+Here are the ENTIRE, CLEAN, FINAL versions of app.html and app.css, exactly aligned with what you want:
+
+✅ Header always visible
+
+✅ Sidebar visible only after login
+
+✅ NO white space on login page
+
+✅ Sidebar always open when logged in
+
+✅ No table / logic touched
+
+
+
+---
+
+✅ app.html (ENTIRE FILE)
+
+<div class="container">
+
+  <!-- HEADER (always visible) -->
+  <div class="header">
+    <div class="header-left">
+      <img class="header-icon" src="abc.png" />
+      <h2>BNP Paribas India Solutions Private Limited</h2>
+    </div>
+
+    <!-- Logout only when logged in -->
+    <div class="header-right" *ngIf="isLoggedIn()">
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- SIDEBAR (only after login) -->
+  <div class="side-menu open" *ngIf="isLoggedIn()">
+    <ul>
+      <li (click)="navigateTo('welcome')">
+        <div class="menu-icon-container">
+          <i class="fas fa-home"></i>
+        </div>
+      </li>
+
+      <li (click)="navigateTo('new-travel')">
+        <div class="menu-icon-container">
+          <i class="fas fa-plus"></i>
+        </div>
+      </li>
+
+      <li (click)="navigateTo('travel-details')">
+        <div class="menu-icon-container">
+          <i class="fas fa-money-check"></i>
+        </div>
+      </li>
+
+      <li (click)="navigateTo('approvals')">
+        <div class="menu-icon-container">
+          <i class="fa fa-check"></i>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" [class.with-sidebar]="isLoggedIn()">
+    <router-outlet></router-outlet>
+  </div>
+
+</div>
+
+
+---
+
+✅ app.css (ENTIRE FILE – CLEAN & FIXED)
+
+.container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f9fdf9;
+  font-family: "Poppins", sans-serif;
+}
+
+/* ================= HEADER ================= */
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 50px;
+  background-color: #008e5c;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 1000;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-icon {
+  height: 40px;
+  width: 40px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+/* ================= LOGOUT BUTTON ================= */
+
+.logout-btn {
+  border: none;
+  background-color: #d93825;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 16px;
+  transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+  background-color: #b92f20;
+}
+
+/* ================= SIDEBAR ================= */
+
+.side-menu {
+  position: fixed;
+  top: 50px;
+  left: 0;
+  width: 54px;
+  height: calc(100vh - 50px);
+  background-color: #f5faf8;
+  border-right: 1px solid #e5e7eb;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 24px;
+}
+
+.side-menu ul {
+  list-style: none;
+  padding: 0;
+  width: 100%;
+}
+
+.side-menu li {
+  width: 100%;
+  padding: 15px 0;
+  display: flex;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.side-menu li:hover {
+  background-color: #e5e7eb;
+}
+
+.menu-icon-container {
+  font-size: 22px;
+  color: #465563;
+}
+
+/* ================= CONTENT ================= */
+
+.content {
+  margin-top: 50px;
+  padding: 20px;
+  height: calc(100vh - 50px);
+  overflow-y: auto;
+  background: #f9fafb;
+}
+
+/* ✅ Sidebar space ONLY when logged in */
+.content.with-sidebar {
+  margin-left: 54px;
+}
+
+
+---
+
+✅ FINAL CONFIRMATION
+
+✔ Login page → NO sidebar space
+✔ After login → Sidebar visible & aligned
+✔ Logout → sidebar + space removed
+✔ Header → always visible
+
+You’re finally done with layout hell 😄
+If you want next:
+
+Route guards
+
+Session persistence
+
+Role-based sidebar items
+
+
+Just tell me 👌
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from './services/auth';
 
