@@ -1,3 +1,330 @@
+Perfect 👍 I understand clearly.
+
+You want:
+
+✅ One extra blank icon in main mini sidebar
+
+✅ Use <i class="fas fa-shopping-bag"></i>
+
+✅ Selected mini-sidebar icon should highlight like image
+
+✅ Selected sliding menu text should turn green
+
+✅ Border between mini sidebar & sliding sidebar should look slightly thicker like image
+
+✅ No functionality for new icon
+
+✅ Clean BNP corporate look
+
+
+Below is your updated FULL HTML + CSS.
+
+
+---
+
+✅ UPDATED app.html
+
+<div class="container">
+
+  <div class="header">
+    <div class="header-left">
+      <img class="header-icon" src="bnp.png" />
+      <h2>BNP Paribas India Solutions Private Limited</h2>
+    </div>
+
+    <div class="header-right" *ngIf="isLoggedIn()">
+      <div class="user-info">
+        <i class="fas fa-user-circle user-icon"></i>
+        <span class="uid">{{ uid }}</span>
+      </div>
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="side-menu" *ngIf="isLoggedIn()">
+    <ul>
+      <li [class.active]="sidebarOpen" (click)="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+      </li>
+
+      <li>
+        <i class="fas fa-shopping-bag"></i>
+      </li>
+    </ul>
+  </div>
+
+  <div class="sidebar"
+       [class.open]="sidebarOpen"
+       *ngIf="sidebarOpen && isLoggedIn()">
+
+    <div class="sidebar-top">
+      <span class="sidebar-title">Requisition</span>
+      <button class="back-btn" (click)="toggleSidebar()">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+    </div>
+
+    <ul>
+      <li routerLink="/welcome" routerLinkActive="active">Home</li>
+      <li routerLink="/new-travel" routerLinkActive="active">New</li>
+      <li routerLink="/travel-details" routerLinkActive="active">Requests</li>
+      <li routerLink="/approvals" routerLinkActive="active">Approvals</li>
+      <li routerLink="/delegate" routerLinkActive="active">Delegate</li>
+    </ul>
+
+  </div>
+
+  <div class="content"
+       [class.with-sidebar]="isLoggedIn()"
+       [class.sidebar-open]="sidebarOpen">
+
+    <router-outlet></router-outlet>
+
+  </div>
+
+</div>
+
+
+---
+
+✅ UPDATED app.css
+
+.container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f9fdf9;
+  font-family: "Poppins", sans-serif;
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 50px;
+  background-color: #008e5c;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 1000;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-icon {
+  height: 40px;
+  width: 40px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: absolute;
+  right: 150px;
+  top: 10px;
+}
+
+.user-icon {
+  color: white;
+  font-size: 16px;
+}
+
+.uid {
+  color: white;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+.logout-btn {
+  border: none;
+  background-color: #d93825;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 16px;
+  transition: all 0.3s ease;
+  position: absolute;
+  right: 50px;
+  top: 10px;
+}
+
+.logout-btn:hover {
+  background-color: #b92f20;
+}
+
+.side-menu {
+  position: fixed;
+  top: 50px;
+  left: 0;
+  width: 60px;
+  height: calc(100vh - 50px);
+  background-color: #f8faf9;
+  border-right: 2px solid #dfe3e8;
+  z-index: 900;
+}
+
+.side-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.side-menu li {
+  padding: 18px 0;
+  text-align: center;
+  cursor: pointer;
+  color: #4b5563;
+  transition: 0.2s;
+}
+
+.side-menu li i {
+  font-size: 20px;
+}
+
+.side-menu li:hover {
+  background-color: #eef2f5;
+}
+
+.side-menu li.active {
+  background-color: #e6f4ee;
+  color: #008e5c;
+}
+
+.sidebar {
+  position: fixed;
+  top: 50px;
+  left: 60px;
+  width: 260px;
+  height: calc(100vh - 50px);
+  background-color: #ffffff;
+  border-right: 2px solid #dfe3e8;
+  border-left: 2px solid #dfe3e8;
+  transform: translateX(-260px);
+  transition: transform 0.25s ease-in-out;
+  z-index: 950;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.sidebar-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.back-btn {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.back-btn i {
+  font-size: 13px;
+  color: #374151;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 10px 0;
+  margin: 0;
+}
+
+.sidebar li {
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.sidebar li:hover {
+  background-color: #f3f4f6;
+}
+
+.sidebar li.active {
+  color: #008e5c;
+  font-weight: 600;
+}
+
+.content {
+  margin-top: 50px;
+  padding: 20px;
+  height: calc(100vh - 50px);
+  overflow-y: auto;
+  transition: margin-left 0.3s ease;
+}
+
+.content.with-sidebar {
+  margin-left: 60px;
+}
+
+.content.sidebar-open {
+  margin-left: 320px;
+}
+
+
+---
+
+Now your UI will:
+
+Show 2 icons in mini sidebar
+
+Highlight selected mini icon
+
+Highlight current page text in green
+
+Show thicker visible borders like screenshot
+
+Look aligned & corporate like image
+
+
+If you want it even more pixel-perfect (exact BNP spacing & font sizing), tell me and I’ll fine tune it.
+
+
+
+
+
+
+
+
+
+
+
+...
+
+
+
+
+
+
 .container {
   height: 100vh;
   display: flex;
