@@ -1,3 +1,69 @@
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <img class="header-icon" src="bnp.png" />
+      <h2>BNP Paribas India Solutions Private Limited</h2>
+    </div>
+
+    <div class="header-right" *ngIf="isLoggedIn()">
+      <div class="user-info">
+        <i class="fas fa-user-circle user-icon"></i>
+        <span class="uid">{{ uid }}</span>
+      </div>
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- MINI SIDEBAR -->
+  <div class="side-menu" *ngIf="isLoggedIn()">
+    <div class="sidebar-toggle" (click)="toggleSidebar()">
+      <i class="fas fa-bars"></i>
+    </div>
+  </div>
+
+  <!-- SLIDING SIDEBAR -->
+  <div class="sidebar"
+       [class.open]="sidebarOpen"
+       *ngIf="sidebarOpen && isLoggedIn()">
+
+    <div class="sidebar-top">
+      <span class="sidebar-title">Requisition</span>
+      <button class="back-btn" (click)="toggleSidebar()">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+    </div>
+
+    <ul>
+      <li (click)="navigateTo('welcome')">Home</li>
+      <li (click)="navigateTo('new-travel')">New</li>
+      <li (click)="navigateTo('travel-details')">Requests</li>
+      <li (click)="navigateTo('approvals')">Approvals</li>
+      <li (click)="navigateTo('delegate')">Delegate</li>
+    </ul>
+
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content"
+       [class.with-sidebar]="isLoggedIn()"
+       [class.sidebar-open]="sidebarOpen">
+
+    <router-outlet></router-outlet>
+
+  </div>
+
+</div>
+
+
+
+
+
+
+
+
+
 Perfect 👍
 Below is your FULLY corrected and clean HTML + CSS.
 
