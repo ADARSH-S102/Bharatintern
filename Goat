@@ -22,6 +22,352 @@ function endAfterStartValidator(start: string, end: string) {
     } else {
       group.get(end)?.setErrors(null);
     }
+
+    return null;
+  };
+}
+
+function sameCityValidator(origin: string, destination: string) {
+  return (group: FormGroup) => {
+    const originCity = group.get(origin)?.value;
+    const destinationCity = group.get(destination)?.value;
+
+    if (!originCity || !destinationCity) return null;
+
+    if (originCity === destinationCity) {
+      group.get(destination)?.setErrors({ sameCity: true });
+    } else {
+      group.get(destination)?.setErrors(null);
+    }
+
+    return null;
+  };
+}
+
+type Travel = {
+  requesterUid: string;
+  travellerUid: string;
+  travellerName: string;
+  cluster: string;
+  subCluster: string;
+  originCity: string;
+  destinationCity: string;
+  startDate: string | Date;
+  endDate: string | Date;
+  travelDays: number;
+  overallRequestStatus?: string;
+  travelType?: string;
+  travelClass?: string;
+  justification?: string;
+  additionalJustification?: string;
+  hodName?: string;
+  budgetType?: string;
+};
+
+@Component({
+  selector: 'app-travel-details',
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  templateUrl: './travel-details.html',
+  styleUrls: ['./travel-details.css']
+})
+export class TravelDetailsComponent implements OnInit {
+
+  travels: Travel[] = [];
+  displayTravels: Travel[] = [];
+  searchText: string = '';
+
+  viewDetailsForm!: FormGroup;
+  travelForm!: FormGroup;
+
+  showViewDetailsForm = false;
+  showAddTravelForm = false;
+  showAdditionalJustification = false;
+  noData = false;
+
+  clusters: string[] = [];
+  originCities: string[] = [];
+  destinationCities: string[] = [];
+  travelTypes: string[] = [];
+  travelClasses: string[] = [];
+  budgetTypes: string[] = [];
+
+  constructor(
+    private dropdownService: DropdownService,
+    private http: HttpClient,
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router
+  ) {}
+
+  ngOnInit(): void {
+    this.loadData();
+    this.buildViewDetailsForm();
+    this.buildAddTravelForm();
+    this.loadDropdowns();
+    this.registerDateListeners();
+  }
+
+  buildViewDetailsForm(): void {
+    this.viewDetailsForm = this.fb.group({
+      requesterUid: ['', Validators.required],
+      travellerUid: ['', Validators.required],
+      travellerName: ['', Validators.required],
+      cluster: ['', Validators.required],
+      subCluster: ['', Validators.required],
+      originCity: ['', Validators.required],
+      destinationCity: ['', Validators.required],
+      startDate: ['', Validators.required],
+      endDate: ['', Validators.required],
+      travelDays: ['', Validators.required],
+      travelType: ['', Validators.required],
+      travelClass: ['', Validators.required],
+      budgetType: ['', Validators.required],
+      justification: ['', Validators.required],
+      additionalJustification: [{ value: '', disabled: true }],
+      hodName: ['', Validators.required]
+    });
+  }
+
+  buildAddTravelForm(): void {
+    this.travelForm = this.fb.group({
+      requesterUid: [{ value: this.authService.getUid(), disabled: true }],
+      travellerUid: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6)]],
+      travellerName: ['', Validators.required],
+      cluster: ['', Validators.required],
+      subCluster: ['', Validators.required],
+      hodName: ['', Validators.required],
+      originCity: ['', Validators.required],
+      destinationCity: ['', Validators.required],
+      startDate: ['', Validators.required],
+      endDate: ['', Validators.required],
+      travelDays: [{ value: 0, disabled: true }],
+      travelType: ['', Validators.required],
+      budgetType: ['', Validators.required],
+      travelClass: ['', Validators.required],
+      justification: ['', Validators.required],
+      additionalJustification: ['']
+    }, {
+      validators: [
+        endAfterStartValidator('startDate', 'endDate'),
+        sameCityValidator('originCity', 'destinationCity')
+      ]
+    });
+
+    this.travelForm.get('cluster')?.valueChanges.subscribe(cluster => {
+      if (cluster) {
+        this.fetchHod(cluster);
+      }
+    });
+
+    this.travelForm.get('originCity')?.valueChanges.subscribe(() => this.updateTravelType());
+    this.travelForm.get('destinationCity')?.valueChanges.subscribe(() => this.updateTravelType());
+  }
+
+  loadData(): void {
+    this.http.get<Travel[]>(`http://localhost:8080/api/users/${this.authService.getUid()}`)
+      .subscribe(data => {
+        this.travels = data || [];
+        this.displayTravels = [...this.travels];
+        this.noData = this.travels.length === 0;
+      });
+  }
+
+  applyFilter(): void {
+    const search = this.searchText.toLowerCase();
+    this.displayTravels = this.travels.filter(t =>
+      Object.values(t).some(val =>
+        val && val.toString().toLowerCase().includes(search)
+      )
+    );
+  }
+
+  resetFilter(): void {
+    this.searchText = '';
+    this.displayTravels = [...this.travels];
+  }
+
+  viewDetails(travel: Travel): void {
+    this.showViewDetailsForm = true;
+    this.viewDetailsForm.patchValue(travel);
+  }
+
+  closeViewDetailsForm(): void {
+    this.showViewDetailsForm = false;
+  }
+
+  addTravel(): void {
+    this.showAddTravelForm = true;
+  }
+
+  closeAddTravelForm(): void {
+    this.showAddTravelForm = false;
+  }
+
+  getStatusClass(status: string | undefined): string {
+    if (!status) return 'status-processing';
+    if (status === 'Approved') return 'status-approved';
+    if (status === 'Rejected' || status === 'Rejected by Line Manager') return 'status-rejected';
+    if (status === 'Pending') return 'status-pending';
+    return 'status-processing';
+  }
+
+  onSubmit(): void {
+
+    if (this.travelForm.invalid) {
+      Swal.fire('Error', 'Please correct the highlighted fields', 'error');
+      return;
+    }
+
+    const travelData = {
+      ...this.travelForm.getRawValue(),
+      overallRequestStatus: 'Pending'
+    };
+
+    this.http.post('http://localhost:8080/api/save', travelData)
+      .subscribe({
+        next: () => {
+          Swal.fire('Success', 'Travel Request Submitted Successfully!', 'success');
+          this.travelForm.reset();
+          this.travelForm.get('requesterUid')?.setValue(this.authService.getUid());
+          this.showAddTravelForm = false;
+          this.loadData();
+        },
+        error: () => {
+          Swal.fire('Error', 'Failed to submit travel request', 'error');
+        }
+      });
+  }
+
+  onReset(): void {
+    this.travelForm.reset();
+    this.travelForm.get('requesterUid')?.setValue(this.authService.getUid());
+    this.showAdditionalJustification = false;
+  }
+
+  private fetchHod(cluster: string): void {
+    this.http.get<any>(`http://localhost:8080/api/gethod/${cluster}`)
+      .subscribe({
+        next: (response) => {
+          if (response?.name) {
+            this.travelForm.get('hodName')?.setValue(response.name.trim());
+          }
+        }
+      });
+  }
+
+  private registerDateListeners(): void {
+    this.travelForm.get('startDate')?.valueChanges.subscribe(() => this.calculateDays());
+    this.travelForm.get('endDate')?.valueChanges.subscribe(() => this.calculateDays());
+  }
+
+  private calculateDays(): void {
+    const start = this.travelForm.get('startDate')?.value;
+    const end = this.travelForm.get('endDate')?.value;
+
+    if (start && end) {
+      const s = new Date(start);
+      const e = new Date(end);
+
+      const diff = Math.floor((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      this.travelForm.get('travelDays')?.setValue(diff > 0 ? diff : 0);
+
+      const today = new Date();
+      const twoWeeks = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+      if (s < twoWeeks) {
+        this.showAdditionalJustification = true;
+        this.travelForm.get('additionalJustification')?.setValidators([Validators.required]);
+      } else {
+        this.showAdditionalJustification = false;
+        this.travelForm.get('additionalJustification')?.clearValidators();
+      }
+
+      this.travelForm.get('additionalJustification')?.updateValueAndValidity();
+    } else {
+      this.travelForm.get('travelDays')?.setValue(0);
+    }
+  }
+
+  private loadDropdowns(): void {
+    const mappings: { [key: string]: (data: string[]) => void } = {
+      cluster: data => this.clusters = data,
+      originCity: data => this.originCities = data,
+      destinationCity: data => this.destinationCities = data,
+      travelType: data => this.travelTypes = data,
+      budgetType: data => this.budgetTypes = data,
+      travelClass: data => this.travelClasses = data
+    };
+
+    Object.keys(mappings).forEach(key => {
+      this.dropdownService.getOptions(key)
+        .subscribe(data => {
+          mappings[key](Array.isArray(data) ? data : []);
+        });
+    });
+  }
+
+  private updateTravelType(): void {
+    const origin = this.travelForm.get('originCity')?.value;
+    const destination = this.travelForm.get('destinationCity')?.value;
+
+    if (origin && destination && origin !== destination) {
+      const indianCities = [
+        'Mumbai, India',
+        'Delhi, India',
+        'Bangalore, India',
+        'Chennai, India',
+        'Hyderabad, India'
+      ];
+
+      if (indianCities.includes(origin) && indianCities.includes(destination)) {
+        this.travelForm.patchValue({ travelType: 'Domestic' });
+      } else {
+        this.travelForm.patchValue({ travelType: 'International' });
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
+import Swal from 'sweetalert2';
+import { DropdownService } from '../dropdown/dropdown';
+import { AuthService } from '../services/auth';
+
+function endAfterStartValidator(start: string, end: string) {
+  return (group: FormGroup) => {
+    const startValue = group.get(start)?.value;
+    const endValue = group.get(end)?.value;
+
+    if (!startValue || !endValue) return null;
+
+    const startDate = new Date(startValue);
+    const endDate = new Date(endValue);
+
+    if (startDate > endDate) {
+      group.get(end)?.setErrors({ endBeforeStart: true });
+    } else {
+      group.get(end)?.setErrors(null);
+    }
     return null;
   };
 }
