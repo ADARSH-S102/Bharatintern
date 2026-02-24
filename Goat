@@ -1,286 +1,325 @@
-Perfect 👍
-Here is your final clean version:
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
+import Swal from 'sweetalert2';
+import { DropdownService } from '../dropdown/dropdown';
+import { AuthService } from '../services/auth';
 
-• No highlighting
-• No active classes
-• No routerLinkActive
-• No extra logic
-• Borders reduced
-• Shopping bag icon added
-• Header untouched
-• Structure exactly like your original
+function endAfterStartValidator(start: string, end: string) {
+  return (group: FormGroup) => {
+    const startValue = group.get(start)?.value;
+    const endValue = group.get(end)?.value;
 
+    if (!startValue || !endValue) return null;
 
----
+    const startDate = new Date(startValue);
+    const endDate = new Date(endValue);
 
-✅ FULL UPDATED HTML
-
-<div class="container">
-
-  <div class="header">
-
-    <div class="header-left">
-      <img class="header-icon" src="bnp.png" />
-      <h2>BNP Paribas India Solutions Private Limited</h2>
-    </div>
-
-    <div class="header-right" *ngIf="isLoggedIn()">
-
-      <div class="user-info">
-        <i class="fas fa-user-circle user-icon"></i>
-        <span class="uid">{{ uid }}</span>
-      </div>
-
-      <button class="logout-btn" (click)="logout()">Logout</button>
-
-    </div>
-
-  </div>
-
-  <div class="side-menu" *ngIf="isLoggedIn()">
-
-    <div class="sidebar-toggle" (click)="toggleSidebar()">
-      <i class="fas fa-bars"></i>
-    </div>
-
-    <div class="sidebar-icon">
-      <i class="fas fa-shopping-bag"></i>
-    </div>
-
-  </div>
-
-  <div class="sidebar"
-       [class.open]="sidebarOpen"
-       *ngIf="sidebarOpen && isLoggedIn()">
-
-    <div class="sidebar-top">
-      <span class="sidebar-title">Travel</span>
-      <button class="back-btn" (click)="toggleSidebar()">
-        <i class="fas fa-chevron-left"></i>
-      </button>
-    </div>
-
-    <ul>
-      <li (click)="navigateTo('welcome')">Home</li>
-      <li (click)="navigateTo('new-travel')">New</li>
-      <li (click)="navigateTo('travel-details')">Requests</li>
-      <li (click)="navigateTo('approvals')">Approvals</li>
-      <li (click)="navigateTo('delegate')">Delegate</li>
-    </ul>
-
-  </div>
-
-  <div class="content"
-       [class.with-sidebar]="isLoggedIn()"
-       [class.sidebar-open]="sidebarOpen">
-
-    <router-outlet></router-outlet>
-
-  </div>
-
-</div>
-
-
----
-
-✅ FULL UPDATED CSS
-
-.container {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: #f9fdf9;
-  font-family: "Poppins", sans-serif;
+    if (startDate > endDate) {
+      group.get(end)?.setErrors({ endBeforeStart: true });
+    } else {
+      group.get(end)?.setErrors(null);
+    }
+    return null;
+  };
 }
 
-.header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 50px;
-  background-color: #008e5c;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  z-index: 1000;
+function sameCityValidator(origin: string, destination: string) {
+  return (group: FormGroup) => {
+    const originCity = group.get(origin)?.value;
+    const destinationCity = group.get(destination)?.value;
+
+    if (!originCity || !destinationCity) return null;
+
+    if (originCity === destinationCity) {
+      group.get(destination)?.setErrors({ sameCity: true });
+    } else {
+      group.get(destination)?.setErrors(null);
+    }
+    return null;
+  };
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+type Travel = {
+  requesterUid: string;
+  travellerUid: string;
+  travellerName: string;
+  cluster: string;
+  subCluster: string;
+  originCity: string;
+  destinationCity: string;
+  startDate: string | Date;
+  endDate: string | Date;
+  travelDays: number;
+  overallRequestStatus?: string;
+  travelType?: string;
+  travelClass?: string;
+  justification?: string;
+  additionalJustification?: string;
+  hodName?: string;
+  budgetType?: string;
+};
 
-.header-icon {
-  height: 40px;
-  width: 40px;
-}
+@Component({
+  selector: 'app-travel-details',
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  templateUrl: './travel-details.html',
+  styleUrls: ['./travel-details.css']
+})
+export class TravelDetailsComponent implements OnInit {
 
-.header-right {
-  display: flex;
-  align-items: center;
-}
+  travels: Travel[] = [];
+  displayTravels: Travel[] = [];
+  searchText: string = '';
 
-.user-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: absolute;
-  right: 150px;
-  top: 10px;
-}
+  viewDetailsForm!: FormGroup;
+  travelForm!: FormGroup;
 
-.user-icon {
-  color: white;
-  font-size: 16px;
-}
+  showViewDetailsForm = false;
+  showAddTravelForm = false;
+  showAdditionalJustification = false;
+  noData = false;
 
-.uid {
-  color: white;
-  font-size: 12px;
-  margin-top: 5px;
-}
+  clusters: string[] = [];
+  originCities: string[] = [];
+  destinationCities: string[] = [];
+  travelTypes: string[] = [];
+  travelClasses: string[] = [];
+  budgetTypes: string[] = [];
 
-.logout-btn {
-  border: none;
-  background-color: #d93825;
-  color: #fff;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 8px 16px;
-  transition: all 0.3s ease;
-  position: absolute;
-  right: 50px;
-  top: 10px;
-}
+  constructor(
+    private dropdownService: DropdownService,
+    private http: HttpClient,
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
-.logout-btn:hover {
-  background-color: #b92f20;
-}
+  ngOnInit(): void {
+    this.loadData();
+    this.buildViewDetailsForm();
+    this.buildAddTravelForm();
+    this.loadDropdowns();
+    this.registerDateListeners();
+  }
 
-.side-menu {
-  position: fixed;
-  top: 50px;
-  left: 0;
-  width: 60px;
-  height: calc(100vh - 50px);
-  background-color: #ffffff;
-  border-right: 1px solid #e5e7eb;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 14px;
-  z-index: 900;
-}
+  buildViewDetailsForm(): void {
+    this.viewDetailsForm = this.fb.group({
+      requesterUid: ['', Validators.required],
+      travellerUid: ['', Validators.required],
+      travellerName: ['', Validators.required],
+      cluster: ['', Validators.required],
+      subCluster: ['', Validators.required],
+      originCity: ['', Validators.required],
+      destinationCity: ['', Validators.required],
+      startDate: ['', Validators.required],
+      endDate: ['', Validators.required],
+      travelDays: ['', Validators.required],
+      travelType: ['', Validators.required],
+      travelClass: ['', Validators.required],
+      budgetType: ['', Validators.required],
+      justification: ['', Validators.required],
+      additionalJustification: [{ value: '', disabled: true }],
+      hodName: ['', Validators.required]
+    });
+  }
 
-.sidebar-toggle,
-.sidebar-icon {
-  font-size: 20px;
-  color: #6b7280;
-  cursor: pointer;
-  margin: 18px 0;
-  padding: 10px;
-  border-radius: 10px;
-  transition: background 0.2s ease;
-}
+  buildAddTravelForm(): void {
+    this.travelForm = this.fb.group({
+      requesterUid: [{ value: this.authService.getUid(), disabled: true }],
+      travellerUid: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6)]],
+      travellerName: ['', Validators.required],
+      cluster: ['', Validators.required],
+      subCluster: ['', Validators.required],
+      hodName: ['', Validators.required],
+      originCity: ['', Validators.required],
+      destinationCity: ['', Validators.required],
+      startDate: ['', Validators.required],
+      endDate: ['', Validators.required],
+      travelDays: [{ value: 0, disabled: true }],
+      travelType: ['', Validators.required],
+      budgetType: ['', Validators.required],
+      travelClass: ['', Validators.required],
+      justification: ['', Validators.required],
+      additionalJustification: ['']
+    }, {
+      validators: [
+        endAfterStartValidator('startDate', 'endDate'),
+        sameCityValidator('originCity', 'destinationCity')
+      ]
+    });
 
-.sidebar-toggle:hover,
-.sidebar-icon:hover {
-  background-color: #f3f4f6;
-}
+    this.travelForm.get('cluster')?.valueChanges.subscribe(cluster => {
+      if (cluster) {
+        this.fetchHod(cluster);
+      }
+    });
 
-.sidebar {
-  position: fixed;
-  top: 50px;
-  left: 60px;
-  width: 250px;
-  height: calc(100vh - 50px);
-  background-color: #ffffff;
-  border-right: 1px solid #e5e7eb;
-  border-left: 1px solid #e5e7eb;
-  transform: translateX(-250px);
-  transition: transform 0.25s ease-in-out;
-  z-index: 950;
-}
+    this.travelForm.get('originCity')?.valueChanges.subscribe(() => this.updateTravelType());
+    this.travelForm.get('destinationCity')?.valueChanges.subscribe(() => this.updateTravelType());
+  }
 
-.sidebar.open {
-  transform: translateX(0);
-}
+  loadData(): void {
+    this.http.get<Travel[]>(`http://localhost:8080/api/users/${this.authService.getUid()}`)
+      .subscribe(data => {
+        this.travels = data || [];
+        this.displayTravels = [...this.travels];
+        this.noData = this.travels.length === 0;
+      });
+  }
 
-.sidebar-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #e5e7eb;
-}
+  applyFilter(): void {
+    const search = this.searchText.toLowerCase();
+    this.displayTravels = this.travels.filter(t =>
+      Object.values(t).some(val =>
+        val && val.toString().toLowerCase().includes(search)
+      )
+    );
+  }
 
-.sidebar-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1f2937;
-}
+  resetFilter(): void {
+    this.searchText = '';
+    this.displayTravels = [...this.travels];
+  }
 
-.back-btn {
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 6px 10px;
-  cursor: pointer;
-}
+  viewDetails(travel: Travel): void {
+    this.showViewDetailsForm = true;
+    this.viewDetailsForm.patchValue(travel);
+  }
 
-.back-btn i {
-  font-size: 13px;
-  color: #374151;
-}
+  closeViewDetailsForm(): void {
+    this.showViewDetailsForm = false;
+  }
 
-.back-btn:hover {
-  background-color: #f3f4f6;
-}
+  addTravel(): void {
+    this.showAddTravelForm = true;
+  }
 
-.sidebar ul {
-  list-style: none;
-  padding: 8px 0;
-  margin: 0;
-}
+  closeAddTravelForm(): void {
+    this.showAddTravelForm = false;
+  }
 
-.sidebar li {
-  padding: 14px 22px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #374151;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
+  onSubmit(): void {
 
-.sidebar li:hover {
-  background-color: #f4f6f8;
-}
+    if (this.travelForm.invalid) {
+      Swal.fire('Error', 'Please correct the highlighted fields', 'error');
+      return;
+    }
 
-.content {
-  margin-top: 50px;
-  padding: 20px;
-  height: calc(100vh - 50px);
-  overflow-y: auto;
-  transition: margin-left 0.3s ease;
-}
+    const travelData = {
+      ...this.travelForm.getRawValue(),
+      overallRequestStatus: 'Pending'
+    };
 
-.content.with-sidebar {
-  margin-left: 60px;
-}
+    this.http.post('http://localhost:8080/api/save', travelData)
+      .subscribe({
+        next: () => {
+          Swal.fire('Success', 'Travel Request Submitted Successfully!', 'success');
+          this.travelForm.reset();
+          this.travelForm.get('requesterUid')?.setValue(this.authService.getUid());
+          this.showAddTravelForm = false;
+          this.loadData();
+        },
+        error: () => {
+          Swal.fire('Error', 'Failed to submit travel request', 'error');
+        }
+      });
+  }
 
-.content.sidebar-open {
-  margin-left: 310px;
-}
+  onReset(): void {
+    this.travelForm.reset();
+    this.travelForm.get('requesterUid')?.setValue(this.authService.getUid());
+    this.showAdditionalJustification = false;
+  }
 
+  private fetchHod(cluster: string): void {
+    this.http.get<any>(`http://localhost:8080/api/gethod/${cluster}`)
+      .subscribe({
+        next: (response) => {
+          if (response?.name) {
+            this.travelForm.get('hodName')?.setValue(response.name.trim());
+          }
+        }
+      });
+  }
 
----
+  private registerDateListeners(): void {
+    this.travelForm.get('startDate')?.valueChanges.subscribe(() => this.calculateDays());
+    this.travelForm.get('endDate')?.valueChanges.subscribe(() => this.calculateDays());
+  }
 
-This is now clean, stable, and exactly aligned with your existing structure.
+  private calculateDays(): void {
+    const start = this.travelForm.get('startDate')?.value;
+    const end = this.travelForm.get('endDate')?.value;
 
-If you now want pixel-perfect match with the screenshot (spacing, icon alignment, exact greys), send the image again and I’ll fine-tune it properly.  
+    if (start && end) {
+      const s = new Date(start);
+      const e = new Date(end);
+
+      const diff = Math.floor((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      this.travelForm.get('travelDays')?.setValue(diff > 0 ? diff : 0);
+
+      const today = new Date();
+      const twoWeeks = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+      if (s < twoWeeks) {
+        this.showAdditionalJustification = true;
+        this.travelForm.get('additionalJustification')
+          ?.setValidators([Validators.required]);
+      } else {
+        this.showAdditionalJustification = false;
+        this.travelForm.get('additionalJustification')
+          ?.clearValidators();
+      }
+
+      this.travelForm.get('additionalJustification')
+        ?.updateValueAndValidity();
+    } else {
+      this.travelForm.get('travelDays')?.setValue(0);
+    }
+  }
+
+  private loadDropdowns(): void {
+    const mappings: { [key: string]: (data: string[]) => void } = {
+      cluster: data => this.clusters = data,
+      originCity: data => this.originCities = data,
+      destinationCity: data => this.destinationCities = data,
+      travelType: data => this.travelTypes = data,
+      budgetType: data => this.budgetTypes = data,
+      travelClass: data => this.travelClasses = data
+    };
+
+    Object.keys(mappings).forEach(key => {
+      this.dropdownService.getOptions(key)
+        .subscribe(data => {
+          mappings[key](Array.isArray(data) ? data : []);
+        });
+    });
+  }
+
+  private updateTravelType(): void {
+    const origin = this.travelForm.get('originCity')?.value;
+    const destination = this.travelForm.get('destinationCity')?.value;
+
+    if (origin && destination) {
+      if (origin === destination) return;
+
+      const indianCities = [
+        'Mumbai, India',
+        'Delhi, India',
+        'Bangalore, India',
+        'Chennai, India',
+        'Hyderabad, India'
+      ];
+
+      if (indianCities.includes(origin) && indianCities.includes(destination)) {
+        this.travelForm.patchValue({ travelType: 'Domestic' });
+      } else {
+        this.travelForm.patchValue({ travelType: 'International' });
+      }
+    }
+  }
+}  
