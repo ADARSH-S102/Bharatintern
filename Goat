@@ -2,6 +2,198 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import Swal from 'sweetalert2';
+
+function endAfterStartValidator(start: string, end: string) {
+  return (group: FormGroup) => {
+
+    const startControl = group.get(start);
+    const endControl = group.get(end);
+
+    if (!startControl || !endControl) return null;
+
+    const startValue = startControl.value;
+    const endValue = endControl.value;
+
+    if (!startValue || !endValue) return null;
+
+    const startDate = new Date(startValue);
+    const endDate = new Date(endValue);
+
+    if (startDate > endDate) {
+      endControl.setErrors({ ...endControl.errors, endBeforeStart: true });
+    } else {
+      if (endControl.hasError('endBeforeStart')) {
+        const errors = { ...endControl.errors };
+        delete errors['endBeforeStart'];
+        if (Object.keys(errors).length === 0) {
+          endControl.setErrors(null);
+        } else {
+          endControl.setErrors(errors);
+        }
+      }
+    }
+
+    return null;
+  };
+}
+
+@Component({
+  selector: 'app-travel-details',
+  standalone: true,
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  templateUrl: './travel-details.html',
+  styleUrls: ['./travel-details.scss']
+})
+export class TravelDetailsComponent implements OnInit {
+
+  travelForm!: FormGroup;
+  filterText = '';
+  travelList: any[] = [];
+  filteredList: any[] = [];
+
+  showAddForm = false;
+  showViewForm = false;
+  selectedTravel: any;
+
+  constructor(private fb: FormBuilder, private http: HttpClient) {}
+
+  ngOnInit(): void {
+    this.buildForm();
+    this.loadTravels();
+  }
+
+  buildForm() {
+    this.travelForm = this.fb.group({
+      employeeName: ['', Validators.required],
+      cluster: ['', Validators.required],
+      hodName: [''],
+      origin: ['', Validators.required],
+      destination: ['', Validators.required],
+      startDate: ['', Validators.required],
+      endDate: ['', Validators.required],
+      purpose: ['', Validators.required]
+    }, {
+      validators: endAfterStartValidator('startDate', 'endDate')
+    });
+
+    this.travelForm.get('cluster')?.valueChanges.subscribe(cluster => {
+      if (cluster) {
+        this.fetchHod(cluster);
+      } else {
+        this.travelForm.get('hodName')?.setValue('');
+      }
+    });
+  }
+
+  fetchHod(cluster: string) {
+    this.http.get<any>(`http://localhost:8080/api/gethod/${cluster}`)
+      .subscribe(res => {
+        if (res && res.name) {
+          this.travelForm.get('hodName')?.setValue(res.name);
+        }
+      });
+  }
+
+  loadTravels() {
+    this.http.get<any[]>('http://localhost:8080/api/travels')
+      .subscribe(res => {
+        this.travelList = res || [];
+        this.filteredList = [...this.travelList];
+      });
+  }
+
+  applyFilter() {
+    if (!this.filterText) {
+      this.filteredList = [...this.travelList];
+      return;
+    }
+
+    this.filteredList = this.travelList.filter(t =>
+      JSON.stringify(t).toLowerCase().includes(this.filterText.toLowerCase())
+    );
+  }
+
+  resetFilter() {
+    this.filterText = '';
+    this.filteredList = [...this.travelList];
+  }
+
+  addTravel() {
+    this.showAddForm = true;
+    this.showViewForm = false;
+  }
+
+  closeAddTravelForm() {
+    this.showAddForm = false;
+    this.travelForm.reset();
+  }
+
+  viewDetails(travel: any) {
+    this.selectedTravel = travel;
+    this.showViewForm = true;
+    this.showAddForm = false;
+  }
+
+  closeViewDetailsForm() {
+    this.showViewForm = false;
+  }
+
+  onSubmit() {
+    if (this.travelForm.invalid) {
+      this.travelForm.markAllAsTouched();
+      return;
+    }
+
+    this.http.post('http://localhost:8080/api/travel', this.travelForm.value)
+      .subscribe(() => {
+        Swal.fire('Success', 'Travel request added', 'success');
+        this.closeAddTravelForm();
+        this.loadTravels();
+      });
+  }
+
+  onReset() {
+    this.travelForm.reset();
+  }
+
+  getStatusClass(status: string | undefined): string {
+
+    if (!status) return 'status-processing';
+    if (status === 'Approved') return 'status-approved';
+    if (status === 'Rejected' || status === 'Rejected by Line Manager') return 'status-rejected';
+    if (status === 'Pending') return 'status-pending';
+
+    return 'status-processing';
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { DropdownService } from '../dropdown/dropdown';
